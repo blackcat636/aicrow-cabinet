@@ -7,13 +7,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const deviceId = require('crypto').randomUUID();
-
     const response = await fetch(`${API_URL}/auth/login`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'x-device-id': deviceId
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify(body)
     });
@@ -37,14 +34,24 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
 
-      setTokens(
-        {
-          accessToken: data.data.accessToken,
-          refreshToken: data.data.refreshToken,
-          deviceId: deviceId
-        },
-        nextResponse
-      );
+      // Set cookies manually using deviceId from server response
+      nextResponse.cookies.set('access_token', data.data.accessToken, {
+        path: '/',
+        secure: true,
+        sameSite: 'strict'
+      });
+      nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
+        path: '/',
+        maxAge: 365 * 24 * 60 * 60,
+        secure: true,
+        sameSite: 'strict'
+      });
+      nextResponse.cookies.set('device_id', data.data.deviceId, {
+        path: '/',
+        maxAge: 365 * 24 * 60 * 60,
+        secure: true,
+        sameSite: 'strict'
+      });
 
       return nextResponse;
     }

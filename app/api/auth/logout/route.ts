@@ -32,7 +32,25 @@ export async function POST(request: NextRequest) {
       { status: 200 }
     );
 
-    removeTokens(nextResponse);
+    // Clear cookies manually
+    nextResponse.cookies.set('access_token', '', {
+      path: '/',
+      expires: new Date(0),
+      secure: true,
+      sameSite: 'strict'
+    });
+    nextResponse.cookies.set('refresh_token', '', {
+      path: '/',
+      expires: new Date(0),
+      secure: true,
+      sameSite: 'strict'
+    });
+    nextResponse.cookies.set('device_id', '', {
+      path: '/',
+      expires: new Date(0),
+      secure: true,
+      sameSite: 'strict'
+    });
 
     return nextResponse;
   } catch (error) {

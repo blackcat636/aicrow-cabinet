@@ -60,13 +60,13 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
   };
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+    <div className="bg-gray-800 rounded-lg border border-gray-700 p-4 hover:shadow-lg hover:shadow-purple-500/10 transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
-            <CalendarIcon className="w-4 h-4 text-gray-500" />
-            <span className="font-medium text-gray-900">
+            <CalendarIcon className="w-4 h-4 text-gray-400" />
+            <span className="font-medium text-white">
               {getScheduleTypeLabel(schedule.scheduleType)}
             </span>
             <Badge 
@@ -78,13 +78,13 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
           </div>
           
           {schedule.scheduleType === 'cron' && schedule.cronExpression && (
-            <p className="text-sm text-gray-600 font-mono">
+            <p className="text-sm text-gray-300 font-mono">
               {formatCronExpression(schedule.cronExpression)}
             </p>
           )}
           
           {schedule.scheduleType === 'once' && schedule.scheduledAt && (
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-300">
               Scheduled for: {new Date(schedule.scheduledAt).toLocaleString()}
             </p>
           )}
@@ -103,7 +103,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
       {/* Next Execution */}
       {schedule.scheduleType !== 'manual' && (
         <div className="mb-3">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
+          <div className="flex items-center gap-2 text-sm text-gray-300">
             <ClockIcon className="w-4 h-4" />
             <span>Next execution: {formatNextExecution(schedule.nextExecutionAt)}</span>
           </div>
@@ -115,7 +115,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
         <div className="flex items-center gap-2">
           <button
             onClick={() => onToggle(schedule.id)}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2 text-gray-400 hover:text-white transition-colors"
             title={schedule.isActive ? 'Deactivate' : 'Activate'}
           >
             {schedule.isActive ? (
@@ -127,7 +127,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
           
           <button
             onClick={() => onEdit(schedule)}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-2 text-gray-400 hover:text-white transition-colors"
             title="Edit Schedule"
           >
             <SettingsIcon className="w-4 h-4" />
@@ -144,8 +144,8 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
       </div>
 
       {/* Timestamps */}
-      <div className="mt-3 pt-3 border-t border-gray-100">
-        <div className="flex items-center justify-between text-xs text-gray-500">
+      <div className="mt-3 pt-3 border-t border-gray-700">
+        <div className="flex items-center justify-between text-xs text-gray-400">
           <span>Created: {new Date(schedule.createdAt).toLocaleDateString()}</span>
           <span>Updated: {new Date(schedule.updatedAt).toLocaleDateString()}</span>
         </div>

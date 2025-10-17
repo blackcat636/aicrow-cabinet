@@ -3,6 +3,7 @@
 export interface LoginRequest {
   email: string;
   password: string;
+  deviceId?: string; // Optional, will be generated automatically
 }
 
 export interface RegisterRequest {
@@ -11,29 +12,46 @@ export interface RegisterRequest {
   confirmPassword: string;
 }
 
-export interface AuthResponse {
-  accessToken: string;
-  refreshToken: string;
-  user: User;
-}
-
-export interface User {
-  id: number;
-  email: string;
-  username: string;
-  role: string;
-  photo?: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface RefreshTokenRequest {
-  refreshToken: string;
+export interface LoginResponse {
+  status: number;
+  data: {
+    accessToken: string;
+    refreshToken: string;
+    deviceId: string;
+    user: {
+      id: string;
+      username: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      phone: string | null;
+      photo: string | null;
+      role: string;
+      balance: string;
+      frozenBalance: string;
+    };
+  };
 }
 
 export interface RefreshTokenResponse {
-  accessToken: string;
-  refreshToken: string;
+  status: number;
+  data: {
+    accessToken: string;
+    refreshToken: string;
+  };
+}
+
+export interface User {
+  id: string;
+  email: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  photo: string | null;
+  role: string;
+  balance: string;
+  frozenBalance: string;
 }
 
 export interface AuthState {

@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { UserWorkflow } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
 import { WorkflowCard } from './WorkflowCard';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PlusIcon, RefreshIcon } from '@/components/icons';
 
 interface WorkflowListProps {
@@ -22,6 +23,15 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
   const [workflows, setWorkflows] = useState<UserWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleteDialog, setDeleteDialog] = useState<{
+    isOpen: boolean;
+    workflowId: number | null;
+    workflowName: string;
+  }>({
+    isOpen: false,
+    workflowId: null,
+    workflowName: ''
+  });
 
   const loadWorkflows = async () => {
     try {
@@ -51,15 +61,24 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
     }
   };
 
-  const handleDelete = async (id: number) => {
-    if (window.confirm('Are you sure you want to delete this workflow?')) {
+  const handleDelete = async (id: number, name: string) => {
+    setDeleteDialog({
+      isOpen: true,
+      workflowId: id,
+      workflowName: name
+    });
+  };
+
+  const confirmDelete = async () => {
+    if (deleteDialog.workflowId) {
       try {
-        await workflowApi.deleteUserWorkflow(id);
+        await workflowApi.deleteUserWorkflow(deleteDialog.workflowId);
         await loadWorkflows(); // Reload to get updated data
       } catch (err) {
         console.error('Error deleting workflow:', err);
       }
     }
+    setDeleteDialog({ isOpen: false, workflowId: null, workflowName: '' });
   };
 
   if (loading) {
@@ -146,7 +165,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
               workflow={workflow}
               onToggle={handleToggle}
               onEdit={onEditWorkflow}
-              onDelete={handleDelete}
+              onDelete={(id, name) => handleDelete(id, name)}
               onExecute={onExecuteWorkflow}
               onManageSchedules={onManageSchedules}
             />
@@ -156,29 +175,41 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
 
       {/* Stats */}
       {workflows.length > 0 && (
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-white">
                 {workflows.length}
               </div>
-              <div className="text-sm text-gray-600">Total Workflows</div>
+              <div className="text-sm text-gray-300">Total Workflows</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {workflows.filter(w => w.isActive).length}
               </div>
-              <div className="text-sm text-gray-600">Active</div>
+              <div className="text-sm text-gray-300">Active</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-600">
+              <div className="text-2xl font-bold text-purple-600">
                 {workflows.filter(w => !w.isActive).length}
               </div>
-              <div className="text-sm text-gray-600">Inactive</div>
+              <div className="text-sm text-gray-300">Inactive</div>
             </div>
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteDialog.isOpen}
+        onClose={() => setDeleteDialog({ isOpen: false, workflowId: null, workflowName: '' })}
+        onConfirm={confirmDelete}
+        title="Видалити воркфлоу"
+        message={`Ви впевнені, що хочете видалити воркфлоу "${deleteDialog.workflowName}"? Цю дію неможливо скасувати.`}
+        confirmText="Видалити"
+        cancelText="Скасувати"
+        type="danger"
+      />
     </div>
   );
 };

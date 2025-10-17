@@ -1,278 +1,163 @@
-import { NextRequest, NextResponse } from 'next/server';
-import * as jose from 'jose';
+import { NextRequest } from 'next/server';
+import { User } from '@/types/auth';
+import { ensureValidToken, refreshAccessToken } from './auth-utils';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
-
-const API_URL = 'https://api.tempdomain.site';
-
+// Types
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;
   deviceId: string;
 }
 
-export function getTokens(request: NextRequest) {
-  const accessToken = request.cookies.get('access_token')?.value;
-  const refreshToken = request.cookies.get('refresh_token')?.value;
-  const deviceId = request.cookies.get('device_id')?.value;
-  return { accessToken, refreshToken, deviceId };
-}
-
-export function setTokens(tokens: AuthTokens, response?: NextResponse) {
-  if (response) {
-    response.cookies.set('access_token', tokens.accessToken, {
-      path: '/',
-      maxAge: 3600,
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    });
-    response.cookies.set('refresh_token', tokens.refreshToken, {
-      path: '/',
-      maxAge: 86400,
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    });
-    response.cookies.set('device_id', tokens.deviceId, {
-      path: '/',
-      maxAge: 86400,
-      httpOnly: false,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    });
+// Device ID management
+export const getDeviceId = (): string => {
+  if (typeof window === 'undefined') {
+    return 'server-device-id';
   }
 
-  if (typeof window !== 'undefined') {
-    // Set cookies with proper attributes
-    document.cookie = `access_token=${tokens.accessToken}; path=/; max-age=3600; SameSite=Lax`;
-    document.cookie = `refresh_token=${tokens.refreshToken}; path=/; max-age=86400; SameSite=Lax`;
-    document.cookie = `device_id=${tokens.deviceId}; path=/; max-age=86400; SameSite=Lax`;
+  let deviceId = getCookieValue('device_id');
+  if (!deviceId) {
+    deviceId = generateDeviceId();
+    setCookieValue('device_id', deviceId, 365 * 24 * 60 * 60); // 1 year
   }
-}
+  return deviceId;
+};
 
-// Function to read cookies
-export const getCookieValue = (name: string): string | null => {
-  if (typeof window === 'undefined') return null;
+const generateDeviceId = (): string => {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+};
+
+// Cookie management
+const setCookieValue = (name: string, value: string, maxAge: number) => {
+  if (typeof document === 'undefined') return;
+
+  document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; secure; samesite=strict`;
+};
+
+const getCookieValue = (name: string): string | null => {
+  if (typeof document === 'undefined') return null;
 
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) {
-    const result = parts.pop()?.split(';').shift() || null;
-    return result;
+    return parts.pop()?.split(';').shift() || null;
   }
   return null;
 };
 
-// Function to decode JWT token
-export const decodeJWT = (token: string) => {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split('')
-        .map(function (c) {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join('')
-    );
-    return JSON.parse(jsonPayload);
-  } catch (error) {
-    console.error('Error decoding JWT:', error);
-    return null;
+// Token management
+export const setTokens = (tokens: AuthTokens) => {
+  if (typeof window === 'undefined') return;
+
+  // Set access token (no max-age, expires when backend says so)
+  setCookieValue('access_token', tokens.accessToken, 0);
+
+  // Set refresh token (1 year)
+  setCookieValue('refresh_token', tokens.refreshToken, 365 * 24 * 60 * 60);
+
+  // Set device ID (1 year)
+  setCookieValue('device_id', tokens.deviceId, 365 * 24 * 60 * 60);
+};
+
+export const getTokens = (request?: NextRequest) => {
+  if (request) {
+    // Server-side: get from request cookies
+    return {
+      accessToken: request.cookies.get('access_token')?.value || null,
+      refreshToken: request.cookies.get('refresh_token')?.value || null,
+      deviceId: request.cookies.get('device_id')?.value || null
+    };
+  } else {
+    // Client-side: get from document cookies
+    return {
+      accessToken: getCookieValue('access_token'),
+      refreshToken: getCookieValue('refresh_token'),
+      deviceId: getCookieValue('device_id')
+    };
   }
 };
 
-export const getAccessToken = () => {
-  if (typeof window !== 'undefined') {
-    const token = getCookieValue('access_token');
-    return token;
-  }
-  return null;
+export const getAccessToken = (): string | null => {
+  return getCookieValue('access_token');
 };
 
-export const getRefreshToken = () => {
-  if (typeof window !== 'undefined') {
-    const token = getCookieValue('refresh_token');
-    return token;
-  }
-  return null;
+export const getRefreshToken = (): string | null => {
+  return getCookieValue('refresh_token');
 };
 
-export const getDeviceId = () => {
-  if (typeof window !== 'undefined') {
-    const deviceId = getCookieValue('device_id');
-    return deviceId;
-  }
-  return null;
+export const removeTokens = () => {
+  if (typeof window === 'undefined') return;
+
+  // Clear all auth cookies
+  document.cookie =
+    'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
+  document.cookie =
+    'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
+  document.cookie =
+    'device_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
 };
 
-export const removeTokens = (response?: NextResponse) => {
-  if (typeof window !== 'undefined') {
-    document.cookie = 'access_token=; path=/; max-age=0';
-    document.cookie = 'refresh_token=; path=/; max-age=0';
-    document.cookie = 'device_id=; path=/; max-age=0';
-  }
+// Get auth headers for API requests
+export const getAuthHeaders = (): HeadersInit => {
+  const accessToken = getAccessToken();
 
-  if (response) {
-    response.cookies.delete('access_token');
-    response.cookies.delete('refresh_token');
-    response.cookies.delete('device_id');
-  }
-};
-
-export async function isAuthenticatedServer(
-  accessToken: string | undefined
-): Promise<boolean> {
   if (!accessToken) {
-    return false;
+    return {};
   }
 
-  try {
-    const secret = new TextEncoder().encode(JWT_SECRET);
-    const { payload } = await jose.jwtVerify(accessToken, secret);
-
-    // Check if token has not expired
-    const now = Math.floor(Date.now() / 1000);
-    if (payload.exp && payload.exp < now) {
-      return false;
-    }
-
-    return true;
-  } catch (error) {
-    return false;
-  }
-}
-
-export async function refreshAccessToken(
-  request: NextRequest
-): Promise<NextResponse | null> {
-  const { refreshToken, deviceId } = getTokens(request);
-
-  if (!refreshToken || !deviceId) {
-    return null;
-  }
-
-  try {
-    const response = await globalThis.fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-device-id': deviceId
-      },
-      body: JSON.stringify({ refreshToken, deviceId })
-    });
-
-    const data = await response.json();
-
-    // Check only status in data, since server returns 201
-    if (data.status === 200 && data.data) {
-      const newResponse = NextResponse.next();
-
-      // Set new tokens in cookies
-      newResponse.cookies.set('access_token', data.data.accessToken, {
-        path: '/',
-        maxAge: 3600,
-        httpOnly: false, // Change to false for client access
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-      });
-      newResponse.cookies.set('refresh_token', data.data.refreshToken, {
-        path: '/',
-        maxAge: 86400,
-        httpOnly: false, // Change to false for client access
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-      });
-      // Keep old deviceId, since it does not change
-      newResponse.cookies.set('device_id', deviceId, {
-        path: '/',
-        maxAge: 86400,
-        httpOnly: false, // Change to false for client access
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax'
-      });
-
-      return newResponse;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-export const isAuthenticated = async (): Promise<boolean> => {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  // Read from cookies instead of cookies
-  const token = getCookieValue('access_token');
-
-  if (!token) {
-    return false;
-  }
-
-  try {
-    const decoded = decodeJWT(token);
-    if (!decoded) {
-      return false;
-    }
-
-    const now = Math.floor(Date.now() / 1000);
-    const isValid = decoded.exp > now;
-    return isValid;
-  } catch (error) {
-    console.error('❌ isAuthenticated: Token validation error:', error);
-    return false;
-  }
+  return {
+    Authorization: `Bearer ${accessToken}`,
+    'Content-Type': 'application/json'
+  };
 };
 
-export const refreshTokenClient = async (): Promise<boolean> => {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  const refreshToken = getRefreshToken();
-  const deviceId = getDeviceId();
-
-  if (!refreshToken || !deviceId) {
-    return false;
-  }
+// Функція для автоматичного оновлення токенів при API запитах
+export const fetchWithAuth = async (
+  url: string,
+  options: RequestInit = {},
+  retryCount = 0
+): Promise<Response> => {
+  const maxRetries = 2;
 
   try {
-    const response = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
+    // Спочатку перевіряємо чи потрібно оновити токен
+    await ensureValidToken();
+
+    // Виконуємо запит з актуальним токеном
+    const response = await fetch(url, {
+      ...options,
       headers: {
-        'Content-Type': 'application/json',
-        'x-device-id': deviceId
+        ...getAuthHeaders(),
+        ...options.headers
       },
-      body: JSON.stringify({ refreshToken, deviceId })
+      cache: 'no-cache'
     });
 
-    const data = await response.json();
-
-    if (data.status === 200 && data.data) {
-      // Update cookies with new tokens
-      setTokens({
-        accessToken: data.data.accessToken,
-        refreshToken: data.data.refreshToken,
-        deviceId: deviceId
-      });
-
-      return true;
-    } else {
-      // If refresh token is also invalid, clear all tokens
-      if (data.status === 401) {
+    // Якщо отримали 401, намагаємося оновити токен і повторити запит
+    if (response.status === 401 && retryCount < maxRetries) {
+      const refreshSuccess = await refreshAccessToken();
+      if (refreshSuccess) {
+        return fetchWithAuth(url, options, retryCount + 1);
+      } else {
         removeTokens();
+        window.location.href = '/';
+        throw new Error('Unauthorized');
       }
-
-      return false;
     }
+
+    return response;
   } catch (error) {
-    console.error('❌ refreshTokenClient: Token refresh error:', error);
-    return false;
+    // Retry logic для мережевих помилок
+    if (retryCount < maxRetries && error instanceof TypeError) {
+      const delay = Math.pow(2, retryCount) * 1000; // Експоненційна затримка
+      await new Promise((resolve) => setTimeout(resolve, delay));
+      return fetchWithAuth(url, options, retryCount + 1);
+    }
+
+    throw error;
   }
 };

@@ -8,19 +8,7 @@ import {
   ExecuteWorkflowRequest
 } from '@/types/workflow';
 import { buildApiUrl, API_CONFIG } from '@/config/api';
-import { getAccessToken, getDeviceId } from './auth';
-
-// Helper function to get auth headers
-const getAuthHeaders = () => {
-  const accessToken = getAccessToken();
-  const deviceId = getDeviceId();
-
-  return {
-    ...API_CONFIG.DEFAULT_HEADERS,
-    ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-    ...(deviceId && { 'x-device-id': deviceId })
-  };
-};
+import { fetchWithAuth } from './auth';
 
 // API Functions
 export const workflowApi = {
@@ -29,17 +17,9 @@ export const workflowApi = {
     try {
       const url = buildApiUrl('/automations/user/workflows');
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: getAuthHeaders()
+      const response = await fetchWithAuth(url, {
+        method: 'GET'
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
 
       const data = await response.json();
 
@@ -64,17 +44,9 @@ export const workflowApi = {
     try {
       const url = buildApiUrl('/automations/user/my-workflows');
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: getAuthHeaders()
+      const response = await fetchWithAuth(url, {
+        method: 'GET'
       });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
 
       const data = await response.json();
 
@@ -100,21 +72,13 @@ export const workflowApi = {
     data: AttachWorkflowRequest
   ): Promise<UserWorkflow> => {
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         buildApiUrl('/automations/user/my-workflows'),
         {
           method: 'POST',
-          headers: getAuthHeaders(),
           body: JSON.stringify({ ...data, userId })
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
 
       const result = await response.json();
       return result.userWorkflow || result;
@@ -129,21 +93,13 @@ export const workflowApi = {
     data: Partial<AttachWorkflowRequest>
   ): Promise<UserWorkflow> => {
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/my-workflows/${id}`),
         {
           method: 'PUT',
-          headers: getAuthHeaders(),
           body: JSON.stringify(data)
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
 
       const result = await response.json();
       return result.userWorkflow || result;
@@ -155,20 +111,12 @@ export const workflowApi = {
 
   toggleUserWorkflow: async (id: number): Promise<UserWorkflow> => {
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/my-workflows/${id}/toggle`),
         {
-          method: 'PATCH',
-          headers: getAuthHeaders()
+          method: 'PATCH'
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
 
       const result = await response.json();
       return result.userWorkflow || result;
@@ -180,20 +128,9 @@ export const workflowApi = {
 
   deleteUserWorkflow: async (id: number): Promise<void> => {
     try {
-      const response = await fetch(
-        buildApiUrl(`/automations/user/my-workflows/${id}`),
-        {
-          method: 'DELETE',
-          headers: getAuthHeaders()
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
+      await fetchWithAuth(buildApiUrl(`/automations/user/my-workflows/${id}`), {
+        method: 'DELETE'
+      });
     } catch (error) {
       console.error('Delete user workflow API error:', error);
       throw error;
@@ -205,22 +142,14 @@ export const workflowApi = {
     userWorkflowId: number
   ): Promise<WorkflowSchedule[]> => {
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         buildApiUrl(
           `/automations/user/my-workflows/${userWorkflowId}/schedules`
         ),
         {
-          method: 'GET',
-          headers: getAuthHeaders()
+          method: 'GET'
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
 
       const data = await response.json();
       return data.schedules || data;
@@ -235,23 +164,15 @@ export const workflowApi = {
     data: CreateScheduleRequest
   ): Promise<WorkflowSchedule> => {
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         buildApiUrl(
           `/automations/user/my-workflows/${userWorkflowId}/schedules`
         ),
         {
           method: 'POST',
-          headers: getAuthHeaders(),
           body: JSON.stringify({ ...data, userWorkflowId })
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
 
       const result = await response.json();
       return result.schedule || result;
@@ -266,21 +187,13 @@ export const workflowApi = {
     data: Partial<CreateScheduleRequest>
   ): Promise<WorkflowSchedule> => {
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/schedules/${id}`),
         {
           method: 'PUT',
-          headers: getAuthHeaders(),
           body: JSON.stringify(data)
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
 
       const result = await response.json();
       return result.schedule || result;
@@ -292,20 +205,9 @@ export const workflowApi = {
 
   deleteSchedule: async (id: number): Promise<void> => {
     try {
-      const response = await fetch(
-        buildApiUrl(`/automations/user/schedules/${id}`),
-        {
-          method: 'DELETE',
-          headers: getAuthHeaders()
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
+      await fetchWithAuth(buildApiUrl(`/automations/user/schedules/${id}`), {
+        method: 'DELETE'
+      });
     } catch (error) {
       console.error('Delete schedule API error:', error);
       throw error;
@@ -318,21 +220,13 @@ export const workflowApi = {
     data: ExecuteWorkflowRequest
   ): Promise<WorkflowExecution> => {
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/my-workflows/${userWorkflowId}/execute`),
         {
           method: 'POST',
-          headers: getAuthHeaders(),
           body: JSON.stringify({ ...data, userWorkflowId })
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
 
       const result = await response.json();
       return result.execution || result;
@@ -346,16 +240,14 @@ export const workflowApi = {
     try {
       const url = buildApiUrl('/automations/user/executions');
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: getAuthHeaders()
+      const response = await fetchWithAuth(url, {
+        method: 'GET'
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
+      // Handle 304 Not Modified - return empty array for now
+      if (response.status === 304) {
+        console.warn('⚠️ 304 Not Modified - returning empty array');
+        return [];
       }
 
       const data = await response.json();
@@ -379,20 +271,12 @@ export const workflowApi = {
 
   getExecutionDetails: async (id: number): Promise<WorkflowExecution> => {
     try {
-      const response = await fetch(
+      const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/executions/${id}`),
         {
-          method: 'GET',
-          headers: getAuthHeaders()
+          method: 'GET'
         }
       );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.message || `HTTP error! status: ${response.status}`
-        );
-      }
 
       const result = await response.json();
       return result.execution || result;

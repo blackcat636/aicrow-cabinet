@@ -15,7 +15,7 @@ interface WorkflowCardProps {
   workflow: UserWorkflow;
   onToggle: (id: number) => void;
   onEdit: (workflow: UserWorkflow) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: number, name: string) => void;
   onExecute: (id: number) => void;
   onManageSchedules: (id: number) => void;
 }
@@ -124,7 +124,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
           </button>
           
           <button
-            onClick={() => onDelete(workflow.id)}
+            onClick={() => onDelete(workflow.id, workflow.name)}
             className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded hover:bg-red-900/20"
             title="Delete"
           >

@@ -25,8 +25,8 @@ export const ExecutionHistory: React.FC = () => {
       const executionsArray = Array.isArray(data) ? data : ((data as any)?.executions || (data as any)?.data || []);
       setExecutions(executionsArray);
     } catch (err) {
-      setError('Failed to load execution history');
-      console.error('Error loading executions:', err);
+      console.error('❌ Error loading executions:', err);
+      setError(`Failed to load execution history: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setLoading(false);
     }
@@ -114,10 +114,11 @@ export const ExecutionHistory: React.FC = () => {
         </div>
         <button
           onClick={loadExecutions}
-          className="flex items-center gap-2 px-4 py-2 text-gray-300 border border-gray-600 rounded hover:bg-gray-700 transition-colors"
+          disabled={loading}
+          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors shadow-lg shadow-purple-500/25"
         >
-          <RefreshIcon className="w-4 h-4" />
-          Refresh
+          <RefreshIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          {loading ? 'Loading...' : 'Refresh'}
         </button>
       </div>
 
@@ -221,31 +222,31 @@ export const ExecutionHistory: React.FC = () => {
 
       {/* Stats */}
       {executions.length > 0 && (
-        <div className="bg-gray-50 rounded-lg p-4">
+        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
-              <div className="text-2xl font-bold text-gray-900">
+              <div className="text-2xl font-bold text-white">
                 {executions.length}
               </div>
-              <div className="text-sm text-gray-600">Total Executions</div>
+              <div className="text-sm text-gray-300">Total Executions</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {executions.filter(e => e.status === 'completed').length}
               </div>
-              <div className="text-sm text-gray-600">Completed</div>
+              <div className="text-sm text-gray-300">Completed</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">
                 {executions.filter(e => e.status === 'failed').length}
               </div>
-              <div className="text-sm text-gray-600">Failed</div>
+              <div className="text-sm text-gray-300">Failed</div>
             </div>
             <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
+              <div className="text-2xl font-bold text-purple-600">
                 {executions.filter(e => e.status === 'running' || e.status === 'pending').length}
               </div>
-              <div className="text-sm text-gray-600">In Progress</div>
+              <div className="text-sm text-gray-300">In Progress</div>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginRequest } from '@/types/auth';
+import { getDeviceId } from '@/lib/auth';
 import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
 
 interface LoginFormProps {
@@ -17,7 +18,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onSwitchToRegister
 }) => {
   const { login, isLoading, error, clearError } = useAuth();
-  const [formData, setFormData] = useState<LoginRequest>({
+  const [formData, setFormData] = useState({
     email: '',
     password: ''
   });
@@ -50,13 +51,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       clearError();
-      await login(formData);
+      await login(formData as LoginRequest);
       onClose();
     } catch (err) {
     }
   };
 
-  const handleInputChange = (field: keyof LoginRequest, value: string) => {
+  const handleInputChange = (field: 'email' | 'password', value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));

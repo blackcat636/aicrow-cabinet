@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTokens, setTokens, removeTokens } from '@/lib/auth';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010';
+import { API_CONFIG } from '@/config/api';
+
+const API_URL = API_CONFIG.BASE_URL;
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,14 +33,24 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
 
-      setTokens(
-        {
-          accessToken: data.data.accessToken,
-          refreshToken: data.data.refreshToken,
-          deviceId: deviceId
-        },
-        nextResponse
-      );
+      // Set cookies manually
+      nextResponse.cookies.set('access_token', data.data.accessToken, {
+        path: '/',
+        secure: true,
+        sameSite: 'strict'
+      });
+      nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
+        path: '/',
+        maxAge: 365 * 24 * 60 * 60,
+        secure: true,
+        sameSite: 'strict'
+      });
+      nextResponse.cookies.set('device_id', deviceId, {
+        path: '/',
+        maxAge: 365 * 24 * 60 * 60,
+        secure: true,
+        sameSite: 'strict'
+      });
 
       return nextResponse;
     } else {
@@ -48,7 +60,25 @@ export async function POST(request: NextRequest) {
           { error: 'Invalid refresh token' },
           { status: 401 }
         );
-        removeTokens(nextResponse);
+        // Clear cookies manually
+        nextResponse.cookies.set('access_token', '', {
+          path: '/',
+          expires: new Date(0),
+          secure: true,
+          sameSite: 'strict'
+        });
+        nextResponse.cookies.set('refresh_token', '', {
+          path: '/',
+          expires: new Date(0),
+          secure: true,
+          sameSite: 'strict'
+        });
+        nextResponse.cookies.set('device_id', '', {
+          path: '/',
+          expires: new Date(0),
+          secure: true,
+          sameSite: 'strict'
+        });
         return nextResponse;
       }
 
