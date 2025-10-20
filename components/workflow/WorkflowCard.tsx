@@ -124,7 +124,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
           </button>
           
           <button
-            onClick={() => onDelete(workflow.id, workflow.name)}
+            onClick={() => onDelete(workflow.id, workflow.workflow.name)}
             className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded hover:bg-red-900/20"
             title="Delete"
           >
