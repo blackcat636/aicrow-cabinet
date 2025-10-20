@@ -67,6 +67,7 @@ export const authApi = {
       }
 
       const data = (await response.json()) as LoginResponse;
+
       return data;
     } catch (error) {
       throw error;
@@ -149,13 +150,14 @@ export const authApi = {
 
       if (!response.ok) {
         let errorMessage = 'Token refresh failed';
+        let errorData = null;
 
         // Handle specific status codes
         if (response.status === 401) {
           errorMessage = 'Invalid refresh token';
         } else {
           try {
-            const errorData = await response.json();
+            errorData = await response.json();
             if (errorData.message) {
               errorMessage = errorData.message;
             } else if (errorData.error) {
@@ -182,6 +184,7 @@ export const authApi = {
       }
 
       const data = (await response.json()) as RefreshTokenResponse;
+
       return data;
     } catch (error) {
       throw error;

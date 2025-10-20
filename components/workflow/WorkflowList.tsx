@@ -5,7 +5,7 @@ import { UserWorkflow } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
 import { WorkflowCard } from './WorkflowCard';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { PlusIcon, RefreshIcon } from '@/components/icons';
+import { PlusIcon } from '@/components/icons';
 
 interface WorkflowListProps {
   onAddWorkflow: () => void;
@@ -100,7 +100,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
           onClick={loadWorkflows}
           className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors mx-auto shadow-lg shadow-purple-500/25"
         >
-          <RefreshIcon className="w-4 h-4" />
+          <PlusIcon className="w-4 h-4" />
           Try Again
         </button>
       </div>
@@ -118,13 +118,6 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button
-            onClick={loadWorkflows}
-            className="flex items-center gap-2 px-4 py-2 text-gray-300 border border-gray-600 rounded hover:bg-gray-700 transition-colors"
-          >
-            <RefreshIcon className="w-4 h-4" />
-            Refresh
-          </button>
           <button
             onClick={onAddWorkflow}
             className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/25"

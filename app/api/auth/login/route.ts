@@ -34,22 +34,21 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
 
-      // Set cookies manually using deviceId from server response
       nextResponse.cookies.set('access_token', data.data.accessToken, {
         path: '/',
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
       nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
         path: '/',
         maxAge: 365 * 24 * 60 * 60,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
       nextResponse.cookies.set('device_id', data.data.deviceId, {
         path: '/',
         maxAge: 365 * 24 * 60 * 60,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
 

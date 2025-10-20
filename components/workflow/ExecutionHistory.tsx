@@ -4,12 +4,11 @@ import React, { useState, useEffect } from 'react';
 import { WorkflowExecution } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
 import { Badge } from '@/components/ui/badge';
-import { 
-  ClockIcon, 
+import {
+  ClockIcon,
   CheckIcon, 
   XIcon, 
-  PlayIcon,
-  RefreshIcon
+  PlayIcon
 } from '@/components/icons';
 
 export const ExecutionHistory: React.FC = () => {
@@ -95,7 +94,7 @@ export const ExecutionHistory: React.FC = () => {
           onClick={loadExecutions}
           className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors mx-auto shadow-lg shadow-purple-500/25"
         >
-          <RefreshIcon className="w-4 h-4" />
+          <PlayIcon className="w-4 h-4" />
           Try Again
         </button>
       </div>
@@ -112,14 +111,6 @@ export const ExecutionHistory: React.FC = () => {
             Track all workflow executions and their results
           </p>
         </div>
-        <button
-          onClick={loadExecutions}
-          disabled={loading}
-          className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 text-white rounded-lg transition-colors shadow-lg shadow-purple-500/25"
-        >
-          <RefreshIcon className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? 'Loading...' : 'Refresh'}
-        </button>
       </div>
 
       {/* Executions List */}

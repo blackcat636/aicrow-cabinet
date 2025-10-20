@@ -19,23 +19,44 @@ export const getDeviceId = (): string => {
   if (!deviceId) {
     deviceId = generateDeviceId();
     setCookieValue('device_id', deviceId, 365 * 24 * 60 * 60); // 1 year
+  } else {
   }
   return deviceId;
 };
 
 const generateDeviceId = (): string => {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+  const deviceId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+    /[xy]/g,
+    function (c) {
+      const r = (Math.random() * 16) | 0;
+      const v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    }
+  );
+  return deviceId;
 };
 
 // Cookie management
 const setCookieValue = (name: string, value: string, maxAge: number) => {
   if (typeof document === 'undefined') return;
 
-  document.cookie = `${name}=${value}; path=/; max-age=${maxAge}; secure; samesite=strict`;
+  const secure = process.env.NODE_ENV === 'production';
+  let cookieString;
+
+  if (maxAge === -1) {
+    // Session cookie (expires when browser closes)
+    cookieString = `${name}=${value}; path=/; ${secure ? 'secure; ' : ''}samesite=strict`;
+  } else {
+    // Persistent cookie with max-age
+    cookieString = `${name}=${value}; path=/; max-age=${maxAge}; ${secure ? 'secure; ' : ''}samesite=strict`;
+  }
+
+  document.cookie = cookieString;
+
+  // Verify cookie was set
+  setTimeout(() => {
+    const savedValue = getCookieValue(name);
+  }, 50);
 };
 
 const getCookieValue = (name: string): string | null => {
@@ -44,7 +65,8 @@ const getCookieValue = (name: string): string | null => {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
   if (parts.length === 2) {
-    return parts.pop()?.split(';').shift() || null;
+    const result = parts.pop()?.split(';').shift() || null;
+    return result;
   }
   return null;
 };
@@ -53,52 +75,63 @@ const getCookieValue = (name: string): string | null => {
 export const setTokens = (tokens: AuthTokens) => {
   if (typeof window === 'undefined') return;
 
-  // Set access token (no max-age, expires when backend says so)
-  setCookieValue('access_token', tokens.accessToken, 0);
+  // Set access token (session cookie - expires when browser closes)
+  setCookieValue('access_token', tokens.accessToken, -1);
 
   // Set refresh token (1 year)
   setCookieValue('refresh_token', tokens.refreshToken, 365 * 24 * 60 * 60);
 
   // Set device ID (1 year)
   setCookieValue('device_id', tokens.deviceId, 365 * 24 * 60 * 60);
+
+  // Verify cookies were set
+  setTimeout(() => {
+    const savedAccessToken = getCookieValue('access_token');
+    const savedRefreshToken = getCookieValue('refresh_token');
+    const savedDeviceId = getCookieValue('device_id');
+  }, 100);
 };
 
 export const getTokens = (request?: NextRequest) => {
   if (request) {
     // Server-side: get from request cookies
-    return {
+    const tokens = {
       accessToken: request.cookies.get('access_token')?.value || null,
       refreshToken: request.cookies.get('refresh_token')?.value || null,
       deviceId: request.cookies.get('device_id')?.value || null
     };
+    return tokens;
   } else {
     // Client-side: get from document cookies
-    return {
+    const tokens = {
       accessToken: getCookieValue('access_token'),
       refreshToken: getCookieValue('refresh_token'),
       deviceId: getCookieValue('device_id')
     };
+    return tokens;
   }
 };
 
 export const getAccessToken = (): string | null => {
-  return getCookieValue('access_token');
+  const token = getCookieValue('access_token');
+  return token;
 };
 
 export const getRefreshToken = (): string | null => {
-  return getCookieValue('refresh_token');
+  const token = getCookieValue('refresh_token');
+  return token;
 };
 
 export const removeTokens = () => {
   if (typeof window === 'undefined') return;
 
+  const secure = process.env.NODE_ENV === 'production';
+  const secureFlag = secure ? 'secure; ' : '';
+
   // Clear all auth cookies
-  document.cookie =
-    'access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
-  document.cookie =
-    'refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
-  document.cookie =
-    'device_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; secure; samesite=strict';
+  document.cookie = `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
+  document.cookie = `refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
+  document.cookie = `device_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
 };
 
 // Get auth headers for API requests
@@ -139,10 +172,17 @@ export const fetchWithAuth = async (
 
     // Якщо отримали 401, намагаємося оновити токен і повторити запит
     if (response.status === 401 && retryCount < maxRetries) {
-      const refreshSuccess = await refreshAccessToken();
-      if (refreshSuccess) {
-        return fetchWithAuth(url, options, retryCount + 1);
-      } else {
+      try {
+        const refreshSuccess = await refreshAccessToken();
+        if (refreshSuccess) {
+          return fetchWithAuth(url, options, retryCount + 1);
+        } else {
+          removeTokens();
+          window.location.href = '/';
+          throw new Error('Unauthorized');
+        }
+      } catch (refreshError) {
+        console.error('❌ fetchWithAuth: Token refresh error:', refreshError);
         removeTokens();
         window.location.href = '/';
         throw new Error('Unauthorized');

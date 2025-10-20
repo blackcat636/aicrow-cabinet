@@ -188,13 +188,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const timeUntilExpiry = decoded.exp * 1000 - Date.now();
         }
 
-        // Save tokens
-        setTokens({
-          accessToken: response.data.accessToken,
-          refreshToken: response.data.refreshToken,
-          deviceId: response.data.deviceId
-        });
-
         // Set user data
         setUser(response.data.user);
         setIsAuthenticated(true);
