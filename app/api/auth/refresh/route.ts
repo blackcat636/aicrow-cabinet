@@ -3,6 +3,8 @@ import { getTokens, setTokens, removeTokens } from '@/lib/auth';
 
 import { API_CONFIG } from '@/config/api';
 
+export const runtime = 'edge';
+
 const API_URL = API_CONFIG.BASE_URL;
 
 export async function POST(request: NextRequest) {
