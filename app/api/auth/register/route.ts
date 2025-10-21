@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { setTokens } from '@/lib/auth';
+import { API_CONFIG } from '@/config/api';
 
 export const runtime = 'edge';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010';
+const API_URL = API_CONFIG.BASE_URL;
 
 export async function POST(request: NextRequest) {
   try {
@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
       // Set cookies manually
       nextResponse.cookies.set('access_token', data.data.accessToken, {
         path: '/',
+        maxAge: 60 * 60, // 1 hour
         secure: true,
         sameSite: 'strict'
       });

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { setTokens } from '@/lib/auth';
+import { API_CONFIG } from '@/config/api';
 
 export const runtime = 'edge';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010';
+const API_URL = API_CONFIG.BASE_URL;
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,15 +38,18 @@ export async function POST(request: NextRequest) {
 
       nextResponse.cookies.set('access_token', data.data.accessToken, {
         path: '/',
+        maxAge: 60 * 60, // 1 hour
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
+
       nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
         path: '/',
         maxAge: 365 * 24 * 60 * 60,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
+
       nextResponse.cookies.set('device_id', data.data.deviceId, {
         path: '/',
         maxAge: 365 * 24 * 60 * 60,
@@ -54,9 +57,20 @@ export async function POST(request: NextRequest) {
         sameSite: 'strict'
       });
 
+      const cookieHeaders = [
+        `access_token=${data.data.accessToken}; Path=/; Max-Age=${60 * 60}; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict`,
+        `refresh_token=${data.data.refreshToken}; Path=/; Max-Age=${365 * 24 * 60 * 60}; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict`,
+        `device_id=${data.data.deviceId}; Path=/; Max-Age=${365 * 24 * 60 * 60}; ${process.env.NODE_ENV === 'production' ? 'Secure; ' : ''}SameSite=Strict`
+      ];
+
+      cookieHeaders.forEach((cookie) => {
+        nextResponse.headers.append('Set-Cookie', cookie);
+      });
+
       return nextResponse;
     }
 
+    console.error('❌ Invalid response format:', data);
     return NextResponse.json(
       { error: 'Invalid response format' },
       { status: 400 }

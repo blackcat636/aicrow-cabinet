@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTokens, removeTokens } from '@/lib/auth';
+import { API_CONFIG } from '@/config/api';
 
 export const runtime = 'edge';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3010';
+const API_URL = API_CONFIG.BASE_URL;
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,6 +21,9 @@ export async function POST(request: NextRequest) {
             'x-device-id': deviceId
           }
         });
+        if (!response.ok) {
+          throw new Error('Logout failed');
+        }
       } catch (error) {
         console.warn(
           '⚠️ API Logout warning: Could not reach external API',
@@ -57,6 +61,11 @@ export async function POST(request: NextRequest) {
     return nextResponse;
   } catch (error) {
     console.error('❌ API Logout error:', error);
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown'
+    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

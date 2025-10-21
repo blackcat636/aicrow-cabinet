@@ -154,10 +154,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = async (): Promise<void> => {
     setIsLoading(true);
     
-    try {
-      await authApi.logout();
+    try {      
+      // Call our Next.js API route for logout
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-cache'
+      });
+
     } catch (error) {
-      console.error('❌ Logout API error:', error);
     } finally {
       // Always clear local state
       removeTokens();
@@ -178,24 +185,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      const response = await authApi.login(credentials.email, credentials.password, '');
+      
+      // Call our Next.js API route instead of external API directly
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(credentials),
+        cache: 'no-cache'
+      });
 
-      if (response.status === 200 && response.data) {
-        // Decode and log token expiration
-        const decoded = decodeToken(response.data.accessToken);
-        if (decoded) {
-          const expirationDate = new Date(decoded.exp * 1000);
-          const timeUntilExpiry = decoded.exp * 1000 - Date.now();
-        }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Login failed');
+      }
 
+      const data = await response.json();
+
+      if (data.user) {
         // Set user data
-        setUser(response.data.user);
+        setUser(data.user);
         setIsAuthenticated(true);
       } else {
         throw new Error('Login failed');
       }
     } catch (error: any) {
-      console.error('Login error:', error);
       setError(error.message || 'Login failed');
       throw error;
     } finally {
@@ -218,7 +233,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Registration failed');
       }
     } catch (error: any) {
-      console.error('Registration error:', error);
       setError(error.message || 'Registration failed');
       throw error;
     } finally {

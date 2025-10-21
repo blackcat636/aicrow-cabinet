@@ -68,6 +68,7 @@ const getCookieValue = (name: string): string | null => {
     const result = parts.pop()?.split(';').shift() || null;
     return result;
   }
+
   return null;
 };
 
@@ -100,6 +101,7 @@ export const getTokens = (request?: NextRequest) => {
       refreshToken: request.cookies.get('refresh_token')?.value || null,
       deviceId: request.cookies.get('device_id')?.value || null
     };
+
     return tokens;
   } else {
     // Client-side: get from document cookies
@@ -108,6 +110,7 @@ export const getTokens = (request?: NextRequest) => {
       refreshToken: getCookieValue('refresh_token'),
       deviceId: getCookieValue('device_id')
     };
+
     return tokens;
   }
 };

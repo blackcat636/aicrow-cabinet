@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTokens, setTokens, removeTokens } from '@/lib/auth';
+import { getTokens, removeTokens } from '@/lib/auth';
 
 import { API_CONFIG } from '@/config/api';
 
@@ -38,15 +38,18 @@ export async function POST(request: NextRequest) {
       // Set cookies manually
       nextResponse.cookies.set('access_token', data.data.accessToken, {
         path: '/',
+        maxAge: 60 * 60, // 1 hour
         secure: true,
         sameSite: 'strict'
       });
+
       nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
         path: '/',
         maxAge: 365 * 24 * 60 * 60,
         secure: true,
         sameSite: 'strict'
       });
+
       nextResponse.cookies.set('device_id', deviceId, {
         path: '/',
         maxAge: 365 * 24 * 60 * 60,
@@ -58,6 +61,7 @@ export async function POST(request: NextRequest) {
     } else {
       // If refresh token is invalid, clear all tokens
       if (data.status === 401) {
+        console.error('❌ Invalid refresh token, clearing all cookies');
         const nextResponse = NextResponse.json(
           { error: 'Invalid refresh token' },
           { status: 401 }
@@ -84,6 +88,7 @@ export async function POST(request: NextRequest) {
         return nextResponse;
       }
 
+      console.error('❌ Refresh failed:', data);
       return NextResponse.json(
         { error: data.message || 'Token refresh failed' },
         { status: response.status }
@@ -91,6 +96,11 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error('❌ API Refresh error:', error);
+    console.error('❌ Error details:', {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : 'Unknown'
+    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
