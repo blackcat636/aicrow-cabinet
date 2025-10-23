@@ -64,17 +64,14 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   // Set refreshing flag
   isRefreshing = true;
 
-
   if (!refreshToken || !deviceId) {
     return false;
   }
 
   try {
-
     const data = await authApi.refreshToken(refreshToken, deviceId);
 
     if (data.status === 200 && data.data) {
-
       // Decode and log token expiration
       const decoded = decodeToken(data.data.accessToken);
       if (decoded) {
@@ -139,7 +136,7 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   }
 };
 
-// Функція для перевірки чи потрібно оновити токен перед API запитом
+// Function to check if token needs to be refreshed before API request
 export const ensureValidToken = async (): Promise<boolean> => {
   const accessToken = getAccessToken();
 

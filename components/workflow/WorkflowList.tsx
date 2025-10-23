@@ -197,10 +197,10 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
         isOpen={deleteDialog.isOpen}
         onClose={() => setDeleteDialog({ isOpen: false, workflowId: null, workflowName: '' })}
         onConfirm={confirmDelete}
-        title="Видалити воркфлоу"
-        message={`Ви впевнені, що хочете видалити воркфлоу "${deleteDialog.workflowName}"? Цю дію неможливо скасувати.`}
-        confirmText="Видалити"
-        cancelText="Скасувати"
+        title="Delete Workflow"
+        message={`Are you sure you want to delete the workflow "${deleteDialog.workflowName}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
         type="danger"
       />
     </div>

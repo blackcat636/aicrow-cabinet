@@ -151,7 +151,7 @@ export const getAuthHeaders = (): HeadersInit => {
   };
 };
 
-// Функція для автоматичного оновлення токенів при API запитах
+// Function for automatic token refresh on API requests
 export const fetchWithAuth = async (
   url: string,
   options: RequestInit = {},
@@ -160,10 +160,10 @@ export const fetchWithAuth = async (
   const maxRetries = 2;
 
   try {
-    // Спочатку перевіряємо чи потрібно оновити токен
+    // First check if we need to refresh the token
     await ensureValidToken();
 
-    // Виконуємо запит з актуальним токеном
+    // Execute request with current token
     const response = await fetch(url, {
       ...options,
       headers: {
@@ -173,7 +173,7 @@ export const fetchWithAuth = async (
       cache: 'no-cache'
     });
 
-    // Якщо отримали 401, намагаємося оновити токен і повторити запит
+    // If we got 401, try to refresh token and retry request
     if (response.status === 401 && retryCount < maxRetries) {
       try {
         const refreshSuccess = await refreshAccessToken();
@@ -194,9 +194,9 @@ export const fetchWithAuth = async (
 
     return response;
   } catch (error) {
-    // Retry logic для мережевих помилок
+    // Retry logic for network errors
     if (retryCount < maxRetries && error instanceof TypeError) {
-      const delay = Math.pow(2, retryCount) * 1000; // Експоненційна затримка
+      const delay = Math.pow(2, retryCount) * 1000;
       await new Promise((resolve) => setTimeout(resolve, delay));
       return fetchWithAuth(url, options, retryCount + 1);
     }

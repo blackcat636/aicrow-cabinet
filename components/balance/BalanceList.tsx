@@ -95,16 +95,12 @@ export const BalanceList: React.FC = () => {
 
   if (balances.length === 0) {
     return (
-      <Card className="w-full">
+      <Card className="w-full bg-gray-800 border-gray-700">
         <CardContent className="flex flex-col items-center justify-center py-8">
-          <h3 className="text-lg font-semibold mb-2">Баланс не знайдено</h3>
-          <p className="text-muted-foreground text-center mb-4">
-            У вас поки що немає активних балансів
+          <h3 className="text-lg font-semibold mb-2 text-white">No balances found</h3>
+          <p className="text-gray-400 text-center mb-4">
+            You don't have any active balances yet
           </p>
-          <Button onClick={handleRefresh} variant="outline">
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Оновити
-          </Button>
         </CardContent>
       </Card>
     );

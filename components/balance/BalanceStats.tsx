@@ -1,11 +1,11 @@
 'use client';
 
 import React from 'react';
-import { BalanceStats } from '@/types/balance';
+import { BalanceStats as BalanceStatsType } from '@/types/balance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface BalanceStatsProps {
-  stats: BalanceStats;
+  stats: BalanceStatsType;
 }
 
 export const BalanceStats: React.FC<BalanceStatsProps> = ({ stats }) => {

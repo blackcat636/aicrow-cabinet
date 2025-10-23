@@ -8,7 +8,7 @@ import { API_CONFIG } from '@/config/api';
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
 export const authApi = {
-  // Логін
+  // Login
   login: async (
     email: string,
     password: string,
@@ -38,7 +38,7 @@ export const authApi = {
 
             if (errorData.message) {
               // Translate Ukrainian messages to English
-              if (errorData.message === 'Невірні облікові дані') {
+              if (errorData.message === 'Invalid credentials') {
                 errorMessage = 'Invalid credentials';
               } else {
                 errorMessage = errorData.message;
@@ -74,7 +74,7 @@ export const authApi = {
     }
   },
 
-  // Реєстрація
+  // Registration
   register: async (
     email: string,
     password: string,
@@ -133,7 +133,7 @@ export const authApi = {
     }
   },
 
-  // Рефреш токена
+  // Refresh token
   refreshToken: async (
     refreshToken: string,
     deviceId: string
