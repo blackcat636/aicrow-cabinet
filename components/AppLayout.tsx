@@ -14,7 +14,8 @@ import {
   MenuIcon,
   XIcon,
   SettingsIcon,
-  ChevronRightIcon
+  ChevronRightIcon,
+  WalletIcon
 } from '@/components/icons';
 
 interface LayoutProps {
@@ -66,6 +67,8 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
         return 'Workflows';
       case '/executions':
         return 'Executions';
+      case '/balance':
+        return 'Balance';
       case '/settings/telegram':
         return 'Telegram Settings';
       default:
@@ -136,6 +139,12 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 icon={<ClockIcon className='w-5 h-5' />}
                 label="Executions"
                 isActive={pathname === '/executions'}
+              />
+              <NavItem
+                href="/balance"
+                icon={<WalletIcon className='w-5 h-5' />}
+                label="Balance"
+                isActive={pathname === '/balance'}
               />
               <div className="relative">
                 <button
