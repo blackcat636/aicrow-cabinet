@@ -5,6 +5,7 @@ export interface Workflow {
   name: string;
   description: string;
   isActive: boolean;
+  priceUsd: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -14,6 +15,8 @@ export interface UserWorkflow {
   userId: number;
   workflowId: number;
   workflow: Workflow;
+  name?: string;
+  description?: string;
   credentialType: CredentialType;
   credentialData: CredentialData;
   inputDataTemplate: string;
@@ -37,14 +40,16 @@ export interface WorkflowSchedule {
 export interface WorkflowExecution {
   id: number;
   userWorkflowId: number;
+  n8nExecutionId: string;
+  status: string;
   triggerType: TriggerType;
   inputData: string;
-  status: ExecutionStatus;
-  result?: string;
-  errorMessage?: string;
+  outputData?: string | null;
   notificationSent: boolean;
-  startedAt: string;
-  completedAt?: string;
+  errorMessage?: string | null;
+  priceUsd: string;
+  startedAt?: string | null;
+  completedAt?: string | null;
   createdAt: string;
 }
 
@@ -64,6 +69,8 @@ export interface CredentialData {
 
 export interface AttachWorkflowRequest {
   workflowId: number;
+  name?: string;
+  description?: string;
   credentialType: CredentialType;
   credentialData: CredentialData;
   inputDataTemplate: string;
@@ -77,6 +84,14 @@ export interface CreateScheduleRequest {
 
 export interface ExecuteWorkflowRequest {
   inputData: string;
+}
+
+export interface ExecutionsResponse {
+  items: WorkflowExecution[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export interface TelegramCommand {

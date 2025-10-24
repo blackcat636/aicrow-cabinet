@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { WorkflowExecution } from '@/types/workflow';
+import { WorkflowExecution, ExecutionsResponse } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -12,7 +12,13 @@ import {
 } from '@/components/icons';
 
 export const ExecutionHistory: React.FC = () => {
-  const [executions, setExecutions] = useState<WorkflowExecution[]>([]);
+  const [executionsData, setExecutionsData] = useState<ExecutionsResponse>({
+    items: [],
+    total: 0,
+    page: 1,
+    limit: 20,
+    totalPages: 0
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -21,8 +27,7 @@ export const ExecutionHistory: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await workflowApi.getMyExecutions();
-      const executionsArray = Array.isArray(data) ? data : ((data as any)?.executions || (data as any)?.data || []);
-      setExecutions(executionsArray);
+      setExecutionsData(data);
     } catch (err) {
       console.error('❌ Error loading executions:', err);
       setError(`Failed to load execution history: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -37,13 +42,13 @@ export const ExecutionHistory: React.FC = () => {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'completed':
+      case '1': // completed
         return 'bg-green-600 text-white';
-      case 'failed':
+      case '2': // failed
         return 'bg-red-600 text-white';
-      case 'running':
+      case '3': // running
         return 'bg-purple-600 text-white';
-      case 'pending':
+      case '0': // pending
         return 'bg-yellow-600 text-white';
       default:
         return 'bg-gray-600 text-white';
@@ -52,16 +57,26 @@ export const ExecutionHistory: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'completed':
+      case '1': // completed
         return <CheckIcon className="w-4 h-4" />;
-      case 'failed':
+      case '2': // failed
         return <XIcon className="w-4 h-4" />;
-      case 'running':
+      case '3': // running
         return <PlayIcon className="w-4 h-4" />;
-      case 'pending':
+      case '0': // pending
         return <ClockIcon className="w-4 h-4" />;
       default:
         return <ClockIcon className="w-4 h-4" />;
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case '1': return 'Completed';
+      case '2': return 'Failed';
+      case '3': return 'Running';
+      case '0': return 'Pending';
+      default: return 'Unknown';
     }
   };
 
@@ -114,7 +129,7 @@ export const ExecutionHistory: React.FC = () => {
       </div>
 
       {/* Executions List */}
-      {executions.length === 0 ? (
+      {executionsData.items.length === 0 ? (
         <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
           <div className="max-w-md mx-auto">
             <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
@@ -130,7 +145,7 @@ export const ExecutionHistory: React.FC = () => {
         </div>
       ) : (
         <div className="space-y-4">
-          {executions.map((execution) => (
+          {executionsData.items.map((execution) => (
             <div
               key={execution.id}
               className="bg-gray-800 rounded-lg border border-gray-700 p-6 hover:shadow-md transition-shadow"
@@ -145,7 +160,7 @@ export const ExecutionHistory: React.FC = () => {
                     >
                       <div className="flex items-center gap-1">
                         {getStatusIcon(execution.status)}
-                        <span className="capitalize">{execution.status}</span>
+                        <span>{getStatusLabel(execution.status)}</span>
                       </div>
                     </Badge>
                     <Badge variant="outline" className="text-xs">
@@ -156,12 +171,21 @@ export const ExecutionHistory: React.FC = () => {
                       Notified
                     </Badge>
                     )}
+                    <Badge variant="outline" className="text-xs bg-blue-600 text-white">
+                      ${execution.priceUsd}
+                    </Badge>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-300">
                     <div className="flex items-center gap-1">
                       <ClockIcon className="w-4 h-4" />
-                      <span>Started: {new Date(execution.startedAt).toLocaleString()}</span>
+                      <span>Created: {new Date(execution.createdAt).toLocaleString()}</span>
                     </div>
+                    {execution.startedAt && (
+                      <div className="flex items-center gap-1">
+                        <ClockIcon className="w-4 h-4" />
+                        <span>Started: {new Date(execution.startedAt).toLocaleString()}</span>
+                      </div>
+                    )}
                     {execution.completedAt && (
                       <div className="flex items-center gap-1">
                         <ClockIcon className="w-4 h-4" />
@@ -172,24 +196,35 @@ export const ExecutionHistory: React.FC = () => {
                 </div>
               </div>
 
-              {/* Input Data */}
+              {/* N8N Execution ID */}
               <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-300 mb-2">Input Data:</h4>
-                <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300 break-all">
-                  {execution.inputData}
+                <h4 className="text-sm font-medium text-gray-300 mb-2">N8N Execution ID:</h4>
+                <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300">
+                  {execution.n8nExecutionId}
                 </div>
               </div>
 
-              {/* Result or Error */}
-              {execution.result && (
+              {/* Input Data */}
+              {execution.inputData && (
                 <div className="mb-4">
-                  <h4 className="text-sm font-medium text-gray-300 mb-2">Result:</h4>
-                  <div className="p-3 bg-green-900/20 rounded text-sm font-mono text-green-300 break-all">
-                    {execution.result}
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">Input Data:</h4>
+                  <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300 break-all">
+                    {execution.inputData}
                   </div>
                 </div>
               )}
 
+              {/* Output Data */}
+              {execution.outputData && (
+                <div className="mb-4">
+                  <h4 className="text-sm font-medium text-gray-300 mb-2">Output Data:</h4>
+                  <div className="p-3 bg-green-900/20 rounded text-sm font-mono text-green-300 break-all">
+                    {execution.outputData}
+                  </div>
+                </div>
+              )}
+
+              {/* Error Message */}
               {execution.errorMessage && (
                 <div className="mb-4">
                   <h4 className="text-sm font-medium text-gray-300 mb-2">Error:</h4>
@@ -203,7 +238,7 @@ export const ExecutionHistory: React.FC = () => {
               <div className="pt-4 border-t border-gray-600">
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>Execution ID: {execution.id}</span>
-                  <span>Created: {new Date(execution.createdAt).toLocaleString()}</span>
+                  <span>User Workflow ID: {execution.userWorkflowId}</span>
                 </div>
               </div>
             </div>
@@ -212,30 +247,30 @@ export const ExecutionHistory: React.FC = () => {
       )}
 
       {/* Stats */}
-      {executions.length > 0 && (
+      {executionsData.items.length > 0 && (
         <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-white">
-                {executions.length}
+                {executionsData.total}
               </div>
               <div className="text-sm text-gray-300">Total Executions</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {executions.filter(e => e.status === 'completed').length}
+                {executionsData.items.filter(e => e.status === '1').length}
               </div>
               <div className="text-sm text-gray-300">Completed</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">
-                {executions.filter(e => e.status === 'failed').length}
+                {executionsData.items.filter(e => e.status === '2').length}
               </div>
               <div className="text-sm text-gray-300">Failed</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {executions.filter(e => e.status === 'running' || e.status === 'pending').length}
+                {executionsData.items.filter(e => e.status === '3' || e.status === '0').length}
               </div>
               <div className="text-sm text-gray-300">In Progress</div>
             </div>

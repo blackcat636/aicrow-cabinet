@@ -12,13 +12,15 @@ interface WorkflowListProps {
   onEditWorkflow: (workflow: UserWorkflow) => void;
   onManageSchedules: (workflowId: number) => void;
   onExecuteWorkflow: (workflowId: number) => void;
+  refreshTrigger?: number; // Add refresh trigger
 }
 
 export const WorkflowList: React.FC<WorkflowListProps> = ({
   onAddWorkflow,
   onEditWorkflow,
   onManageSchedules,
-  onExecuteWorkflow
+  onExecuteWorkflow,
+  refreshTrigger
 }) => {
   const [workflows, setWorkflows] = useState<UserWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +53,13 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
   useEffect(() => {
     loadWorkflows();
   }, []);
+
+  // Refresh when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger !== undefined) {
+      loadWorkflows();
+    }
+  }, [refreshTrigger]);
 
   const handleToggle = async (id: number) => {
     try {

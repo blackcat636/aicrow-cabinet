@@ -3,6 +3,7 @@ import {
   UserWorkflow,
   WorkflowSchedule,
   WorkflowExecution,
+  ExecutionsResponse,
   AttachWorkflowRequest,
   CreateScheduleRequest,
   ExecuteWorkflowRequest
@@ -68,15 +69,27 @@ export const workflowApi = {
   },
 
   attachWorkflow: async (
-    userId: number,
     data: AttachWorkflowRequest
   ): Promise<UserWorkflow> => {
     try {
+      // Create API data object with correct field names
+      const apiData = {
+        workflowId: data.workflowId,
+        credentialType: data.credentialType,
+        credentialData: data.credentialData,
+        inputDataTemplate: data.inputDataTemplate,
+        name: data.name,
+        description: data.description
+      };
+
+      console.log('Original data:', data);
+      console.log('API data:', apiData);
+
       const response = await fetchWithAuth(
         buildApiUrl('/automations/user/my-workflows'),
         {
           method: 'POST',
-          body: JSON.stringify({ ...data, userId })
+          body: JSON.stringify(apiData)
         }
       );
 
@@ -93,11 +106,24 @@ export const workflowApi = {
     data: Partial<AttachWorkflowRequest>
   ): Promise<UserWorkflow> => {
     try {
+      // Create API data object with correct field names
+      const apiData: any = {};
+      if (data.workflowId !== undefined) apiData.workflowId = data.workflowId;
+      if (data.credentialType !== undefined)
+        apiData.credentialType = data.credentialType;
+      if (data.credentialData !== undefined)
+        apiData.credentialData = data.credentialData;
+      if (data.inputDataTemplate !== undefined)
+        apiData.inputDataTemplate = data.inputDataTemplate;
+      if (data.name !== undefined) apiData.name = data.name;
+      if (data.description !== undefined)
+        apiData.description = data.description;
+
       const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/my-workflows/${id}`),
         {
           method: 'PUT',
-          body: JSON.stringify(data)
+          body: JSON.stringify(apiData)
         }
       );
 
@@ -236,7 +262,7 @@ export const workflowApi = {
     }
   },
 
-  getMyExecutions: async (userId?: number): Promise<WorkflowExecution[]> => {
+  getMyExecutions: async (userId?: number): Promise<ExecutionsResponse> => {
     try {
       const url = buildApiUrl('/automations/user/executions');
 
@@ -244,24 +270,34 @@ export const workflowApi = {
         method: 'GET'
       });
 
-      // Handle 304 Not Modified - return empty array for now
+      // Handle 304 Not Modified - return empty response for now
       if (response.status === 304) {
-        console.warn('⚠️ 304 Not Modified - returning empty array');
-        return [];
+        console.warn('⚠️ 304 Not Modified - returning empty response');
+        return {
+          items: [],
+          total: 0,
+          page: 1,
+          limit: 20,
+          totalPages: 0
+        };
       }
 
       const data = await response.json();
 
       // Handle different response formats
-      if (data.executions) {
-        return data.executions;
-      } else if (data.data) {
+      if (data.data) {
         return data.data;
-      } else if (Array.isArray(data)) {
+      } else if (data.items) {
         return data;
       } else {
         console.warn('⚠️ Unexpected response format:', data);
-        return [];
+        return {
+          items: [],
+          total: 0,
+          page: 1,
+          limit: 20,
+          totalPages: 0
+        };
       }
     } catch (error) {
       console.error('Get executions API error:', error);

@@ -14,6 +14,7 @@ export default function WorkflowsPage() {
   const [editingWorkflow, setEditingWorkflow] = useState<UserWorkflow | undefined>();
   const [showSchedules, setShowSchedules] = useState(false);
   const [selectedWorkflowId, setSelectedWorkflowId] = useState<number | null>(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Show loading state
   if (isLoading) {
@@ -40,6 +41,7 @@ export default function WorkflowsPage() {
   const handleFormSuccess = () => {
     setShowForm(false);
     setEditingWorkflow(undefined);
+    setRefreshTrigger(prev => prev + 1); // Trigger refresh
   };
 
   const handleManageSchedules = (workflowId: number) => {
@@ -58,6 +60,7 @@ export default function WorkflowsPage() {
         onEditWorkflow={handleEditWorkflow}
         onManageSchedules={handleManageSchedules}
         onExecuteWorkflow={handleExecuteWorkflow}
+        refreshTrigger={refreshTrigger}
       />
 
       {/* Modals */}

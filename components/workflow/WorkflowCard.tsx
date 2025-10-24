@@ -56,10 +56,10 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1">
           <h3 className="text-lg font-semibold text-white mb-1">
-            {workflow.workflow.name}
+            {workflow.name || workflow.workflow.name}
           </h3>
           <p className="text-sm text-gray-300">
-            {workflow.workflow.description}
+            {workflow.description || workflow.workflow.description}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -79,6 +79,11 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
             {getCredentialTypeLabel(workflow.credentialType)}
           </Badge>
           <span className="text-xs text-gray-400">{getCredentialData()}</span>
+          {workflow.workflow.priceUsd && (
+            <Badge variant="outline" className="text-xs bg-blue-600 text-white">
+              ${workflow.workflow.priceUsd}
+            </Badge>
+          )}
         </div>
       </div>
 
@@ -124,7 +129,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
           </button>
           
           <button
-            onClick={() => onDelete(workflow.id, workflow.workflow.name)}
+            onClick={() => onDelete(workflow.id, workflow.name || workflow.workflow.name)}
             className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded hover:bg-red-900/20"
             title="Delete"
           >

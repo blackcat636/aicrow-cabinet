@@ -24,6 +24,8 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
   
   const [formData, setFormData] = useState<AttachWorkflowRequest>({
     workflowId: 0,
+    name: '',
+    description: '',
     credentialType: 'telegram',
     credentialData: {},
     inputDataTemplate: ''
@@ -37,13 +39,17 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
       if (editingWorkflow) {
         setFormData({
           workflowId: editingWorkflow.workflowId,
+          name: editingWorkflow.name || '',
+          description: editingWorkflow.description || '',
           credentialType: editingWorkflow.credentialType,
-          credentialData: editingWorkflow.credentialData,
+          credentialData: editingWorkflow.credentialData || {},
           inputDataTemplate: editingWorkflow.inputDataTemplate
         });
       } else {
         setFormData({
           workflowId: 0,
+          name: '',
+          description: '',
           credentialType: 'telegram',
           credentialData: {},
           inputDataTemplate: ''
@@ -110,7 +116,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
       if (editingWorkflow) {
         await workflowApi.updateUserWorkflow(editingWorkflow.id, formData);
       } else {
-        await workflowApi.attachWorkflow(formData.workflowId, formData);
+        await workflowApi.attachWorkflow(formData);
       }
       
       onSuccess();
@@ -180,7 +186,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
                 <option value={0} className="bg-gray-800">Choose a workflow...</option>
                 {availableWorkflows.map((workflow) => (
                   <option key={workflow.id} value={workflow.id} className="bg-gray-800">
-                    {workflow.name} - {workflow.description}
+                    {workflow.name}
                   </option>
                 ))}
               </select>
@@ -188,6 +194,40 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
             {errors.workflowId && (
               <p className="mt-1 text-sm text-red-400">{errors.workflowId}</p>
             )}
+          </div>
+
+          {/* Custom Workflow Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Custom Workflow Name
+            </label>
+            <input
+              type="text"
+              value={formData.name || ''}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Enter a custom name for this workflow (optional)"
+              className="w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 border-gray-600"
+            />
+            <p className="mt-1 text-xs text-gray-400">
+              Leave empty to use the default workflow name
+            </p>
+          </div>
+
+          {/* Custom Workflow Description */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Custom Workflow Description
+            </label>
+            <textarea
+              value={formData.description || ''}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              placeholder="Enter a custom description for this workflow (optional)"
+              rows={3}
+              className="w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 border-gray-600"
+            />
+            <p className="mt-1 text-xs text-gray-400">
+              Leave empty to use the default workflow description
+            </p>
           </div>
 
           {/* Credential Type */}
@@ -261,7 +301,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
               Input Data Template *
             </label>
             <textarea
-              value={formData.inputDataTemplate}
+              value={formData.inputDataTemplate || ''}
               onChange={(e) => setFormData({ ...formData, inputDataTemplate: e.target.value })}
               placeholder='{"userId": "{userId}", "action": "daily_report"}'
               rows={4}
