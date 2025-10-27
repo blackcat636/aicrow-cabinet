@@ -250,9 +250,21 @@ export const workflowApi = {
         buildApiUrl(`/automations/user/my-workflows/${userWorkflowId}/execute`),
         {
           method: 'POST',
-          body: JSON.stringify({ ...data, userWorkflowId })
+          body: JSON.stringify(data)
         }
       );
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          // If we can't parse the error response, use the status text
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
 
       const result = await response.json();
       return result.execution || result;

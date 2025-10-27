@@ -12,7 +12,9 @@ interface WorkflowListProps {
   onEditWorkflow: (workflow: UserWorkflow) => void;
   onManageSchedules: (workflowId: number) => void;
   onExecuteWorkflow: (workflowId: number) => void;
+  onViewDetails: (workflowId: number) => void; // Add view details handler
   refreshTrigger?: number; // Add refresh trigger
+  executingWorkflowId?: number | null; // Add executing state
 }
 
 export const WorkflowList: React.FC<WorkflowListProps> = ({
@@ -20,7 +22,9 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
   onEditWorkflow,
   onManageSchedules,
   onExecuteWorkflow,
-  refreshTrigger
+  onViewDetails,
+  refreshTrigger,
+  executingWorkflowId
 }) => {
   const [workflows, setWorkflows] = useState<UserWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -160,7 +164,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
           {workflows.map((workflow) => (
             <WorkflowCard
               key={workflow.id}
@@ -170,6 +174,8 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
               onDelete={(id, name) => handleDelete(id, name)}
               onExecute={onExecuteWorkflow}
               onManageSchedules={onManageSchedules}
+              onViewDetails={onViewDetails}
+              isExecuting={executingWorkflowId === workflow.id}
             />
           ))}
         </div>

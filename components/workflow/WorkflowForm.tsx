@@ -83,20 +83,12 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
       newErrors.credentialType = 'Please select a credential type';
     }
 
-    if (formData.credentialType === 'telegram' && !formData.credentialData.chatId) {
-      newErrors.chatId = 'Telegram Chat ID is required';
-    }
-
     if (formData.credentialType === 'email' && !formData.credentialData.email) {
       newErrors.email = 'Email address is required';
     }
 
     if (formData.credentialType === 'webhook' && !formData.credentialData.webhookUrl) {
       newErrors.webhookUrl = 'Webhook URL is required';
-    }
-
-    if (!formData.inputDataTemplate.trim()) {
-      newErrors.inputDataTemplate = 'Input data template is required';
     }
 
     setErrors(newErrors);
@@ -259,7 +251,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
           {/* Credential Data */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              {formData.credentialType === 'telegram' && 'Telegram Chat ID *'}
+              {formData.credentialType === 'telegram' && 'Telegram Chat ID'}
               {formData.credentialType === 'email' && 'Email Address *'}
               {formData.credentialType === 'webhook' && 'Webhook URL *'}
             </label>
@@ -276,7 +268,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
                 handleCredentialDataChange(field, e.target.value);
               }}
               placeholder={
-                formData.credentialType === 'telegram' ? 'Enter Telegram Chat ID' :
+                formData.credentialType === 'telegram' ? 'Enter Telegram Chat ID (optional)' :
                 formData.credentialType === 'email' ? 'Enter email address' :
                 'Enter webhook URL'
               }
@@ -298,19 +290,19 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
           {/* Input Data Template */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Input Data Template *
+              Input Data Template
             </label>
             <textarea
               value={formData.inputDataTemplate || ''}
               onChange={(e) => setFormData({ ...formData, inputDataTemplate: e.target.value })}
-              placeholder='{"userId": "{userId}", "action": "daily_report"}'
+              placeholder='{"userId": "{userId}", "action": "daily_report"} (optional)'
               rows={4}
               className={`w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm ${
                 errors.inputDataTemplate ? 'border-red-500' : 'border-gray-600'
               }`}
             />
             <p className="mt-1 text-xs text-gray-400">
-              JSON template for workflow input data. Use {"{userId}"} for dynamic user ID.
+              JSON template for workflow input data. Use {"{userId}"} for dynamic user ID. (Optional)
             </p>
             {errors.inputDataTemplate && (
               <p className="mt-1 text-sm text-red-400">{errors.inputDataTemplate}</p>

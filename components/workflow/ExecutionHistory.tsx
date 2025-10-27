@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { WorkflowExecution, ExecutionsResponse } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
 import { Badge } from '@/components/ui/badge';
@@ -8,10 +9,12 @@ import {
   ClockIcon,
   CheckIcon, 
   XIcon, 
-  PlayIcon
+  PlayIcon,
+  EyeIcon
 } from '@/components/icons';
 
 export const ExecutionHistory: React.FC = () => {
+  const router = useRouter();
   const [executionsData, setExecutionsData] = useState<ExecutionsResponse>({
     items: [],
     total: 0,
@@ -171,9 +174,6 @@ export const ExecutionHistory: React.FC = () => {
                       Notified
                     </Badge>
                     )}
-                    <Badge variant="outline" className="text-xs bg-blue-600 text-white">
-                      ${execution.priceUsd}
-                    </Badge>
                   </div>
                   <div className="flex items-center gap-4 text-sm text-gray-300">
                     <div className="flex items-center gap-1">
@@ -233,6 +233,17 @@ export const ExecutionHistory: React.FC = () => {
                   </div>
                 </div>
               )}
+
+              {/* View Workflow Button */}
+              <div className="mb-4">
+                <button
+                  onClick={() => router.push(`/workflows/${execution.userWorkflowId}`)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                >
+                  <EyeIcon className="w-4 h-4" />
+                  <span>View Workflow</span>
+                </button>
+              </div>
 
               {/* Execution ID */}
               <div className="pt-4 border-t border-gray-600">

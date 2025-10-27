@@ -8,7 +8,8 @@ import {
   PauseIcon, 
   SettingsIcon, 
   TrashIcon,
-  CalendarIcon
+  CalendarIcon,
+  EyeIcon
 } from '@/components/icons';
 
 interface WorkflowCardProps {
@@ -18,6 +19,8 @@ interface WorkflowCardProps {
   onDelete: (id: number, name: string) => void;
   onExecute: (id: number) => void;
   onManageSchedules: (id: number) => void;
+  onViewDetails: (id: number) => void; // Add view details handler
+  isExecuting?: boolean; // Add executing state
 }
 
 export const WorkflowCard: React.FC<WorkflowCardProps> = ({
@@ -26,7 +29,9 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
   onEdit,
   onDelete,
   onExecute,
-  onManageSchedules
+  onManageSchedules,
+  onViewDetails,
+  isExecuting = false
 }) => {
   const getCredentialTypeLabel = (type: string) => {
     switch (type) {
@@ -79,62 +84,90 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
             {getCredentialTypeLabel(workflow.credentialType)}
           </Badge>
           <span className="text-xs text-gray-400">{getCredentialData()}</span>
-          {workflow.workflow.priceUsd && (
-            <Badge variant="outline" className="text-xs bg-blue-600 text-white">
-              ${workflow.workflow.priceUsd}
-            </Badge>
-          )}
         </div>
       </div>
 
       {/* Actions */}
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-2">
+      <div className="space-y-3">
+        {/* Primary Actions */}
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => onExecute(workflow.id)}
-            className="flex items-center gap-1 px-3 py-2 text-sm bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/25"
+            disabled={isExecuting || !workflow.isActive}
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 w-32 ${
+              isExecuting 
+                ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                : !workflow.isActive
+                ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-500/25'
+            }`}
+            title={!workflow.isActive ? 'Activate workflow to execute' : ''}
           >
-            <PlayIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Execute</span>
-          </button>
-          
-          <button
-            onClick={() => onManageSchedules(workflow.id)}
-            className="flex items-center gap-1 px-3 py-2 text-sm bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
-          >
-            <CalendarIcon className="w-4 h-4" />
-            <span className="hidden sm:inline">Schedules</span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => onToggle(workflow.id)}
-            className="p-2 text-gray-400 hover:text-white transition-colors rounded hover:bg-gray-700"
-            title={workflow.isActive ? 'Deactivate' : 'Activate'}
-          >
-            {workflow.isActive ? (
-              <PauseIcon className="w-4 h-4" />
+            {isExecuting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                <span>Executing...</span>
+              </>
             ) : (
-              <PlayIcon className="w-4 h-4" />
+              <>
+                <PlayIcon className="w-4 h-4" />
+                <span>Execute</span>
+              </>
             )}
           </button>
           
           <button
-            onClick={() => onEdit(workflow)}
-            className="p-2 text-gray-400 hover:text-white transition-colors rounded hover:bg-gray-700"
-            title="Edit"
+            onClick={() => onViewDetails(workflow.id)}
+            className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-32"
           >
-            <SettingsIcon className="w-4 h-4" />
+            <EyeIcon className="w-4 h-4" />
+            <span>Details</span>
           </button>
           
           <button
-            onClick={() => onDelete(workflow.id, workflow.name || workflow.workflow.name)}
-            className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded hover:bg-red-900/20"
-            title="Delete"
+            onClick={() => onManageSchedules(workflow.id)}
+            className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium w-32"
           >
-            <TrashIcon className="w-4 h-4" />
+            <CalendarIcon className="w-4 h-4" />
+            <span>Schedules</span>
           </button>
+        </div>
+
+        {/* Secondary Actions */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => onToggle(workflow.id)}
+              className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-700"
+              title={workflow.isActive ? 'Deactivate workflow' : 'Activate workflow'}
+            >
+              {workflow.isActive ? (
+                <PauseIcon className="w-4 h-4" />
+              ) : (
+                <PlayIcon className="w-4 h-4" />
+              )}
+            </button>
+            
+            <button
+              onClick={() => onEdit(workflow)}
+              className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-700"
+              title="Edit workflow"
+            >
+              <SettingsIcon className="w-4 h-4" />
+            </button>
+            
+            <button
+              onClick={() => onDelete(workflow.id, workflow.name || workflow.workflow.name)}
+              className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-900/20"
+              title="Delete workflow"
+            >
+              <TrashIcon className="w-4 h-4" />
+            </button>
+          </div>
+          
+          <div className="text-xs text-gray-500">
+            ID: {workflow.id}
+          </div>
         </div>
       </div>
 

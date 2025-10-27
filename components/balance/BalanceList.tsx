@@ -1,49 +1,16 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { BalanceData, BalanceStats } from '@/types/balance';
+import { BalanceData } from '@/types/balance';
 import { balanceApi } from '@/lib/apiBalance';
 import { BalanceCard } from './BalanceCard';
-import { BalanceStats as BalanceStatsComponent } from './BalanceStats';
 import { Card, CardContent } from '@/components/ui/card';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 
 export const BalanceList: React.FC = () => {
   const [balances, setBalances] = useState<BalanceData[]>([]);
-  const [stats, setStats] = useState<BalanceStats | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const calculateStats = (balanceData: BalanceData[]): BalanceStats => {
-    const totalBalance = balanceData.reduce((sum, balance) => {
-      return sum + (balance.balance * parseFloat(balance.currency.exchange_rate_to_usd));
-    }, 0);
-
-    const totalFrozen = balanceData.reduce((sum, balance) => {
-      return sum + (balance.frozen_balance * parseFloat(balance.currency.exchange_rate_to_usd));
-    }, 0);
-
-    const totalAvailable = balanceData.reduce((sum, balance) => {
-      return sum + (balance.available_balance * parseFloat(balance.currency.exchange_rate_to_usd));
-    }, 0);
-
-    const totalDeposited = balanceData.reduce((sum, balance) => {
-      return sum + (balance.total_deposited * parseFloat(balance.currency.exchange_rate_to_usd));
-    }, 0);
-
-    const totalWithdrawn = balanceData.reduce((sum, balance) => {
-      return sum + (balance.total_withdrawn * parseFloat(balance.currency.exchange_rate_to_usd));
-    }, 0);
-
-    return {
-      totalBalance,
-      totalFrozen,
-      totalAvailable,
-      totalDeposited,
-      totalWithdrawn,
-      currencies: balanceData
-    };
-  };
 
   const fetchBalances = async () => {
     try {
@@ -54,7 +21,6 @@ export const BalanceList: React.FC = () => {
       
       if (response.status === 200 && response.data) {
         setBalances(response.data);
-        setStats(calculateStats(response.data));
       } else {
         throw new Error('Invalid response format');
       }
@@ -118,8 +84,6 @@ export const BalanceList: React.FC = () => {
         </div>
       </div>
 
-      {/* Stats Overview */}
-      {stats && <BalanceStatsComponent stats={stats} />}
 
       {/* Balance Cards */}
       {balances.length === 0 ? (
