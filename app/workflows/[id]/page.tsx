@@ -18,6 +18,8 @@ import {
 } from '@/components/icons';
 import { toast } from 'sonner';
 
+export const runtime = 'edge';
+
 export default function WorkflowDetailPage() {
   const params = useParams();
   const router = useRouter();
