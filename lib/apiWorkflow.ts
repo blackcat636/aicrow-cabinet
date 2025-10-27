@@ -106,11 +106,10 @@ export const workflowApi = {
     data: Partial<AttachWorkflowRequest>
   ): Promise<UserWorkflow> => {
     try {
-      // Create API data object with correct field names
+      // Create API data object according to API documentation
+      // Fields allowed: credentialData, inputDataTemplate, name, description
+      // Exclude workflowId and credentialType - they should not be changed
       const apiData: any = {};
-      if (data.workflowId !== undefined) apiData.workflowId = data.workflowId;
-      if (data.credentialType !== undefined)
-        apiData.credentialType = data.credentialType;
       if (data.credentialData !== undefined)
         apiData.credentialData = data.credentialData;
       if (data.inputDataTemplate !== undefined)
@@ -118,6 +117,8 @@ export const workflowApi = {
       if (data.name !== undefined) apiData.name = data.name;
       if (data.description !== undefined)
         apiData.description = data.description;
+
+      console.log('Update workflow data:', apiData);
 
       const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/my-workflows/${id}`),
