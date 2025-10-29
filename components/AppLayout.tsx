@@ -123,16 +123,10 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
             {/* Navigation */}
             <nav className='space-y-2 w-[260px] xl:w-[300px] 2xl:w-[330px] 3xl:w-[360px] 4xl:w-[390px]'>
               <NavItem
-                href="/"
-                icon={<DashBoardIcon className='w-5 h-5' />}
-                label="Dashboard"
-                isActive={pathname === '/'}
-              />
-              <NavItem
                 href="/workflows"
                 icon={<FileTextIcon className='w-5 h-5' />}
-                label="Workflows"
-                isActive={pathname === '/workflows'}
+                label="My Workflows"
+                isActive={pathname === '/workflows' || pathname === '/'}
               />
               <NavItem
                 href="/executions"
@@ -245,17 +239,10 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 {/* Navigation */}
                 <nav className='space-y-2 mb-4'>
                   <NavItem
-                    href="/"
-                    icon={<DashBoardIcon className='w-5 h-5' />}
-                    label="Dashboard"
-                    isActive={pathname === '/'}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  />
-                  <NavItem
                     href="/workflows"
                     icon={<FileTextIcon className='w-5 h-5' />}
-                    label="Workflows"
-                    isActive={pathname === '/workflows'}
+                    label="My Workflows"
+                    isActive={pathname === '/workflows' || pathname === '/'}
                     onClick={() => setIsMobileMenuOpen(false)}
                   />
                   <NavItem
@@ -263,6 +250,13 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                     icon={<ClockIcon className='w-5 h-5' />}
                     label="Executions"
                     isActive={pathname === '/executions'}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  />
+                  <NavItem
+                    href="/balance"
+                    icon={<WalletIcon className='w-5 h-5' />}
+                    label="Balance"
+                    isActive={pathname === '/balance'}
                     onClick={() => setIsMobileMenuOpen(false)}
                   />
                   <div className="relative">

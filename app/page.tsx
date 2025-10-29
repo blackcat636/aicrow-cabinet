@@ -1,16 +1,30 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
+import { VerifyEmailForm } from '@/components/auth/VerifyEmailForm';
 import { AppLayout } from '@/components/AppLayout';
 import { FileTextIcon, DashBoardIcon, ClockIcon } from '@/components/icons';
+import { toast } from 'sonner';
 
 export default function Home() {
+  const router = useRouter();
   const { user, isAuthenticated, isLoading } = useAuth();
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [showVerifyForm, setShowVerifyForm] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+
+  
+  // Redirect authenticated users to workflows page
+  useEffect(() => {
+    if (isAuthenticated && !showLoginForm && !showRegisterForm && !showVerifyForm) {
+      router.replace('/workflows');
+    }
+  }, [isAuthenticated, router, showLoginForm, showRegisterForm, showVerifyForm]);
 
   // Show loading state
   if (isLoading) {
@@ -63,10 +77,33 @@ export default function Home() {
         
         <RegisterForm
           isOpen={showRegisterForm}
-          onClose={() => setShowRegisterForm(false)}
+          onClose={() => {
+            setShowRegisterForm(false);
+            setVerificationEmail('');
+          }}
           onSwitchToLogin={() => {
             setShowRegisterForm(false);
             setShowLoginForm(true);
+          }}
+          onRegistrationSuccess={(email) => {
+            setShowRegisterForm(false);
+            setVerificationEmail(email);
+            setShowVerifyForm(true);
+          }}
+        />
+        
+        <VerifyEmailForm
+          isOpen={showVerifyForm}
+          onClose={() => {
+            setShowVerifyForm(false);
+            setVerificationEmail('');
+          }}
+          email={verificationEmail}
+          onVerified={() => {
+            setShowVerifyForm(false);
+            setVerificationEmail('');
+            // Redirect to workflows page instead of reload
+            router.push('/workflows');
           }}
         />
       </div>
@@ -74,45 +111,7 @@ export default function Home() {
   }
 
 
-  return (
-    <AppLayout>
-      <div className="text-center">
-        <h1 className="text-3xl font-bold text-white mb-8">Workflow Management</h1>
-        <div className="bg-gray-800 rounded-xl shadow-sm p-8 border border-gray-700">
-          <div className="text-center py-12">
-            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
-              <FileTextIcon className="w-8 h-8 text-white" />
-            </div>
-            <h2 className="text-2xl font-semibold text-white mb-2">Workflow Management System</h2>
-            <p className="text-gray-300 text-lg mb-6">
-              Automate your tasks with powerful workflows. Attach workflows, schedule executions, and receive results via Telegram, email, or webhooks.
-            </p>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-              <div className="text-center p-6 bg-gray-700 rounded-lg border border-gray-600">
-                <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
-                  <FileTextIcon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="font-semibold text-white mb-3 text-lg">Attach Workflows</h3>
-                <p className="text-gray-300 leading-relaxed">Connect available workflows to your account and configure credentials for seamless automation</p>
-              </div>
-              <div className="text-center p-6 bg-gray-700 rounded-lg border border-gray-600">
-                <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
-                  <ClockIcon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="font-semibold text-white mb-3 text-lg">Schedule Execution</h3>
-                <p className="text-gray-300 leading-relaxed">Set up cron schedules or one-time executions for your workflows with flexible timing options</p>
-              </div>
-              <div className="text-center p-6 bg-gray-700 rounded-lg border border-gray-600">
-                <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
-                  <DashBoardIcon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="font-semibold text-white mb-3 text-lg">Monitor Results</h3>
-                <p className="text-gray-300 leading-relaxed">Track execution history and receive notifications via multiple channels including Telegram and email</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </AppLayout>
-  );
+  // This return statement won't be reached if authenticated (useEffect handles redirect)
+  // But keeping it for TypeScript
+  return null;
 }

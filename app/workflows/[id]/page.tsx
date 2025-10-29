@@ -233,13 +233,17 @@ export default function WorkflowDetailPage() {
             </button>
             
             <div className="flex items-start justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-white mb-2">
-                  {workflow.name || workflow.workflow.name}
+              <div className="flex-1 min-w-0 pr-4">
+                <h1 className="text-3xl font-bold text-white mb-2 break-words">
+                  {workflow.name || workflow.workflow.name || 'Unnamed Workflow'}
                 </h1>
-                <p className="text-gray-300 text-lg">
-                  {workflow.description || workflow.workflow.description}
-                </p>
+                {workflow.description || workflow.workflow?.description ? (
+                  <p className="text-gray-300 text-lg break-words">
+                    {workflow.description || workflow.workflow.description}
+                  </p>
+                ) : (
+                  <p className="text-gray-400 italic text-lg">No description</p>
+                )}
               </div>
               
               <div className="flex items-center gap-3">

@@ -19,7 +19,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (credentials: LoginRequest) => Promise<void>;
-  register: (userData: RegisterRequest) => Promise<void>;
+  register: (userData: RegisterRequest) => Promise<any>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -219,19 +219,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   // Register function
-  const register = async (userData: RegisterRequest): Promise<void> => {
+  const register = async (userData: RegisterRequest): Promise<any> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await authApi.register(userData.email, userData.password, userData.confirmPassword);
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(userData),
+        cache: 'no-cache'
+      });
 
-      if (response.status === 200 || response.success) {
-        // Registration successful, but user needs to verify email
-        setError(null);
-      } else {
-        throw new Error('Registration failed');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Registration failed');
       }
+
+      // Return result for email verification handling
+      return data;
     } catch (error: any) {
       setError(error.message || 'Registration failed');
       throw error;

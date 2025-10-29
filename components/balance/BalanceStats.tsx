@@ -23,9 +23,9 @@ export const BalanceStats: React.FC<BalanceStatsProps> = ({ stats }) => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="text-2xl font-bold text-white">${formatAmount(stats.totalBalance)}</div>
+          <div className="text-2xl font-bold text-white">{formatAmount(stats.totalBalance)}</div>
           <p className="text-xs text-gray-400">
-            All currencies
+            Token
           </p>
         </CardContent>
       </Card>
@@ -39,10 +39,10 @@ export const BalanceStats: React.FC<BalanceStatsProps> = ({ stats }) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-green-400">
-            ${formatAmount(stats.totalAvailable)}
+            {formatAmount(stats.totalAvailable)}
           </div>
           <p className="text-xs text-gray-400">
-            For use
+            Token
           </p>
         </CardContent>
       </Card>
@@ -56,10 +56,10 @@ export const BalanceStats: React.FC<BalanceStatsProps> = ({ stats }) => {
         </CardHeader>
         <CardContent>
           <div className="text-2xl font-bold text-orange-400">
-            ${formatAmount(stats.totalFrozen)}
+            {formatAmount(stats.totalFrozen)}
           </div>
           <p className="text-xs text-gray-400">
-            In process
+            Token
           </p>
         </CardContent>
       </Card>
@@ -77,10 +77,10 @@ export const BalanceStats: React.FC<BalanceStatsProps> = ({ stats }) => {
               ? 'text-green-400' 
               : 'text-red-400'
           }`}>
-            ${formatAmount(stats.totalDeposited - stats.totalWithdrawn)}
+            {formatAmount(stats.totalDeposited - stats.totalWithdrawn)}
           </div>
           <p className="text-xs text-gray-400">
-            Deposited - Withdrawn
+            Token
           </p>
         </CardContent>
       </Card>

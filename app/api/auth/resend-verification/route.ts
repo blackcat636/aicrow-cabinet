@@ -9,11 +9,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const response = await fetch(`${API_URL}/auth/register`, {
+    const response = await fetch(`${API_URL}/auth/resend-verification`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
 
@@ -21,20 +19,12 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: data.message || 'Registration failed' },
+        { error: data.message || 'Failed to resend verification code' },
         { status: response.status }
       );
     }
 
-    // Return success message - email verification is required
-    return NextResponse.json(
-      {
-        message: data.message || 'Registration successful',
-        email: data.email || body.email,
-        requiresVerification: true
-      },
-      { status: 200 }
-    );
+    return NextResponse.json(data, { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { error: 'Internal server error' },

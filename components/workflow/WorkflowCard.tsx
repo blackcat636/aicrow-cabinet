@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { UserWorkflow } from '@/types/workflow';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -19,8 +19,8 @@ interface WorkflowCardProps {
   onDelete: (id: number, name: string) => void;
   onExecute: (id: number) => void;
   onManageSchedules: (id: number) => void;
-  onViewDetails: (id: number) => void; // Add view details handler
-  isExecuting?: boolean; // Add executing state
+  onViewDetails: (id: number) => void;
+  isExecuting?: boolean;
 }
 
 export const WorkflowCard: React.FC<WorkflowCardProps> = ({
@@ -33,6 +33,27 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
   onViewDetails,
   isExecuting = false
 }) => {
+  const [showFullDescription, setShowFullDescription] = useState(false);
+
+  // Trim text helper
+  const truncateText = (text: string | null | undefined, maxLength: number): string => {
+    if (!text) return '';
+    if (text.length <= maxLength) return text;
+    return text.substring(0, maxLength) + '...';
+  };
+
+  const workflowName = workflow.name || workflow.workflow?.name || '';
+  const workflowDescription = workflow.description || workflow.workflow?.description || '';
+  
+  const maxNameLength = 30;
+  const maxDescriptionLength = 100;
+  
+  const displayName = truncateText(workflowName, maxNameLength);
+  const displayDescription = showFullDescription 
+    ? workflowDescription 
+    : truncateText(workflowDescription, maxDescriptionLength);
+  
+  const shouldShowMoreButton = workflowDescription ? workflowDescription.length > maxDescriptionLength : false;
   const getCredentialTypeLabel = (type: string) => {
     switch (type) {
       case 'telegram': return 'Telegram';
@@ -59,15 +80,32 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
     <div className="bg-gray-800 rounded-lg border border-gray-700 p-5 hover:shadow-md transition-shadow w-full">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-white mb-1">
-            {workflow.name || workflow.workflow.name}
+        <div className="flex-1 min-w-0">
+          <h3 
+            className="text-lg font-semibold text-white mb-1 break-words"
+            title={workflowName && workflowName.length > maxNameLength ? workflowName : undefined}
+          >
+            {displayName || 'Unnamed Workflow'}
           </h3>
-          <p className="text-sm text-gray-300">
-            {workflow.description || workflow.workflow.description}
-          </p>
+          <div className="text-sm text-gray-300">
+            {displayDescription ? (
+              <>
+                <p className="break-words">{displayDescription}</p>
+                {shouldShowMoreButton && (
+                  <button
+                    onClick={() => setShowFullDescription(!showFullDescription)}
+                    className="text-purple-400 hover:text-purple-300 mt-1 font-medium text-xs transition-colors"
+                  >
+                    {showFullDescription ? 'Less' : 'More'}
+                  </button>
+                )}
+              </>
+            ) : (
+              <p className="text-gray-400 italic">No description</p>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0 ml-3">
           <Badge 
             variant={workflow.isActive ? "default" : "secondary"}
             className={workflow.isActive ? "bg-green-600 text-white" : "bg-gray-600 text-gray-300"}
@@ -124,13 +162,6 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
             <span>Details</span>
           </button>
           
-          <button
-            onClick={() => onManageSchedules(workflow.id)}
-            className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors font-medium w-32"
-          >
-            <CalendarIcon className="w-4 h-4" />
-            <span>Schedules</span>
-          </button>
         </div>
 
         {/* Secondary Actions */}

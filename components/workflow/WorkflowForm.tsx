@@ -32,6 +32,10 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
+  
+  // Get selected workflow details
+  const selectedWorkflow = availableWorkflows.find(w => w.id === formData.workflowId);
 
   useEffect(() => {
     if (isOpen) {
@@ -89,6 +93,15 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
 
     if (formData.credentialType === 'webhook' && !formData.credentialData.webhookUrl) {
       newErrors.webhookUrl = 'Webhook URL is required';
+    }
+
+    // Validate length limits
+    if (formData.name && formData.name.length > 100) {
+      newErrors.name = 'Name must not exceed 100 characters';
+    }
+
+    if (formData.description && formData.description.length > 500) {
+      newErrors.description = 'Description must not exceed 500 characters';
     }
 
     setErrors(newErrors);
@@ -168,20 +181,61 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
                 Loading workflows...
               </div>
             ) : (
-              <select
-                value={formData.workflowId}
-                onChange={(e) => setFormData({ ...formData, workflowId: parseInt(e.target.value) })}
-                className={`w-full p-3 border rounded-lg bg-gray-800 text-white focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                  errors.workflowId ? 'border-red-500' : 'border-gray-600'
-                }`}
-              >
-                <option value={0} className="bg-gray-800">Choose a workflow...</option>
-                {availableWorkflows.map((workflow) => (
-                  <option key={workflow.id} value={workflow.id} className="bg-gray-800">
-                    {workflow.name}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setIsSelectOpen(!isSelectOpen)}
+                  className={`w-full p-3 border rounded-lg bg-gray-800 text-white flex items-center justify-between ${
+                    errors.workflowId ? 'border-red-500' : 'border-gray-600'
+                  }`}
+                >
+                  <span className="text-left">
+                    {selectedWorkflow ? selectedWorkflow.name : 'Choose a workflow...'}
+                  </span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                
+                {isSelectOpen && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-10"
+                      onClick={() => setIsSelectOpen(false)}
+                    ></div>
+                    <div className="absolute z-20 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setFormData({ ...formData, workflowId: 0 });
+                          setIsSelectOpen(false);
+                        }}
+                        className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors border-b border-gray-700"
+                      >
+                        <span className="text-white font-medium">Choose a workflow...</span>
+                      </button>
+                      {availableWorkflows.map((workflow) => (
+                        <button
+                          key={workflow.id}
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, workflowId: workflow.id });
+                            setIsSelectOpen(false);
+                          }}
+                          className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors border-b border-gray-700"
+                        >
+                          <div className="text-white font-medium">{workflow.name}</div>
+                          {workflow.description && (
+                            <div className="text-gray-400 text-sm mt-1 break-words">
+                              {workflow.description}
+                            </div>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
             )}
             {errors.workflowId && (
               <p className="mt-1 text-sm text-red-400">{errors.workflowId}</p>
@@ -198,11 +252,19 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
               value={formData.name || ''}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Enter a custom name for this workflow (optional)"
-              className="w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 border-gray-600"
+              maxLength={100}
+              className={`w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                errors.name ? 'border-red-500' : 'border-gray-600'
+              }`}
             />
-            <p className="mt-1 text-xs text-gray-400">
-              Leave empty to use the default workflow name
-            </p>
+            <div className="flex items-center justify-between mt-1">
+              <p className={`text-xs ${errors.name ? 'text-red-400' : 'text-gray-400'}`}>
+                {errors.name || 'Leave empty to use the default workflow name'}
+              </p>
+              <p className="text-xs text-gray-500">
+                {(formData.name || '').length}/100
+              </p>
+            </div>
           </div>
 
           {/* Custom Workflow Description */}
@@ -215,11 +277,19 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               placeholder="Enter a custom description for this workflow (optional)"
               rows={3}
-              className="w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 border-gray-600"
+              maxLength={500}
+              className={`w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                errors.description ? 'border-red-500' : 'border-gray-600'
+              }`}
             />
-            <p className="mt-1 text-xs text-gray-400">
-              Leave empty to use the default workflow description
-            </p>
+            <div className="flex items-center justify-between mt-1">
+              <p className={`text-xs ${errors.description ? 'text-red-400' : 'text-gray-400'}`}>
+                {errors.description || 'Leave empty to use the default workflow description'}
+              </p>
+              <p className="text-xs text-gray-500">
+                {(formData.description || '').length}/500
+              </p>
+            </div>
           </div>
 
           {/* Credential Type */}

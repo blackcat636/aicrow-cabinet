@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { LoginRequest } from '@/types/auth';
 import { getDeviceId } from '@/lib/auth';
 import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
+import { ResetPasswordForm } from './ResetPasswordForm';
 
 interface LoginFormProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showResetPassword, setShowResetPassword] = useState(false);
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -67,6 +69,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   if (!isOpen) return null;
 
   return (
+    <>
     <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
       <div className="bg-gray-900 rounded-lg max-w-md w-full border border-gray-700">
         {/* Header */}
@@ -158,6 +161,17 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </button>
           </div>
 
+          {/* Forgot Password */}
+          <div className="text-center">
+            <button
+              type="button"
+              onClick={() => setShowResetPassword(true)}
+              className="text-sm text-gray-400 hover:text-purple-400 font-medium transition-colors"
+            >
+              Forgot password?
+            </button>
+          </div>
+
           {/* Switch to Register */}
           <div className="text-center pt-4 border-t border-gray-700">
             <p className="text-sm text-gray-300">
@@ -174,5 +188,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         </form>
       </div>
     </div>
+
+    {/* Reset Password Form */}
+    <ResetPasswordForm
+      isOpen={showResetPassword}
+      onClose={() => setShowResetPassword(false)}
+      initialEmail={formData.email}
+    />
+    </>
   );
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkflowList } from '@/components/workflow/WorkflowList';
 import { WorkflowForm } from '@/components/workflow/WorkflowForm';
@@ -21,6 +21,7 @@ export default function WorkflowsPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [executingWorkflowId, setExecutingWorkflowId] = useState<number | null>(null);
 
+  
   // Show loading state
   if (isLoading) {
     return (

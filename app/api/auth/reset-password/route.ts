@@ -8,33 +8,26 @@ const API_URL = API_CONFIG.BASE_URL;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const { email, code, newPassword } = body;
 
-    const response = await fetch(`${API_URL}/auth/register`, {
+    const response = await fetch(`${API_URL}/auth/reset-password`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ email, code, newPassword })
     });
 
     const data = await response.json();
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: data.message || 'Registration failed' },
+        { error: data.message || 'Password reset failed' },
         { status: response.status }
       );
     }
 
-    // Return success message - email verification is required
-    return NextResponse.json(
-      {
-        message: data.message || 'Registration successful',
-        email: data.email || body.email,
-        requiresVerification: true
-      },
-      { status: 200 }
-    );
+    return NextResponse.json(data, { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { error: 'Internal server error' },

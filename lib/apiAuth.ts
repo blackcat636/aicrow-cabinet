@@ -1,7 +1,11 @@
 import {
   LoginRequest,
   LoginResponse,
-  RefreshTokenResponse
+  RefreshTokenResponse,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  VerifyEmailRequest,
+  ResendVerificationRequest
 } from '@/types/auth';
 import { API_CONFIG } from '@/config/api';
 
@@ -233,6 +237,114 @@ export const authApi = {
 
       const data = await response.json();
       return data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Forgot Password - Send reset code to email
+  forgotPassword: async (email: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email }),
+        cache: 'no-cache'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const error = new Error(
+          errorData.message || 'Failed to send reset code'
+        );
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Reset Password - Set new password with code
+  resetPassword: async (resetData: ResetPasswordRequest) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(resetData),
+        cache: 'no-cache'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const error = new Error(
+          errorData.message || 'Failed to reset password'
+        );
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Verify Email - Verify email after registration
+  verifyEmail: async (verifyData: VerifyEmailRequest) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(verifyData),
+        cache: 'no-cache'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const error = new Error(
+          errorData.message || 'Email verification failed'
+        );
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Resend Verification - Resend verification code
+  resendVerification: async (email: string) => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email }),
+        cache: 'no-cache'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        const error = new Error(
+          errorData.message || 'Failed to resend verification code'
+        );
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      return await response.json();
     } catch (error) {
       throw error;
     }

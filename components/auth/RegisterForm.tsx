@@ -1,20 +1,23 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { RegisterRequest } from '@/types/auth';
 import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
+import { VerifyEmailForm } from './VerifyEmailForm';
 
 interface RegisterFormProps {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToLogin: () => void;
+  onRegistrationSuccess?: (email: string) => void;
 }
 
 export const RegisterForm: React.FC<RegisterFormProps> = ({
   isOpen,
   onClose,
-  onSwitchToLogin
+  onSwitchToLogin,
+  onRegistrationSuccess
 }) => {
   const { register, isLoading, error, clearError } = useAuth();
   const [formData, setFormData] = useState<RegisterRequest>({
@@ -25,6 +28,17 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showVerifyEmail, setShowVerifyEmail] = useState(false);
+  const [registrationEmail, setRegistrationEmail] = useState('');
+  const registrationEmailRef = useRef('');
+
+  // Clear error when form opens
+  useEffect(() => {
+    if (isOpen) {
+      clearError();
+    }
+  }, [isOpen, clearError]);
+
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -60,11 +74,34 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
     try {
       clearError();
-      await register(formData);
-      onClose();
+      const result = await register(formData);
+      
+      // Check if email verification is required
+      if (result?.requiresVerification) {
+        const emailToUse = result.email || formData.email;
+        
+        // Save email in state, ref, and sessionStorage
+        setRegistrationEmail(emailToUse);
+        registrationEmailRef.current = emailToUse;
+        sessionStorage.setItem('registrationEmail', emailToUse);
+        
+        // Call parent callback if provided, otherwise show form directly
+        if (onRegistrationSuccess) {
+          onRegistrationSuccess(emailToUse);
+        } else {
+          // Fallback: show form directly
+          setShowVerifyEmail(true);
+        }
+      } else {
+        onClose();
+      }
     } catch (err) {
       // Error is handled by AuthContext
     }
+  };
+
+  const handleEmailVerified = () => {
+    window.location.reload();
   };
 
   const handleInputChange = (field: keyof RegisterRequest, value: string) => {
@@ -77,8 +114,26 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
   if (!isOpen) return null;
 
+  const emailToUse = registrationEmail || registrationEmailRef.current || sessionStorage.getItem('registrationEmail') || '';
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
+    <>
+    {/* Always render both forms, control visibility via isOpen */}
+    <VerifyEmailForm
+      isOpen={showVerifyEmail && !!emailToUse}
+      onClose={() => {
+        setShowVerifyEmail(false);
+        setRegistrationEmail('');
+        registrationEmailRef.current = '';
+        sessionStorage.removeItem('registrationEmail');
+        onClose();
+      }}
+      email={emailToUse}
+      onVerified={handleEmailVerified}
+    />
+
+    {!showVerifyEmail && (
+      <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
       <div className="bg-gray-900 rounded-lg max-w-md w-full border border-gray-700">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
@@ -91,9 +146,21 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           </button>
         </div>
 
+        {/* Step Indicator */}
+        <div className="px-6 pt-4 pb-2">
+          <div className="flex items-center gap-2">
+            <div className="flex-1 h-1 rounded bg-purple-600"></div>
+            <div className="flex-1 h-1 rounded bg-gray-700"></div>
+          </div>
+          <div className="flex justify-between mt-2">
+            <span className="text-xs text-purple-400">Create Account</span>
+            <span className="text-xs text-gray-500">Verify Email</span>
+          </div>
+        </div>
+
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {/* Error Message */}
+            {/* Error Message */}
           {error && (
             <div className="p-3 bg-red-900/20 border border-red-600 rounded-lg">
               <p className="text-sm text-red-400">{error}</p>
@@ -220,5 +287,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         </form>
       </div>
     </div>
+    )}
+    </>
   );
 };

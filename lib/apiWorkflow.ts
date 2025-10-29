@@ -82,9 +82,6 @@ export const workflowApi = {
         description: data.description
       };
 
-      console.log('Original data:', data);
-      console.log('API data:', apiData);
-
       const response = await fetchWithAuth(
         buildApiUrl('/automations/user/my-workflows'),
         {
@@ -117,8 +114,6 @@ export const workflowApi = {
       if (data.name !== undefined) apiData.name = data.name;
       if (data.description !== undefined)
         apiData.description = data.description;
-
-      console.log('Update workflow data:', apiData);
 
       const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/my-workflows/${id}`),
