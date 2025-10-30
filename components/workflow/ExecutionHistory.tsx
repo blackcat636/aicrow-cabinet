@@ -121,38 +121,42 @@ export const ExecutionHistory: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white">Execution History</h2>
-          <p className="text-gray-300 mt-1">
-            Track all workflow executions and their results
-          </p>
-        </div>
-      </div>
-
       {/* Executions List */}
       {executionsData.items.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
-              <ClockIcon className="w-8 h-8 text-white" />
+        <div className="rounded-lg border border-gray-700 bg-[#141519]">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6">
+            <div className="ml-6">
+              <h2 className="text-2xl font-bold text-white">Execution History</h2>
+              <p className="text-gray-300 mt-1">View results and logs of your workflow runs</p>
             </div>
-            <h3 className="text-lg font-medium text-white mb-2">
-              No executions yet
-            </h3>
-            <p className="text-gray-300">
-              Execute your workflows to see their history here.
-            </p>
+          </div>
+          <div className="p-6">
+            <div className="ml-6 mr-6 p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+              <div className="bg-black rounded-lg p-10 text-center h-full w-full">
+              <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
+                <ClockIcon className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-lg font-medium text-white mb-2">No executions yet</h3>
+              <p className="text-gray-300">Execute your workflows to see their history here.</p>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          {executionsData.items.map((execution) => (
-            <div
-              key={execution.id}
-              className="bg-gray-800 rounded-lg border border-gray-700 p-6 hover:shadow-md transition-shadow"
-            >
+        <div className="rounded-lg border border-gray-700 bg-[#141519]">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6">
+            <div className="ml-6">
+              <h2 className="text-2xl font-bold text-white">Execution History</h2>
+              <p className="text-gray-300 mt-1">View results and logs of your workflow runs</p>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="space-y-4 ml-6 mr-6">
+              {executionsData.items.map((execution) => (
+            <div key={execution.id} className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+              <div className="bg-black rounded-lg p-6 hover:shadow-md transition-shadow h-full w-full">
               {/* Header */}
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -238,7 +242,7 @@ export const ExecutionHistory: React.FC = () => {
               <div className="mb-4">
                 <button
                   onClick={() => router.push(`/workflows/${execution.userWorkflowId}`)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg transition-all font-medium hover:brightness-110 shadow-lg shadow-[#A500E1]/25 bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)]"
                 >
                   <EyeIcon className="w-4 h-4" />
                   <span>View Workflow</span>
@@ -253,13 +257,16 @@ export const ExecutionHistory: React.FC = () => {
                 </div>
               </div>
             </div>
-          ))}
+            </div>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
       {/* Stats */}
       {executionsData.items.length > 0 && (
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <div className="bg-[#141519] rounded-lg p-4 border border-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-white">

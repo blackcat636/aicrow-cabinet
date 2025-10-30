@@ -104,7 +104,6 @@ const TelegramSettingsPage: React.FC = () => {
     }
   };
 
-
   const unlinkAccount = async () => {
     setShowConfirmDialog(true);
   };
@@ -132,179 +131,177 @@ const TelegramSettingsPage: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="min-h-screen bg-gray-900">
-        <div className="max-w-4xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Telegram Settings</h1>
-            <p className="text-gray-400">Manage your Telegram account connection and notifications</p>
-          </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="mb-6 p-4 bg-red-900/20 border border-red-600 rounded-lg">
-              <p className="text-sm text-red-400">{error}</p>
-            </div>
-          )}
-
-          {/* Loading State */}
-          {isLoading && !status && (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
-            </div>
-          )}
-
-          {/* Status Section */}
-          {status && (
-            <div className="space-y-6">
-              {/* Connection Status */}
-              <div className="bg-gray-800 rounded-lg p-6 border border-gray-600">
-                <h2 className="text-xl font-semibold text-white mb-4">Connection Status</h2>
-                
-                {status.isLinked ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-4 h-4 bg-green-500 rounded-full"></div>
-                      <span className="text-green-400 font-medium text-lg">Telegram account connected</span>
-                    </div>
-                    
-                    {status.telegramUsername && (
-                      <div className="text-gray-300">
-                        <span className="text-gray-400">Username:</span> {status.telegramUsername}
-                      </div>
-                    )}
-                    
-                    {status.telegramFirstName && (
-                      <div className="text-gray-300">
-                        <span className="text-gray-400">Name:</span> {status.telegramFirstName}
-                        {status.telegramLastName && ` ${status.telegramLastName}`}
-                      </div>
-                    )}
-                    
-                    {status.linkedAt && (
-                      <div className="text-gray-300">
-                        <span className="text-gray-400">Connected:</span> {new Date(status.linkedAt).toLocaleDateString('en-US')}
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-3">
-                    <div className="w-4 h-4 bg-red-500 rounded-full"></div>
-                    <span className="text-red-400 font-medium text-lg">Telegram account not connected</span>
-                  </div>
-                )}
+      <div className="h-full">
+        <div className="max-w-5xl mx-auto py-6 h-full flex flex-col">
+          {/* Outer container similar to Workflows */}
+          <div className="rounded-lg border border-gray-700 bg-[#141519] h-full flex flex-col">
+            {/* Header inside gray block */}
+            <div className="flex items-center justify-between p-6">
+              <div className="ml-6">
+                <h2 className="text-2xl font-bold text-white">Telegram Settings</h2>
+                <p className="text-gray-300 mt-1">Manage your Telegram account connection and notifications</p>
               </div>
+            </div>
 
-              {/* Notifications Settings */}
-              {status.isLinked && (
-                <div className="bg-gray-800 rounded-lg p-6 border border-gray-600">
-                  <h2 className="text-xl font-semibold text-white mb-4">Notifications</h2>
-                  
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-gray-300 text-lg">Receive notifications in Telegram</p>
-                      <p className="text-sm text-gray-400">
-                        {status.notificationsEnabled ? 'Notifications enabled' : 'Notifications disabled'}
-                      </p>
-                    </div>
-                    
-                    <button
-                      onClick={() => toggleNotifications(!status.notificationsEnabled)}
-                      disabled={isLoading}
-                      className={`px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                        status.notificationsEnabled
-                          ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-red-500/25'
-                          : 'bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white shadow-lg hover:shadow-green-500/25'
-                      } disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.02] active:scale-[0.98] border border-gray-500/20`}
-                    >
-                      {status.notificationsEnabled ? 'Disable' : 'Enable'}
-                    </button>
-                  </div>
+            {/* Content */}
+            <div className="p-6 flex-1 flex flex-col">
+              {/* Error Message */}
+              {error && (
+                <div className="mb-4 p-3 bg-red-900/20 border border-red-600 rounded-lg">
+                  <p className="text-sm text-red-400">{error}</p>
                 </div>
               )}
 
-              {/* Actions */}
-              <div className="bg-gray-800 rounded-lg p-6 border border-gray-600">
-                <h2 className="text-xl font-semibold text-white mb-4">Actions</h2>
-                
+              {/* Loading State */}
+              {isLoading && !status && (
+                <div className="flex items-center justify-center py-12">
+                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500"></div>
+                </div>
+              )}
+
+              {/* Status Section */}
+              {status && (
                 <div className="space-y-4">
-                  {!status.isLinked ? (
-                    <div className="space-y-4">
-                      <button
-                        onClick={generateLink}
-                        disabled={isGeneratingLink}
-                        className="w-full py-4 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-lg"
-                      >
-                        {isGeneratingLink ? (
-                          <div className="flex items-center justify-center gap-3">
-                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                            Generating link...
-                          </div>
-                        ) : (
-                          'Connect Telegram Account'
-                        )}
-                      </button>
-                      
-                      {generatedLink && (
-                        <div className="space-y-3">
-                          <div className="flex items-center gap-3 p-4 bg-gray-700 rounded-lg">
-                            <input
-                              type="text"
-                              value={generatedLink}
-                              readOnly
-                              className="flex-1 bg-transparent text-gray-300 text-sm"
-                            />
-                            <button
-                              onClick={copyLink}
-                              className="p-2 text-gray-400 hover:text-white transition-colors"
-                            >
-                              {linkCopied ? (
-                                <CheckIcon className="w-5 h-5 text-green-400" />
-                              ) : (
-                                <CopyIcon className="w-5 h-5" />
-                              )}
-                            </button>
-                            <button
-                              onClick={openTelegram}
-                              className="p-2 text-gray-400 hover:text-white transition-colors"
-                            >
-                              <ExternalLinkIcon className="w-5 h-5" />
-                            </button>
-                          </div>
-                          <p className="text-sm text-gray-400">
-                            Click the link or copy it to connect your Telegram account
-                          </p>
+                  {/* Connection Status Card */}
+                  <div className="p-[1px] rounded-2xl bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+                    <div className="bg-black rounded-2xl p-6 h-full w-full">
+                    <h2 className="text-lg font-medium text-white mb-5 text-center">Connection Status</h2>
+                    
+                    <div className="flex items-center justify-center py-4">
+                      {status.isLinked ? (
+                        <div className="inline-flex items-center gap-2 px-6 py-2 bg-green-900/30 border border-green-700 rounded-full">
+                          <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
+                          <span className="text-green-400 font-medium text-sm">Telegram account connected</span>
+                        </div>
+                      ) : (
+                        <div className="inline-flex items-center gap-2 px-6 py-2 bg-red-900/30 border border-red-700 rounded-full">
+                          <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
+                          <span className="text-red-400 font-medium text-sm">Telegram account not connected</span>
                         </div>
                       )}
                     </div>
-                  ) : (
-                    <button
-                      onClick={unlinkAccount}
-                      disabled={isLoading}
-                      className="w-full py-4 bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl hover:from-red-700 hover:to-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold text-lg shadow-lg hover:shadow-red-500/25 transform hover:scale-[1.02] active:scale-[0.98] border border-red-500/20"
-                    >
-                      Disconnect Telegram Account
-                    </button>
-                  )}
-                  
-                  <button
-                    onClick={loadStatus}
-                    disabled={isLoading}
-                    className="w-full py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl hover:from-gray-700 hover:to-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-gray-500/25 transform hover:scale-[1.02] active:scale-[0.98] border border-gray-500/20"
-                  >
-                    Refresh Status
-                  </button>
+
+                    {status.isLinked && (
+                      <div className="mt-6 space-y-2 text-sm">
+                        {status.telegramUsername && (
+                          <div className="text-gray-400">
+                            <span className="text-gray-500">Username:</span> <span className="text-gray-300">{status.telegramUsername}</span>
+                          </div>
+                        )}
+                        {status.telegramFirstName && (
+                          <div className="text-gray-400">
+                            <span className="text-gray-500">Name:</span> <span className="text-gray-300">{status.telegramFirstName}{status.telegramLastName && ` ${status.telegramLastName}`}</span>
+                          </div>
+                        )}
+                        {status.linkedAt && (
+                          <div className="text-gray-400">
+                            <span className="text-gray-500">Connected:</span> <span className="text-gray-300">{new Date(status.linkedAt).toLocaleDateString('en-US')}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    </div>
+                  </div>
+
+                  {/* Actions Card */}
+                  <div className="p-[1px] rounded-2xl bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+                    <div className="bg-black rounded-2xl p-6 h-full w-full">
+                    <div className="space-y-3">
+                      {!status.isLinked ? (
+                        <>
+                          <button
+                            onClick={generateLink}
+                            disabled={isGeneratingLink}
+                            className="w-full py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+                          >
+                            {isGeneratingLink ? (
+                              <div className="flex items-center justify-center gap-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                                Generating link...
+                              </div>
+                            ) : (
+                              'Connect Telegram Account'
+                            )}
+                          </button>
+                          
+                          {generatedLink && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 p-3 bg-[#0f1012] rounded-lg border border-gray-800">
+                                <input
+                                  type="text"
+                                  value={generatedLink}
+                                  readOnly
+                                  className="flex-1 bg-transparent text-gray-300 text-xs"
+                                />
+                                <button
+                                  onClick={copyLink}
+                                  className="p-1.5 text-gray-400 hover:text-white transition-colors"
+                                >
+                                  {linkCopied ? (
+                                    <CheckIcon className="w-4 h-4 text-green-400" />
+                                  ) : (
+                                    <CopyIcon className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <button
+                                  onClick={openTelegram}
+                                  className="p-1.5 text-gray-400 hover:text-white transition-colors"
+                                >
+                                  <ExternalLinkIcon className="w-4 h-4" />
+                                </button>
+                              </div>
+                              <p className="text-xs text-gray-500 text-center">
+                                Click the link or copy it to connect your Telegram account
+                              </p>
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <button
+                          onClick={unlinkAccount}
+                          disabled={isLoading}
+                          className="w-full py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+                        >
+                          Disconnect Telegram Account
+                        </button>
+                      )}
+
+                      <button
+                        onClick={loadStatus}
+                        disabled={isLoading}
+                        className="w-full py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
+                      >
+                        Refresh Status
+                      </button>
+
+                      {/* Notifications Toggle (visible only when Telegram is linked) */}
+                      {status.isLinked && (
+                        <button
+                          onClick={() => toggleNotifications(!status.notificationsEnabled)}
+                          disabled={isLoading}
+                          className={`w-full py-3 rounded-xl transition-colors font-medium text-sm ${
+                            status.notificationsEnabled
+                              ? 'bg-red-600 hover:bg-red-700 text-white'
+                              : 'bg-purple-600 hover:bg-purple-700 text-white'
+                          }`}
+                        >
+                          {status.notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications'}
+                        </button>
+                      )}
+                    </div>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
       {/* Custom Confirm Dialog */}
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-2xl p-8 max-w-md w-full border border-gray-600 shadow-2xl">
+          <div className="bg-[#141519] rounded-2xl p-8 max-w-md w-full border border-gray-600 shadow-2xl">
             {/* Icon */}
             <div className="flex justify-center mb-6">
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center">

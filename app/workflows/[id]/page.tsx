@@ -187,7 +187,7 @@ export default function WorkflowDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
+      <div className="h-full bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
           <p className="text-gray-300">Loading...</p>
@@ -199,7 +199,7 @@ export default function WorkflowDetailPage() {
   if (error || !workflow) {
     return (
       <AppLayout>
-        <div className="min-h-screen bg-gray-900">
+        <div className="h-full bg-gray-900">
           <div className="max-w-4xl mx-auto p-6">
             <div className="text-center py-12">
               <h1 className="text-2xl font-bold text-white mb-4">Workflow Not Found</h1>
@@ -220,25 +220,24 @@ export default function WorkflowDetailPage() {
 
   return (
     <AppLayout>
-      <div className="min-h-screen bg-gray-900">
+      <div className="h-full">
         <div className="max-w-6xl mx-auto p-6">
-          {/* Header */}
-          <div className="mb-8">
-            <button
-              onClick={() => router.push('/workflows')}
-              className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors mb-4"
-            >
-              <ChevronLeftIcon className="w-4 h-4" />
-              Back to Workflows
-            </button>
-            
-            <div className="flex items-start justify-between">
-              <div className="flex-1 min-w-0 pr-4">
-                <h1 className="text-3xl font-bold text-white mb-2 break-words">
+          <div className="rounded-lg border border-gray-700 bg-[#141519]">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6">
+              <div className="ml-6">
+                <button
+                  onClick={() => router.push('/workflows')}
+                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors mb-4"
+                >
+                  <ChevronLeftIcon className="w-4 h-4" />
+                  Back to Workflows
+                </button>
+                <h1 className="text-3xl font-bold text-white mb-2 break-words break-all">
                   {workflow.name || workflow.workflow.name || 'Unnamed Workflow'}
                 </h1>
                 {workflow.description || workflow.workflow?.description ? (
-                  <p className="text-gray-300 text-lg break-words">
+                  <p className="text-gray-300 text-lg break-words break-all">
                     {workflow.description || workflow.workflow.description}
                   </p>
                 ) : (
@@ -246,7 +245,7 @@ export default function WorkflowDetailPage() {
                 )}
               </div>
               
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mr-6">
                 <Badge 
                   variant={workflow.isActive ? "default" : "secondary"}
                   className={workflow.isActive ? "bg-green-600 text-white" : "bg-gray-600 text-gray-300"}
@@ -262,7 +261,7 @@ export default function WorkflowDetailPage() {
                       ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
                       : !workflow.isActive
                       ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                      : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-500/25'
+                      : 'text-white shadow-lg shadow-[#A500E1]/25 bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] hover:brightness-110'
                   }`}
                 >
                   {executing ? (
@@ -279,145 +278,153 @@ export default function WorkflowDetailPage() {
                 </button>
               </div>
             </div>
-          </div>
 
-          {/* Workflow Info */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-            {/* Basic Info */}
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h2 className="text-xl font-semibold text-white mb-4">Workflow Information</h2>
-              <div className="space-y-3">
-                <div>
-                  <span className="text-gray-400">Type:</span>
-                  <Badge variant="outline" className="ml-2 text-xs border-gray-600 text-gray-300">
-                    {getCredentialTypeLabel(workflow.credentialType)}
-                  </Badge>
-                </div>
-                <div>
-                  <span className="text-gray-400">Credentials:</span>
-                  <span className="ml-2 text-gray-300 text-sm">{getCredentialData()}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400">Created:</span>
-                  <span className="ml-2 text-gray-300">{new Date(workflow.createdAt).toLocaleDateString()}</span>
-                </div>
-                <div>
-                  <span className="text-gray-400">Last Updated:</span>
-                  <span className="ml-2 text-gray-300">{new Date(workflow.updatedAt).toLocaleDateString()}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Input Data Template */}
-            <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-              <h2 className="text-xl font-semibold text-white mb-4">Input Data Template</h2>
-              {workflow.inputDataTemplate ? (
-                <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300 break-all">
-                  {workflow.inputDataTemplate}
-                </div>
-              ) : (
-                <p className="text-gray-400 italic">No input data template configured</p>
-              )}
-            </div>
-          </div>
-
-          {/* Executions */}
-          <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-semibold text-white">Execution History</h2>
-              <div className="text-sm text-gray-400">
-                {executions.total} total executions
-              </div>
-            </div>
-
-            {executionsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-              </div>
-            ) : executions.items.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <PlayIcon className="w-8 h-8 text-gray-400" />
-                </div>
-                <h3 className="text-lg font-medium text-white mb-2">No executions yet</h3>
-                <p className="text-gray-300 mb-6">
-                  This workflow hasn't been executed yet. Click the Execute button to run it.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {executions.items.map((execution) => (
-                  <div
-                    key={execution.id}
-                    className="bg-gray-700 rounded-lg p-4 border border-gray-600 hover:shadow-md transition-shadow"
-                  >
-                    {/* Header */}
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <Badge 
-                          variant="secondary" 
-                          className={getStatusColor(execution.status)}
-                        >
-                          <div className="flex items-center gap-1">
-                            {getStatusIcon(execution.status)}
-                            <span>{getStatusLabel(execution.status)}</span>
-                          </div>
+            {/* Content */}
+            <div className="p-6">
+              {/* Workflow Info */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                {/* Basic Info */}
+                <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+                  <div className="bg-black rounded-lg p-6 h-full w-full">
+                    <h2 className="text-xl font-semibold text-white mb-4">Workflow Information</h2>
+                    <div className="space-y-3">
+                      <div>
+                        <span className="text-gray-400">Type:</span>
+                        <Badge variant="outline" className="ml-2 text-xs border-gray-600 text-gray-300">
+                          {getCredentialTypeLabel(workflow.credentialType)}
                         </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {getTriggerTypeLabel(execution.triggerType)}
-                        </Badge>
-                        {execution.notificationSent && (
-                          <Badge variant="outline" className="text-xs bg-green-600 text-white">
-                            Notified
-                          </Badge>
-                        )}
                       </div>
-                      <div className="text-sm text-gray-400">
-                        {new Date(execution.createdAt).toLocaleString()}
+                      <div>
+                        <span className="text-gray-400">Credentials:</span>
+                        <span className="ml-2 text-gray-300 text-sm">{getCredentialData()}</span>
                       </div>
-                    </div>
-
-                    {/* Input Data */}
-                    {execution.inputData && (
-                      <div className="mb-3">
-                        <h4 className="text-sm font-medium text-gray-300 mb-1">Input Data:</h4>
-                        <div className="p-2 bg-gray-600 rounded text-xs font-mono text-gray-300 break-all">
-                          {execution.inputData}
-                        </div>
+                      <div>
+                        <span className="text-gray-400">Created:</span>
+                        <span className="ml-2 text-gray-300">{new Date(workflow.createdAt).toLocaleDateString()}</span>
                       </div>
-                    )}
-
-                    {/* Output Data */}
-                    {execution.outputData && (
-                      <div className="mb-3">
-                        <h4 className="text-sm font-medium text-gray-300 mb-1">Output Data:</h4>
-                        <div className="p-2 bg-green-900/20 rounded text-xs font-mono text-green-300 break-all">
-                          {execution.outputData}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Error Message */}
-                    {execution.errorMessage && (
-                      <div className="mb-3">
-                        <h4 className="text-sm font-medium text-gray-300 mb-1">Error:</h4>
-                        <div className="p-2 bg-red-900/20 rounded text-xs font-mono text-red-300 break-all">
-                          {execution.errorMessage}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Execution Details */}
-                    <div className="pt-3 border-t border-gray-600">
-                      <div className="flex items-center justify-between text-xs text-gray-400">
-                        <span>Execution ID: {execution.id}</span>
-                        <span>N8N ID: {execution.n8nExecutionId}</span>
+                      <div>
+                        <span className="text-gray-400">Last Updated:</span>
+                        <span className="ml-2 text-gray-300">{new Date(workflow.updatedAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
-                ))}
+                </div>
+
+                {/* Input Data Template */}
+                <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+                  <div className="bg-black rounded-lg p-6 h-full w-full">
+                    <h2 className="text-xl font-semibold text-white mb-4">Input Data Template</h2>
+                    {workflow.inputDataTemplate ? (
+                      <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300 break-all">
+                        {workflow.inputDataTemplate}
+                      </div>
+                    ) : (
+                      <p className="text-gray-400 italic">No input data template configured</p>
+                    )}
+                  </div>
+                </div>
               </div>
-            )}
+
+              {/* Executions */}
+              <div>
+                <div className="flex items-center justify-between mb-6 ml-6 mr-6">
+                  <h2 className="text-xl font-semibold text-white">Execution History</h2>
+                  <div className="text-sm text-gray-400">
+                    {executions.total} total executions
+                  </div>
+                </div>
+
+                {executionsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  </div>
+                ) : executions.items.length === 0 ? (
+                  <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+                    <div className="bg-black rounded-lg p-10 text-center h-full w-full">
+                      <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
+                        <PlayIcon className="w-8 h-8 text-white" />
+                      </div>
+                      <h3 className="text-lg font-medium text-white mb-2">No executions yet</h3>
+                      <p className="text-gray-300 mb-0">
+                        This workflow hasn't been executed yet. Click the Execute button to run it.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {executions.items.map((execution) => (
+                      <div key={execution.id} className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+                        <div className="bg-black rounded-lg p-4 hover:shadow-md transition-shadow h-full w-full">
+                          {/* Header */}
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-3">
+                              <Badge 
+                                variant="secondary" 
+                                className={getStatusColor(execution.status)}
+                              >
+                                <div className="flex items-center gap-1">
+                                  {getStatusIcon(execution.status)}
+                                  <span>{getStatusLabel(execution.status)}</span>
+                                </div>
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {getTriggerTypeLabel(execution.triggerType)}
+                              </Badge>
+                              {execution.notificationSent && (
+                                <Badge variant="outline" className="text-xs bg-green-600 text-white">
+                                  Notified
+                                </Badge>
+                              )}
+                            </div>
+                            <div className="text-sm text-gray-400">
+                              {new Date(execution.createdAt).toLocaleString()}
+                            </div>
+                          </div>
+
+                          {/* Input Data */}
+                          {execution.inputData && (
+                            <div className="mb-3">
+                              <h4 className="text-sm font-medium text-gray-300 mb-1">Input Data:</h4>
+                              <div className="p-2 bg-gray-700 rounded text-xs font-mono text-gray-300 break-all">
+                                {execution.inputData}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Output Data */}
+                          {execution.outputData && (
+                            <div className="mb-3">
+                              <h4 className="text-sm font-medium text-gray-300 mb-1">Output Data:</h4>
+                              <div className="p-2 bg-green-900/20 rounded text-xs font-mono text-green-300 break-all">
+                                {execution.outputData}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Error Message */}
+                          {execution.errorMessage && (
+                            <div className="mb-3">
+                              <h4 className="text-sm font-medium text-gray-300 mb-1">Error:</h4>
+                              <div className="p-2 bg-red-900/20 rounded text-xs font-mono text-red-300 break-all">
+                                {execution.errorMessage}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Execution Details */}
+                          <div className="pt-3 border-t border-gray-600">
+                            <div className="flex items-center justify-between text-xs text-gray-400">
+                              <span>Execution ID: {execution.id}</span>
+                              <span>N8N ID: {execution.n8nExecutionId}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>

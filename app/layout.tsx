@@ -36,13 +36,13 @@ export default function RootLayout({
       <head />
       <body
         className={clsx(
-          'min-h-screen bg-gray-900 text-white font-sans antialiased',
+          'h-screen bg-black text-white font-sans antialiased',
           fontSans.variable,
           fontSans.className
         )}
       >
         <Providers themeProps={{ attribute: 'class', defaultTheme: 'dark' }}>
-          <main role="main" className="min-h-screen bg-gray-900">{children}</main>
+          <main role="main" className="h-full bg-black">{children}</main>
           <Toaster />
         </Providers>
       </body>

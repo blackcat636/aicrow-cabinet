@@ -33,8 +33,9 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ balanceData }) => {
   };
 
   return (
-    <Card className="w-full bg-gray-800 border-gray-700">
-      <CardHeader className="pb-3">
+    <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+      <Card className="w-full bg-black border-0 rounded-lg h-full">
+      <CardHeader className="pb-3 bg-black rounded-t-lg">
         <CardTitle className="flex items-center gap-3 text-white">
           {getCurrencyIcon(currency)}
           <span className="text-lg font-semibold">Token</span>
@@ -42,7 +43,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ balanceData }) => {
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Main Balance */}
-        <div className="text-center p-6 bg-gray-700 rounded-lg">
+        <div className="text-center p-6 bg-[#141519] rounded-lg border border-gray-700">
           <p className="text-sm text-gray-400 mb-2">Total Balance</p>
           <p className="text-4xl font-bold text-white">
             {formatAmount(balance, currency.precision)}
@@ -50,5 +51,6 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ balanceData }) => {
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 };

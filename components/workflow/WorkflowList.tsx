@@ -122,68 +122,75 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-white">My Workflows</h2>
-          <p className="text-gray-300 mt-1">
-            Manage your automated workflows and schedules
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onAddWorkflow}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/25"
-          >
-            <PlusIcon className="w-4 h-4" />
-            Add Workflow
-          </button>
-        </div>
-      </div>
-
       {/* Workflows Grid */}
       {workflows.length === 0 ? (
-        <div className="text-center py-12 bg-gray-800 rounded-lg border border-gray-700">
-          <div className="max-w-md mx-auto">
-            <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
-              <PlusIcon className="w-8 h-8 text-white" />
+        <div className="rounded-lg border border-gray-700 bg-[#141519]">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6">
+            <div className="ml-6">
+              <h2 className="text-2xl font-bold text-white">My Workflows</h2>
+              <p className="text-gray-300 mt-1">Create, manage and run your workflows</p>
             </div>
-            <h3 className="text-lg font-medium text-white mb-2">
-              No workflows yet
-            </h3>
-            <p className="text-gray-300 mb-6">
-              Get started by attaching your first workflow to automate your tasks.
-            </p>
-            <button
-              onClick={onAddWorkflow}
-              className="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mx-auto shadow-lg shadow-purple-500/25"
-            >
-              <PlusIcon className="w-5 h-5" />
-              Add Your First Workflow
-            </button>
+            {/* No header button when empty */}
+            <div className="mr-6" />
+          </div>
+          <div className="p-6">
+            <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+              <div className="bg-black rounded-lg p-10 text-center h-full w-full">
+              <button
+                onClick={onAddWorkflow}
+                aria-label="Add Workflow"
+                className="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25 hover:opacity-90 transition"
+              >
+                <PlusIcon className="w-8 h-8" />
+              </button>
+              <h3 className="text-lg font-medium text-white mb-2">No workflows yet</h3>
+              <p className="text-gray-300">Get started by attaching your first workflow to automate your tasks.</p>
+              </div>
+            </div>
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-          {workflows.map((workflow) => (
-            <WorkflowCard
-              key={workflow.id}
-              workflow={workflow}
-              onToggle={handleToggle}
-              onEdit={onEditWorkflow}
-              onDelete={(id, name) => handleDelete(id, name)}
-              onExecute={onExecuteWorkflow}
-              onManageSchedules={onManageSchedules}
-              onViewDetails={onViewDetails}
-              isExecuting={executingWorkflowId === workflow.id}
-            />
-          ))}
+        <div className="rounded-lg border border-gray-700 bg-[#141519]">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6">
+            <div className="ml-6">
+              <h2 className="text-2xl font-bold text-white">My Workflows</h2>
+              <p className="text-gray-300 mt-1">Create, manage and run your workflows</p>
+            </div>
+            <div className="flex items-center gap-3 mr-6">
+              <button
+                onClick={onAddWorkflow}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/25"
+              >
+                <PlusIcon className="w-4 h-4" />
+                Add Workflow
+              </button>
+            </div>
+          </div>
+          <div className="p-6">
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {workflows.map((workflow) => (
+              <WorkflowCard
+                key={workflow.id}
+                workflow={workflow}
+                onToggle={handleToggle}
+                onEdit={onEditWorkflow}
+                onDelete={(id, name) => handleDelete(id, name)}
+                onExecute={onExecuteWorkflow}
+                onManageSchedules={onManageSchedules}
+                onViewDetails={onViewDetails}
+                isExecuting={executingWorkflowId === workflow.id}
+              />
+            ))}
+            </div>
+          </div>
         </div>
       )}
 
       {/* Stats */}
       {workflows.length > 0 && (
-        <div className="bg-gray-800 rounded-lg p-4 border border-gray-700">
+        <div className="bg-[#141519] rounded-lg p-4 border border-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-white">

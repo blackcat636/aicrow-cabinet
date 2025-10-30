@@ -8,7 +8,7 @@ const NotFoundPage: React.FC = () => {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center px-4">
+    <div className="h-full bg-black flex items-center justify-center px-4">
       {/* Desktop Layout */}
       <div className="hidden lg:flex max-w-6xl w-full items-center justify-center gap-12">
         {/* Error illustration */}

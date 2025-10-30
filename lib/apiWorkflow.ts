@@ -63,7 +63,7 @@ export const workflowApi = {
         return [];
       }
     } catch (error) {
-      console.error('Get my workflows API error:', error);
+      console.error('Get workflows API error:', error);
       throw error;
     }
   },

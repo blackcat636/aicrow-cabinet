@@ -77,7 +77,8 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg border border-gray-700 p-5 hover:shadow-md transition-shadow w-full">
+    <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] w-full overflow-hidden">
+      <div className="bg-black rounded-lg p-5 hover:shadow-md transition-shadow w-full h-full">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
@@ -132,13 +133,14 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
           <button
             onClick={() => onExecute(workflow.id)}
             disabled={isExecuting || !workflow.isActive}
-            className={`flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 w-32 ${
+            className={`flex items-center justify-center gap-2 px-4 py-2 text-sm rounded-lg font-medium transition-all duration-200 w-32 text-white ${
               isExecuting 
-                ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                ? 'bg-gray-600 text-gray-300 cursor-not-allowed' 
                 : !workflow.isActive
                 ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg shadow-purple-500/25'
+                : 'hover:brightness-110 shadow-lg'
             }`}
+            style={!isExecuting && workflow.isActive ? { background: 'linear-gradient(90deg, #A500E1 0%, #7B61FF 100%)', boxShadow: '0 10px 15px -3px rgba(165,0,225,0.25)' } : undefined}
             title={!workflow.isActive ? 'Activate workflow to execute' : ''}
           >
             {isExecuting ? (
@@ -156,7 +158,8 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
           
           <button
             onClick={() => onViewDetails(workflow.id)}
-            className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium w-32"
+            className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-white rounded-lg transition-all font-medium w-32 hover:brightness-110 shadow-lg"
+            style={{ background: 'linear-gradient(90deg, #7B61FF 0%, #3B82F6 100%)', boxShadow: '0 10px 15px -3px rgba(165,0,225,0.25)' }}
           >
             <EyeIcon className="w-4 h-4" />
             <span>Details</span>
@@ -169,30 +172,30 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
           <div className="flex items-center gap-1">
             <button
               onClick={() => onToggle(workflow.id)}
-              className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-700"
+              className="p-2 text-white transition-colors rounded-lg hover:bg-gray-700"
               title={workflow.isActive ? 'Deactivate workflow' : 'Activate workflow'}
             >
               {workflow.isActive ? (
-                <PauseIcon className="w-4 h-4" />
+                <PauseIcon className="w-4 h-4 text-white" />
               ) : (
-                <PlayIcon className="w-4 h-4" />
+                <PlayIcon className="w-4 h-4 text-white" />
               )}
             </button>
             
             <button
               onClick={() => onEdit(workflow)}
-              className="p-2 text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-gray-700"
+              className="p-2 text-white transition-colors rounded-lg hover:bg-gray-700"
               title="Edit workflow"
             >
-              <SettingsIcon className="w-4 h-4" />
+              <SettingsIcon className="w-4 h-4" color="#ffffff" />
             </button>
             
             <button
               onClick={() => onDelete(workflow.id, workflow.name || workflow.workflow.name)}
-              className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-900/20"
+              className="p-2 text-white hover:text-red-400 transition-colors rounded-lg hover:bg-red-900/20"
               title="Delete workflow"
             >
-              <TrashIcon className="w-4 h-4" />
+              <TrashIcon className="w-4 h-4 text-white" />
             </button>
           </div>
           
@@ -202,6 +205,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
         </div>
       </div>
 
+      </div>
     </div>
   );
 };

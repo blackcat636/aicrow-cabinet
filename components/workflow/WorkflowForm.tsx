@@ -185,11 +185,11 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsSelectOpen(!isSelectOpen)}
-                  className={`w-full p-3 border rounded-lg bg-gray-800 text-white flex items-center justify-between ${
+                  className={`w-full p-3 border rounded-lg bg-gray-800 text-white flex items-center justify-between overflow-hidden ${
                     errors.workflowId ? 'border-red-500' : 'border-gray-600'
                   }`}
                 >
-                  <span className="text-left">
+                  <span className="text-left truncate w-full" title={selectedWorkflow ? selectedWorkflow.name : undefined}>
                     {selectedWorkflow ? selectedWorkflow.name : 'Choose a workflow...'}
                   </span>
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +224,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
                           }}
                           className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors border-b border-gray-700"
                         >
-                          <div className="text-white font-medium">{workflow.name}</div>
+                          <div className="text-white font-medium truncate" title={workflow.name}>{workflow.name}</div>
                           {workflow.description && (
                             <div className="text-gray-400 text-sm mt-1 break-words">
                               {workflow.description}
