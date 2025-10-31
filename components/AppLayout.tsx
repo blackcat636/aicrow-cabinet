@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -76,7 +77,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const getPageTitle = () => {
     switch (pathname) {
       case '/':
-        return 'AiPills CRM';
+        return 'Ai Pills User Account';
       case '/workflows':
         return 'Workflows';
       case '/executions':
@@ -86,7 +87,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
       case '/settings/telegram':
         return 'Telegram Settings';
       default:
-        return 'AiPills CRM';
+        return 'Ai Pills User Account';
     }
   };
 
@@ -114,9 +115,11 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <div className='h-screen bg-black overflow-hidden'>
       {/* Global Top Navbar */}
-      <nav className='w-full px-8 pt-[40px] pb-4 bg-[#141519] border-b border-gray-700'>
+      <nav className='w-full px-8 py-4 bg-[#141519] border-b border-gray-700'>
         <div className='flex items-center justify-between'>
-          <Link href='/' className='text-2xl font-semibold text-white hover:opacity-90 ml-[40px]'>AiPills</Link>
+          <Link href='/' className='ml-[40px] hover:opacity-90'>
+            <Image src="/brand/aiPillsLogo.png" alt="AiPills logo" width={40} height={70} priority />
+          </Link>
           
           {/* User Avatar */}
           <div className='flex items-center gap-4'>

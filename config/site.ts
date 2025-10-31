@@ -1,7 +1,7 @@
 export type SiteConfig = typeof siteConfig;
 
 export const siteConfig = {
-  name: 'AiPills CRM User',
+  name: 'Ai Pills User Account',
   description: 'User interface for AiPills CRM system',
   navItems: [],
   navMenuItems: [],

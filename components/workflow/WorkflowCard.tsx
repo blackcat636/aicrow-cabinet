@@ -118,11 +118,16 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
 
       {/* Credentials - Simplified */}
       <div className="mb-4">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
             {getCredentialTypeLabel(workflow.credentialType)}
           </Badge>
           <span className="text-xs text-gray-400">{getCredentialData()}</span>
+          {workflow.workflow?.priceUsd && (
+            <Badge variant="outline" className="text-xs border-green-600 text-green-300 bg-green-900/20">
+              ${workflow.workflow.priceUsd}
+            </Badge>
+          )}
         </div>
       </div>
 

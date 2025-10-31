@@ -44,7 +44,7 @@ export default function Home() {
       <div className="h-full bg-black flex items-center justify-center">
         <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-sm p-8 border border-gray-700">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">AiPills CRM</h1>
+            <h1 className="text-3xl font-bold text-white mb-2">Ai Pills User Account</h1>
             <p className="text-gray-300">Welcome to Workflow Management System</p>
           </div>
           

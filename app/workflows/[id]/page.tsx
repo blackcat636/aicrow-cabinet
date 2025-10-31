@@ -387,6 +387,16 @@ export default function WorkflowDetailPage() {
                         </Badge>
                       </div>
                       <div>
+                        <span className="text-gray-400">Price:</span>
+                        {workflow.workflow?.priceUsd ? (
+                          <Badge variant="outline" className="ml-2 text-xs border-green-600 text-green-300 bg-green-900/20">
+                            ${workflow.workflow.priceUsd}
+                          </Badge>
+                        ) : (
+                          <span className="ml-2 text-gray-300 text-sm">N/A</span>
+                        )}
+                      </div>
+                      <div>
                         <span className="text-gray-400">Credentials:</span>
                         <span className="ml-2 text-gray-300 text-sm">{getCredentialData()}</span>
                       </div>
