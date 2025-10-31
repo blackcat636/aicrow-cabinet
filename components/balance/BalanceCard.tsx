@@ -13,7 +13,7 @@ export const BalanceCard: React.FC<BalanceCardProps> = ({ balanceData }) => {
   const { currency, balance, frozen_balance, available_balance, total_deposited, total_withdrawn } = balanceData;
 
   const formatAmount = (amount: number, precision: string) => {
-    return amount.toFixed(2);
+    return amount.toFixed(3);
   };
 
   const getCurrencyIcon = (currency: Currency) => {

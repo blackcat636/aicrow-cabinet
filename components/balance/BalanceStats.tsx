@@ -10,7 +10,7 @@ interface BalanceStatsProps {
 
 export const BalanceStats: React.FC<BalanceStatsProps> = ({ stats }) => {
   const formatAmount = (amount: number) => {
-    return amount.toFixed(2);
+    return amount.toFixed(3);
   };
 
   return (
