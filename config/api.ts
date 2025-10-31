@@ -12,6 +12,9 @@ export const API_CONFIG = {
       LOGOUT: '/auth/logout',
       ME: '/auth/profile'
     },
+    USERS: {
+      PROFILE: '/users/profile'
+    },
     WORKFLOWS: {
       BASE: '/automations/user/workflows',
       USER_WORKFLOWS: '/automations/user/my-workflows',

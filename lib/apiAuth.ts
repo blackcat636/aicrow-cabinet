@@ -5,7 +5,9 @@ import {
   ForgotPasswordRequest,
   ResetPasswordRequest,
   VerifyEmailRequest,
-  ResendVerificationRequest
+  ResendVerificationRequest,
+  ChangeEmailRequest,
+  ConfirmEmailChangeRequest
 } from '@/types/auth';
 import { API_CONFIG } from '@/config/api';
 
@@ -345,6 +347,90 @@ export const authApi = {
       }
 
       return await response.json();
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Change email - Step 1
+  changeEmail: async (newEmail: string): Promise<void> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/change-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ newEmail }),
+        cache: 'no-cache'
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to send email change request';
+
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          try {
+            const errorText = await response.text();
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          } catch (textError) {
+            errorMessage = response.statusText || 'Failed to send email change request';
+          }
+        }
+
+        const error = new Error(errorMessage);
+        (error as any).status = response.status;
+        throw error;
+      }
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Confirm email change - Step 2
+  confirmEmailChange: async (email: string, code: string): Promise<void> => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/confirm-email-change`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ email, code }),
+        cache: 'no-cache'
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to confirm email change';
+
+        try {
+          const errorData = await response.json();
+          if (errorData.message) {
+            errorMessage = errorData.message;
+          } else if (errorData.error) {
+            errorMessage = errorData.error;
+          }
+        } catch (e) {
+          try {
+            const errorText = await response.text();
+            if (errorText) {
+              errorMessage = errorText;
+            }
+          } catch (textError) {
+            errorMessage = response.statusText || 'Failed to confirm email change';
+          }
+        }
+
+        const error = new Error(errorMessage);
+        (error as any).status = response.status;
+        throw error;
+      }
     } catch (error) {
       throw error;
     }

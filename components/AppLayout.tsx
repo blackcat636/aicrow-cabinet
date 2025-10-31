@@ -32,14 +32,18 @@ interface LayoutProps {
   children: React.ReactNode;
 }
 
-const getInitials = (username: string) => {
-  if (!username) return 'U';
-  return username
-    .split(' ')
-    .map((name) => name[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+const getInitials = (firstName?: string, lastName?: string, username?: string) => {
+  if (firstName && lastName) {
+    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+  }
+  if (username) {
+    const parts = username.split(' ');
+    if (parts.length >= 2) {
+      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
+    }
+    return username.slice(0, 2).toUpperCase();
+  }
+  return 'U';
 };
 
 export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
@@ -114,19 +118,35 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
         <div className='flex items-center justify-between'>
           <Link href='/' className='text-2xl font-semibold text-white hover:opacity-90 ml-[40px]'>AiPills</Link>
           
-          {/* Navigation links removed per design */}
-          
-          <button
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className='p-2 text-gray-300 hover:text-white transition-colors md:hidden'
-            aria-label='Toggle menu'
-          >
-            {isMobileMenuOpen ? (
-              <XIcon className='w-6 h-6' />
-            ) : (
-              <MenuIcon className='w-6 h-6' />
-            )}
-          </button>
+          {/* User Avatar */}
+          <div className='flex items-center gap-4'>
+            <Link
+              href='/profile'
+              className='hidden md:block'
+            >
+              <Avatar className='w-10 h-10 cursor-pointer hover:ring-2 hover:ring-purple-500 transition-all'>
+                <AvatarImage 
+                  src={user?.photo || undefined} 
+                  alt={user?.username || 'User'} 
+                />
+                <AvatarFallback className='bg-purple-600 text-white'>
+                  {getInitials(user?.firstName, user?.lastName, user?.username)}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+            
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className='p-2 text-gray-300 hover:text-white transition-colors md:hidden'
+              aria-label='Toggle menu'
+            >
+              {isMobileMenuOpen ? (
+                <XIcon className='w-6 h-6' />
+              ) : (
+                <MenuIcon className='w-6 h-6' />
+              )}
+            </button>
+          </div>
         </div>
       </nav>
       {/* Desktop Layout */}

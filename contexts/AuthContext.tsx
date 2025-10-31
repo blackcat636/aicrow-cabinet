@@ -12,6 +12,7 @@ import {
 } from '@/lib/auth';
 import { authApi } from '@/lib/apiAuth';
 import { decodeToken, refreshAccessToken } from '@/lib/auth-utils';
+import { userApi } from '@/lib/apiUser';
 
 interface AuthContextType {
   user: User | null;
@@ -58,22 +59,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             const timeUntilExpiry = decoded.exp * 1000 - Date.now();
             
             if (decoded.exp > now) {
-              // Token is valid, set user data
+              // Token is valid, load full user profile
               if (decoded.email) {
-                setUser({
-                  id: decoded.sub?.toString() || 'unknown',
-                  email: decoded.email,
-                  username: decoded.email.split('@')[0],
-                  firstName: '',
-                  lastName: '',
-                  phone: null,
-                  photo: null,
-                  role: decoded.role || 'user',
-                  balance: '0',
-                  frozenBalance: '0'
-                });
-                // Token is valid, no need to set it again
                 setIsAuthenticated(true);
+                // Load full user profile to get photo and other details
+                try {
+                  const profile = await userApi.getProfile();
+                  setUser({
+                    id: profile.id.toString(),
+                    email: profile.email,
+                    username: profile.username,
+                    firstName: profile.firstName || '',
+                    lastName: profile.lastName || '',
+                    phone: profile.phone,
+                    photo: profile.photo,
+                    role: profile.role,
+                    balance: '0',
+                    frozenBalance: '0'
+                  });
+                } catch (error) {
+                  // If profile load fails, use basic data from token
+                  console.error('Failed to load user profile:', error);
+                  setUser({
+                    id: decoded.sub?.toString() || 'unknown',
+                    email: decoded.email,
+                    username: decoded.email.split('@')[0],
+                    firstName: '',
+                    lastName: '',
+                    phone: null,
+                    photo: null,
+                    role: decoded.role || 'user',
+                    balance: '0',
+                    frozenBalance: '0'
+                  });
+                }
               }
             } else {
               // Token expired, try to refresh
@@ -84,20 +103,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 if (newToken) {
                   const newDecoded = decodeToken(newToken);
                   if (newDecoded && newDecoded.email) {
-                    setUser({
-                      id: newDecoded.sub?.toString() || 'unknown',
-                      email: newDecoded.email,
-                      username: newDecoded.email.split('@')[0],
-                      firstName: '',
-                      lastName: '',
-                      phone: null,
-                      photo: null,
-                      role: newDecoded.role || 'user',
-                      balance: '0',
-                      frozenBalance: '0'
-                    });
-                    // Token is already set by refreshAccessToken
                     setIsAuthenticated(true);
+                    // Load full user profile to get photo and other details
+                    try {
+                      const profile = await userApi.getProfile();
+                      setUser({
+                        id: profile.id.toString(),
+                        email: profile.email,
+                        username: profile.username,
+                        firstName: profile.firstName || '',
+                        lastName: profile.lastName || '',
+                        phone: profile.phone,
+                        photo: profile.photo,
+                        role: profile.role,
+                        balance: '0',
+                        frozenBalance: '0'
+                      });
+                    } catch (error) {
+                      // If profile load fails, use basic data from token
+                      console.error('Failed to load user profile:', error);
+                      setUser({
+                        id: newDecoded.sub?.toString() || 'unknown',
+                        email: newDecoded.email,
+                        username: newDecoded.email.split('@')[0],
+                        firstName: '',
+                        lastName: '',
+                        phone: null,
+                        photo: null,
+                        role: newDecoded.role || 'user',
+                        balance: '0',
+                        frozenBalance: '0'
+                      });
+                    }
                   }
                 }
               } else {
@@ -204,9 +241,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const data = await response.json();
 
       if (data.user) {
-        // Set user data
-        setUser(data.user);
         setIsAuthenticated(true);
+        // Load full user profile to get photo and other details
+        try {
+          const profile = await userApi.getProfile();
+          setUser({
+            id: profile.id.toString(),
+            email: profile.email,
+            username: profile.username,
+            firstName: profile.firstName || '',
+            lastName: profile.lastName || '',
+            phone: profile.phone,
+            photo: profile.photo,
+            role: profile.role,
+            balance: data.user.balance || '0',
+            frozenBalance: data.user.frozenBalance || '0'
+          });
+        } catch (error) {
+          // If profile load fails, use data from login response
+          console.error('Failed to load user profile:', error);
+          setUser(data.user);
+        }
       } else {
         throw new Error('Login failed');
       }

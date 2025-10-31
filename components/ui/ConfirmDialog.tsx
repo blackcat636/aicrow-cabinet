@@ -87,7 +87,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
         {/* Content */}
         <div className="p-6">
-          <p className="text-gray-300 text-base leading-relaxed mb-6">
+          <p className="text-gray-300 text-base leading-relaxed mb-6 break-words overflow-wrap-anywhere">
             {message}
           </p>
 

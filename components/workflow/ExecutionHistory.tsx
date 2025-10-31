@@ -157,60 +157,43 @@ export const ExecutionHistory: React.FC = () => {
               {executionsData.items.map((execution) => (
             <div key={execution.id} className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
               <div className="bg-black rounded-lg p-6 hover:shadow-md transition-shadow h-full w-full">
-              {/* Header */}
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Badge 
-                      variant="secondary" 
-                      className={getStatusColor(execution.status)}
-                    >
-                      <div className="flex items-center gap-1">
-                        {getStatusIcon(execution.status)}
-                        <span>{getStatusLabel(execution.status)}</span>
-                      </div>
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {getTriggerTypeLabel(execution.triggerType)}
-                    </Badge>
-                    {execution.notificationSent && (
+              {/* Single row layout */}
+              <div className="flex items-center pb-6 justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Badge 
+                    variant="secondary" 
+                    className={getStatusColor(execution.status)}
+                  >
+                    <div className="flex items-center gap-1">
+                      {getStatusIcon(execution.status)}
+                      <span>{getStatusLabel(execution.status)}</span>
+                    </div>
+                  </Badge>
+                  <Badge variant="outline" className="text-xs">
+                    {getTriggerTypeLabel(execution.triggerType)}
+                  </Badge>
+                  {execution.notificationSent && (
                     <Badge variant="outline" className="text-xs bg-green-600 text-white">
                       Notified
                     </Badge>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-4 text-sm text-gray-300">
-                    <div className="flex items-center gap-1">
-                      <ClockIcon className="w-4 h-4" />
-                      <span>Created: {new Date(execution.createdAt).toLocaleString()}</span>
-                    </div>
-                    {execution.startedAt && (
-                      <div className="flex items-center gap-1">
-                        <ClockIcon className="w-4 h-4" />
-                        <span>Started: {new Date(execution.startedAt).toLocaleString()}</span>
-                      </div>
-                    )}
-                    {execution.completedAt && (
-                      <div className="flex items-center gap-1">
-                        <ClockIcon className="w-4 h-4" />
-                        <span>Completed: {new Date(execution.completedAt).toLocaleString()}</span>
-                      </div>
-                    )}
+                  )}
+                  <div className="flex items-center gap-1 text-sm text-gray-300">
+                    <ClockIcon className="w-4 h-4" />
+                    <span>Created: {new Date(execution.createdAt).toLocaleString()}</span>
                   </div>
                 </div>
-              </div>
-
-              {/* N8N Execution ID */}
-              <div className="mb-4">
-                <h4 className="text-sm font-medium text-gray-300 mb-2">N8N Execution ID:</h4>
-                <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300">
-                  {execution.n8nExecutionId}
-                </div>
+                <button
+                  onClick={() => router.push(`/workflows/${execution.userWorkflowId}`)}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg transition-all font-medium hover:brightness-110 shadow-lg shadow-[#A500E1]/25 bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)]"
+                >
+                  <EyeIcon className="w-4 h-4" />
+                  <span>View Workflow</span>
+                </button>
               </div>
 
               {/* Input Data */}
               {execution.inputData && (
-                <div className="mb-4">
+                <div className="mb-4 mt-4">
                   <h4 className="text-sm font-medium text-gray-300 mb-2">Input Data:</h4>
                   <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300 break-all">
                     {execution.inputData}
@@ -237,17 +220,6 @@ export const ExecutionHistory: React.FC = () => {
                   </div>
                 </div>
               )}
-
-              {/* View Workflow Button */}
-              <div className="mb-4">
-                <button
-                  onClick={() => router.push(`/workflows/${execution.userWorkflowId}`)}
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg transition-all font-medium hover:brightness-110 shadow-lg shadow-[#A500E1]/25 bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)]"
-                >
-                  <EyeIcon className="w-4 h-4" />
-                  <span>View Workflow</span>
-                </button>
-              </div>
 
               {/* Execution ID */}
               <div className="pt-4 border-t border-gray-600">

@@ -82,6 +82,15 @@ export interface ResendVerificationRequest {
   email: string;
 }
 
+export interface ChangeEmailRequest {
+  newEmail: string;
+}
+
+export interface ConfirmEmailChangeRequest {
+  email: string;
+  code: string;
+}
+
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginRequest) => Promise<void>;
   register: (userData: RegisterRequest) => Promise<void>;

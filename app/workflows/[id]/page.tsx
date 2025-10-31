@@ -14,9 +14,13 @@ import {
   CheckIcon, 
   XIcon,
   CalendarIcon,
-  SettingsIcon
+  SettingsIcon,
+  PauseIcon,
+  TrashIcon
 } from '@/components/icons';
 import { toast } from 'sonner';
+import { WorkflowForm } from '@/components/workflow/WorkflowForm';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export const runtime = 'edge';
 
@@ -37,6 +41,9 @@ export default function WorkflowDetailPage() {
   const [executionsLoading, setExecutionsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [executing, setExecuting] = useState(false);
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [toggling, setToggling] = useState(false);
 
   const workflowId = params?.id ? parseInt(params.id as string) : null;
 
@@ -120,6 +127,40 @@ export default function WorkflowDetailPage() {
     } finally {
       setExecuting(false);
     }
+  };
+
+  const handleToggle = async () => {
+    if (!workflow) return;
+    
+    try {
+      setToggling(true);
+      const updated = await workflowApi.toggleUserWorkflow(workflow.id);
+      setWorkflow(updated);
+      toast.success(`Workflow ${updated.isActive ? 'activated' : 'deactivated'} successfully`);
+    } catch (error: any) {
+      console.error('Error toggling workflow:', error);
+      toast.error(error.message || 'Failed to toggle workflow');
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!workflow) return;
+    
+    try {
+      await workflowApi.deleteUserWorkflow(workflow.id);
+      toast.success('Workflow deleted successfully');
+      router.push('/workflows');
+    } catch (error: any) {
+      console.error('Error deleting workflow:', error);
+      toast.error(error.message || 'Failed to delete workflow');
+    }
+  };
+
+  const handleEditSuccess = () => {
+    setShowEditForm(false);
+    loadWorkflow();
   };
 
   const getStatusColor = (status: string) => {
@@ -224,16 +265,100 @@ export default function WorkflowDetailPage() {
         <div className="max-w-6xl mx-auto p-6">
           <div className="rounded-lg border border-gray-700 bg-[#141519]">
             {/* Header */}
-            <div className="flex items-center justify-between p-6">
+            <div className="p-6">
+              {/* Top row with Back button and action buttons */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => router.push('/workflows')}
+                    className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
+                  >
+                    <ChevronLeftIcon className="w-4 h-4" />
+                    Back
+                  </button>
+                  <Badge 
+                    variant={workflow.isActive ? "default" : "secondary"}
+                    className={workflow.isActive ? "bg-green-600 text-white" : "bg-gray-600 text-gray-300"}
+                  >
+                    {workflow.isActive ? 'Active' : 'Inactive'}
+                  </Badge>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleExecute}
+                    disabled={executing || !workflow.isActive}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                      executing 
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
+                        : !workflow.isActive
+                        ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
+                        : 'text-white shadow-lg shadow-[#A500E1]/25 bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] hover:brightness-110'
+                    }`}
+                  >
+                    {executing ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                        Executing...
+                      </>
+                    ) : (
+                      <>
+                        <PlayIcon className="w-4 h-4" />
+                        Execute
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={handleToggle}
+                    disabled={toggling}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                      toggling
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        : workflow.isActive
+                        ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
+                        : 'bg-green-600 hover:bg-green-700 text-white'
+                    }`}
+                    title={workflow.isActive ? 'Deactivate workflow' : 'Activate workflow'}
+                  >
+                    {toggling ? (
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    ) : workflow.isActive ? (
+                      <>
+                        <PauseIcon className="w-4 h-4" />
+                        Deactivate
+                      </>
+                    ) : (
+                      <>
+                        <PlayIcon className="w-4 h-4" />
+                        Activate
+                      </>
+                    )}
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowEditForm(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                    title="Edit workflow"
+                  >
+                    <SettingsIcon className="w-4 h-4" />
+                    Edit
+                  </button>
+                  
+                  <button
+                    onClick={() => setShowDeleteDialog(true)}
+                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                    title="Delete workflow"
+                  >
+                    <TrashIcon className="w-4 h-4" />
+                    Delete
+                  </button>
+                </div>
+              </div>
+              
+              {/* Title and description */}
               <div className="ml-6">
-                <button
-                  onClick={() => router.push('/workflows')}
-                  className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors mb-4"
-                >
-                  <ChevronLeftIcon className="w-4 h-4" />
-                  Back to Workflows
-                </button>
-                <h1 className="text-3xl font-bold text-white mb-2 break-words break-all">
+                <h1 className="text-3xl font-bold text-white break-words break-all mb-2">
                   {workflow.name || workflow.workflow.name || 'Unnamed Workflow'}
                 </h1>
                 {workflow.description || workflow.workflow?.description ? (
@@ -243,39 +368,6 @@ export default function WorkflowDetailPage() {
                 ) : (
                   <p className="text-gray-400 italic text-lg">No description</p>
                 )}
-              </div>
-              
-              <div className="flex items-center gap-3 mr-6">
-                <Badge 
-                  variant={workflow.isActive ? "default" : "secondary"}
-                  className={workflow.isActive ? "bg-green-600 text-white" : "bg-gray-600 text-gray-300"}
-                >
-                  {workflow.isActive ? 'Active' : 'Inactive'}
-                </Badge>
-                
-                <button
-                  onClick={handleExecute}
-                  disabled={executing || !workflow.isActive}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    executing 
-                      ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                      : !workflow.isActive
-                      ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                      : 'text-white shadow-lg shadow-[#A500E1]/25 bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] hover:brightness-110'
-                  }`}
-                >
-                  {executing ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
-                      Executing...
-                    </>
-                  ) : (
-                    <>
-                      <PlayIcon className="w-4 h-4" />
-                      Execute
-                    </>
-                  )}
-                </button>
               </div>
             </div>
 
@@ -428,6 +520,26 @@ export default function WorkflowDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Form Modal */}
+      <WorkflowForm
+        isOpen={showEditForm}
+        onClose={() => setShowEditForm(false)}
+        onSuccess={handleEditSuccess}
+        editingWorkflow={workflow}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDelete}
+        title="Delete Workflow"
+        message={`Are you sure you want to delete the workflow "${workflow.name || workflow.workflow.name}"? This action cannot be undone.`}
+        confirmText="Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </AppLayout>
   );
 }
