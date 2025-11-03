@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { UserWorkflow } from '@/types/workflow';
 import { Badge } from '@/components/ui/badge';
 import { 
@@ -23,7 +23,23 @@ interface WorkflowCardProps {
   isExecuting?: boolean;
 }
 
-export const WorkflowCard: React.FC<WorkflowCardProps> = ({
+// Move helper functions outside component to prevent recreation
+const getCredentialTypeLabel = (type: string) => {
+  switch (type) {
+    case 'telegram': return 'Telegram';
+    case 'email': return 'Email';
+    case 'webhook': return 'Webhook';
+    default: return type;
+  }
+};
+
+const truncateText = (text: string | null | undefined, maxLength: number): string => {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
+export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
   workflow,
   onToggle,
   onEdit,
@@ -34,36 +50,50 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
   isExecuting = false
 }) => {
   const [showFullDescription, setShowFullDescription] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
-  // Trim text helper
-  const truncateText = (text: string | null | undefined, maxLength: number): string => {
-    if (!text) return '';
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
+  // Mouse tracking for interactive background on card
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setMousePosition({ x, y });
+  }, []);
 
-  const workflowName = workflow.name || workflow.workflow?.name || '';
-  const workflowDescription = workflow.description || workflow.workflow?.description || '';
+  const handleMouseEnter = useCallback(() => {
+    setIsHovering(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false);
+  }, []);
+
+  // Memoize computed values
+  const workflowName = useMemo(() => workflow.name || workflow.workflow?.name || '', [workflow.name, workflow.workflow?.name]);
+  const workflowDescription = useMemo(() => workflow.description || workflow.workflow?.description || '', [workflow.description, workflow.workflow?.description]);
   
   const maxNameLength = 30;
   const maxDescriptionLength = 100;
   
-  const displayName = truncateText(workflowName, maxNameLength);
-  const displayDescription = showFullDescription 
-    ? workflowDescription 
-    : truncateText(workflowDescription, maxDescriptionLength);
+  const displayName = useMemo(() => truncateText(workflowName, maxNameLength), [workflowName]);
+  const displayDescription = useMemo(() => 
+    showFullDescription 
+      ? workflowDescription 
+      : truncateText(workflowDescription, maxDescriptionLength),
+    [workflowDescription, showFullDescription]
+  );
   
-  const shouldShowMoreButton = workflowDescription ? workflowDescription.length > maxDescriptionLength : false;
-  const getCredentialTypeLabel = (type: string) => {
-    switch (type) {
-      case 'telegram': return 'Telegram';
-      case 'email': return 'Email';
-      case 'webhook': return 'Webhook';
-      default: return type;
-    }
-  };
+  const shouldShowMoreButton = useMemo(() => 
+    workflowDescription ? workflowDescription.length > maxDescriptionLength : false,
+    [workflowDescription]
+  );
 
-  const getCredentialData = () => {
+  const getCredentialData = useCallback(() => {
     switch (workflow.credentialType) {
       case 'telegram':
         return `Chat ID: ${workflow.credentialData.chatId}`;
@@ -74,13 +104,37 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
       default:
         return 'No credentials';
     }
-  };
+  }, [workflow.credentialType, workflow.credentialData]);
+
+  // Memoize credential type label
+  const credentialTypeLabel = useMemo(() => getCredentialTypeLabel(workflow.credentialType), [workflow.credentialType]);
+  const credentialDataText = useMemo(() => getCredentialData(), [getCredentialData]);
 
   return (
-    <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] w-full overflow-hidden">
-      <div className="bg-black rounded-lg p-5 hover:shadow-md transition-shadow w-full h-full">
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
+    <div 
+      className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] w-full overflow-hidden shadow-lg shadow-purple-500/30"
+    >
+      <div 
+        ref={cardRef}
+        className="relative bg-black rounded-lg p-5 hover:shadow-md transition-shadow w-full h-full overflow-hidden group"
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* Interactive gradient overlay that follows mouse - more visible */}
+        <div 
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
+          style={{
+            background: isHovering
+              ? `radial-gradient(500px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(165,0,225,0.4), rgba(123,97,255,0.2) 40%, transparent 70%)`
+              : 'none'
+          }}
+        />
+        
+        {/* Content with relative z-index */}
+        <div className="relative z-10">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
           <h3 
             className="text-lg font-semibold text-white mb-1 break-words"
@@ -120,9 +174,9 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
       <div className="mb-4">
         <div className="flex items-center gap-2 flex-wrap">
           <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
-            {getCredentialTypeLabel(workflow.credentialType)}
+            {credentialTypeLabel}
           </Badge>
-          <span className="text-xs text-gray-400">{getCredentialData()}</span>
+          <span className="text-xs text-gray-400">{credentialDataText}</span>
           {workflow.workflow?.priceUsd && (
             <Badge variant="outline" className="text-xs border-green-600 text-green-300 bg-green-900/20">
               ${workflow.workflow.priceUsd}
@@ -209,8 +263,10 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = ({
           </div>
         </div>
       </div>
-
+        </div>
       </div>
     </div>
   );
-};
+});
+
+WorkflowCard.displayName = 'WorkflowCard';

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { telegramApi } from '@/lib/apiTelegram';
 import { TelegramStatusResponse } from '@/types/telegram';
 import { CopyIcon, CheckIcon, ExternalLinkIcon } from '@/components/icons';
@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getAccessToken } from '@/lib/auth';
 import { AppLayout } from '@/components/AppLayout';
 
-const TelegramSettingsPage: React.FC = () => {
+const TelegramIntegrationPage: React.FC = () => {
   const { user } = useAuth();
   const [status, setStatus] = useState<TelegramStatusResponse['data'] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -134,11 +134,11 @@ const TelegramSettingsPage: React.FC = () => {
       <div className="h-full">
         <div className="max-w-5xl mx-auto py-6 h-full flex flex-col">
           {/* Outer container similar to Workflows */}
-          <div className="rounded-lg border border-gray-700 bg-[#141519] h-full flex flex-col">
-            {/* Header inside gray block */}
-            <div className="flex items-center justify-between p-6">
+          <div className="rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm h-full flex flex-col min-h-[400px]">
+            {/* Header inside gray block - fixed height */}
+            <div className="flex items-center justify-between p-6 min-h-[100px]">
               <div className="ml-6">
-                <h2 className="text-2xl font-bold text-white">Telegram Settings</h2>
+                <h2 className="text-2xl font-bold text-white">Telegram Integration</h2>
                 <p className="text-gray-300 mt-1">Manage your Telegram account connection and notifications</p>
               </div>
             </div>
@@ -163,8 +163,8 @@ const TelegramSettingsPage: React.FC = () => {
               {status && (
                 <div className="space-y-4">
                   {/* Connection Status Card */}
-                  <div className="p-[1px] rounded-2xl bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
-                    <div className="bg-black rounded-2xl p-6 h-full w-full">
+                  <TelegramCard>
+                    <div className="bg-[#141519]/60 backdrop-blur-sm rounded-2xl p-6 h-full w-full">
                     <h2 className="text-lg font-medium text-white mb-5 text-center">Connection Status</h2>
                     
                     <div className="flex items-center justify-center py-4">
@@ -201,11 +201,11 @@ const TelegramSettingsPage: React.FC = () => {
                       </div>
                     )}
                     </div>
-                  </div>
+                  </TelegramCard>
 
                   {/* Actions Card */}
-                  <div className="p-[1px] rounded-2xl bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
-                    <div className="bg-black rounded-2xl p-6 h-full w-full">
+                  <TelegramCard>
+                    <div className="bg-[#141519]/60 backdrop-blur-sm rounded-2xl p-6 h-full w-full">
                     <div className="space-y-3">
                       {!status.isLinked ? (
                         <>
@@ -290,7 +290,7 @@ const TelegramSettingsPage: React.FC = () => {
                       )}
                     </div>
                     </div>
-                  </div>
+                  </TelegramCard>
                 </div>
               )}
             </div>
@@ -351,4 +351,60 @@ const TelegramSettingsPage: React.FC = () => {
   );
 };
 
-export default TelegramSettingsPage;
+// Telegram Card Component with interactive hover effect
+const TelegramCard: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Mouse tracking for interactive background on card
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setMousePosition({ x, y });
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    setIsHovering(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false);
+  }, []);
+
+  return (
+    <div 
+      className="p-[1px] rounded-2xl bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30"
+    >
+      <div 
+        ref={cardRef}
+        className="relative bg-[#141519] rounded-2xl h-full w-full overflow-hidden group"
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* Interactive gradient overlay that follows mouse - more visible */}
+        <div 
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
+          style={{
+            background: isHovering
+              ? `radial-gradient(500px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(165,0,225,0.5), rgba(123,97,255,0.3) 40%, transparent 70%)`
+              : 'none'
+          }}
+        />
+        
+        {/* Content with relative z-index */}
+        <div className="relative z-10">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TelegramIntegrationPage;
+

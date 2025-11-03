@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { UserWorkflow } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
 import { WorkflowCard } from './WorkflowCard';
@@ -39,7 +39,10 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
     workflowName: ''
   });
 
-  const loadWorkflows = async () => {
+  const isMountedRef = React.useRef(false);
+  const prevRefreshTriggerRef = React.useRef<number | undefined>(undefined);
+
+  const loadWorkflows = React.useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -52,37 +55,42 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    loadWorkflows();
   }, []);
 
-  // Refresh when refreshTrigger changes
+  // Load workflows on mount only
   useEffect(() => {
-    if (refreshTrigger !== undefined) {
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
       loadWorkflows();
     }
-  }, [refreshTrigger]);
+  }, [loadWorkflows]);
 
-  const handleToggle = async (id: number) => {
+  // Refresh when refreshTrigger changes (but not on initial mount when it's 0)
+  useEffect(() => {
+    if (isMountedRef.current && refreshTrigger !== undefined && prevRefreshTriggerRef.current !== refreshTrigger) {
+      prevRefreshTriggerRef.current = refreshTrigger;
+      loadWorkflows();
+    }
+  }, [refreshTrigger, loadWorkflows]);
+
+  const handleToggle = useCallback(async (id: number) => {
     try {
       await workflowApi.toggleUserWorkflow(id);
       await loadWorkflows(); // Reload to get updated data
     } catch (err) {
       console.error('Error toggling workflow:', err);
     }
-  };
+  }, [loadWorkflows]);
 
-  const handleDelete = async (id: number, name: string) => {
+  const handleDelete = useCallback((id: number, name: string) => {
     setDeleteDialog({
       isOpen: true,
       workflowId: id,
       workflowName: name
     });
-  };
+  }, []);
 
-  const confirmDelete = async () => {
+  const confirmDelete = useCallback(async () => {
     if (deleteDialog.workflowId) {
       try {
         await workflowApi.deleteUserWorkflow(deleteDialog.workflowId);
@@ -92,17 +100,76 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
       }
     }
     setDeleteDialog({ isOpen: false, workflowId: null, workflowName: '' });
-  };
+  }, [deleteDialog.workflowId, loadWorkflows]);
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading workflows...</p>
+  // Memoize stats calculations
+  const stats = useMemo(() => {
+    if (workflows.length === 0) {
+      return {
+        total: 0,
+        active: 0,
+        inactive: 0
+      };
+    }
+    
+    return {
+      total: workflows.length,
+      active: workflows.filter(w => w.isActive).length,
+      inactive: workflows.filter(w => !w.isActive).length
+    };
+  }, [workflows]);
+
+  const handleCloseDeleteDialog = useCallback(() => {
+    setDeleteDialog({ isOpen: false, workflowId: null, workflowName: '' });
+  }, []);
+
+  const deleteMessage = useMemo(() => 
+    `Are you sure you want to delete the workflow "${deleteDialog.workflowName}"? This action cannot be undone.`,
+    [deleteDialog.workflowName]
+  );
+
+  // Skeleton loader component - reserves space to prevent layout shift
+  const SkeletonLoader = () => (
+    <div className="space-y-6 relative min-h-[400px]">
+      <div className="rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm">
+        {/* Header skeleton - reserves space for header with fixed height */}
+        <div className="flex items-center justify-between p-6 min-h-[100px]">
+          <div className="ml-6">
+            <div className="h-8 w-48 bg-gray-700 rounded mb-2 animate-pulse"></div>
+            <div className="h-5 w-64 bg-gray-700 rounded animate-pulse"></div>
+          </div>
+          <div className="mr-6">
+            <div className="h-10 w-32 bg-gray-700 rounded animate-pulse"></div>
+          </div>
+        </div>
+        {/* Cards skeleton - reserves space for 2 cards */}
+        <div className="p-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+                <div className="bg-black rounded-lg p-5 h-64 animate-pulse">
+                  <div className="h-6 w-3/4 bg-gray-700 rounded mb-3"></div>
+                  <div className="h-4 w-full bg-gray-700 rounded mb-2"></div>
+                  <div className="h-4 w-5/6 bg-gray-700 rounded mb-4"></div>
+                  <div className="flex gap-2 mb-4">
+                    <div className="h-6 w-20 bg-gray-700 rounded"></div>
+                    <div className="h-6 w-16 bg-gray-700 rounded"></div>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="h-4 w-full bg-gray-700 rounded"></div>
+                    <div className="h-4 w-4/5 bg-gray-700 rounded"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    );
+    </div>
+  );
+
+  if (loading) {
+    return <SkeletonLoader />;
   }
 
   if (error) {
@@ -121,12 +188,12 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative min-h-[400px]">
       {/* Workflows Grid */}
       {workflows.length === 0 ? (
-        <div className="rounded-lg border border-gray-700 bg-[#141519]">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6">
+        <div className="rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm">
+          {/* Header - fixed height to prevent layout shift */}
+          <div className="flex items-center justify-between p-6 min-h-[100px]">
             <div className="ml-6">
               <h2 className="text-2xl font-bold text-white">My Workflows</h2>
               <p className="text-gray-300 mt-1">Create, manage and run your workflows</p>
@@ -151,9 +218,9 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-gray-700 bg-[#141519]">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6">
+        <div className="rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm">
+          {/* Header - fixed height to prevent layout shift */}
+          <div className="flex items-center justify-between p-6 min-h-[100px]">
             <div className="ml-6">
               <h2 className="text-2xl font-bold text-white">My Workflows</h2>
               <p className="text-gray-300 mt-1">Create, manage and run your workflows</p>
@@ -190,23 +257,23 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
 
       {/* Stats */}
       {workflows.length > 0 && (
-        <div className="bg-[#141519] rounded-lg p-4 border border-gray-700">
+        <div className="bg-[#141519]/80 backdrop-blur-sm rounded-lg p-4 border border-gray-700">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-white">
-                {workflows.length}
+                {stats.total}
               </div>
               <div className="text-sm text-gray-300">Total Workflows</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {workflows.filter(w => w.isActive).length}
+                {stats.active}
               </div>
               <div className="text-sm text-gray-300">Active</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {workflows.filter(w => !w.isActive).length}
+                {stats.inactive}
               </div>
               <div className="text-sm text-gray-300">Inactive</div>
             </div>
@@ -217,10 +284,10 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
       {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         isOpen={deleteDialog.isOpen}
-        onClose={() => setDeleteDialog({ isOpen: false, workflowId: null, workflowName: '' })}
+        onClose={handleCloseDeleteDialog}
         onConfirm={confirmDelete}
         title="Delete Workflow"
-        message={`Are you sure you want to delete the workflow "${deleteDialog.workflowName}"? This action cannot be undone.`}
+        message={deleteMessage}
         confirmText="Delete"
         cancelText="Cancel"
         type="danger"

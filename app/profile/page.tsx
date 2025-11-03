@@ -146,23 +146,38 @@ export default function ProfilePage() {
     window.location.reload();
   };
 
+  // Handle click outside modal and ESC key
+  useEffect(() => {
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        handleClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   if (loading) {
     return (
-      <AppLayout>
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+      <>
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <p className="text-gray-300">Loading profile...</p>
           </div>
         </div>
-      </AppLayout>
+      </>
     );
   }
 
   if (!profile) {
     return (
-      <AppLayout>
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+      <>
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999]">
           <div className="bg-gray-900 rounded-xl max-w-md w-full border border-gray-700 shadow-2xl p-6">
             <p className="text-gray-300 text-center">Failed to load profile</p>
             <Button
@@ -173,50 +188,71 @@ export default function ProfilePage() {
             </Button>
           </div>
         </div>
-      </AppLayout>
+      </>
     );
   }
 
   return (
-    <AppLayout>
-      {/* Modal-like overlay */}
-      <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
-        <div className="bg-gray-900 rounded-xl max-w-2xl w-full border border-gray-700 shadow-2xl max-h-[90vh] overflow-y-auto">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-700">
-            <h2 className="text-2xl font-semibold text-white">User Profile</h2>
-            <button
-              onClick={handleClose}
-              className="p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-gray-800"
-            >
-              <XIcon className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="p-6">
-            {/* Avatar Section */}
-            <div className="flex flex-col items-center mb-6">
-              <Avatar className="w-24 h-24 mb-4">
-                <AvatarImage src={formData.photo || profile.photo || undefined} alt={profile.username} />
-                <AvatarFallback className="bg-purple-600 text-white text-2xl">
-                  {getInitials(formData.firstName || profile.firstName, formData.lastName || profile.lastName, formData.username || profile.username)}
-                </AvatarFallback>
-              </Avatar>
+    <>
+      {/* Modal-like overlay - above everything including navbar */}
+      <div 
+        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+        onClick={(e) => {
+          // Close modal when clicking on overlay (background), not on modal content
+          if (e.target === e.currentTarget) {
+            handleClose();
+          }
+        }}
+      >
+        <div 
+          className="p-[1px] rounded-2xl bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] max-w-2xl w-full shadow-2xl shadow-purple-500/30 max-h-[90vh] overflow-hidden"
+          onClick={(e) => {
+            // Prevent closing when clicking inside modal
+            e.stopPropagation();
+          }}
+        >
+          <div className="bg-[#141519] rounded-2xl overflow-y-auto max-h-[90vh]">
+            {/* Header with gradient accent */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-600/10 via-purple-700/5 to-transparent">
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent">
+                User Profile
+              </h2>
+              <button
+                onClick={handleClose}
+                className="p-2 text-gray-400 hover:text-white transition-all rounded-full hover:bg-gray-800/50 hover:ring-2 hover:ring-purple-500/30"
+                aria-label="Close"
+              >
+                <XIcon className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Avatar Section with enhanced styling */}
+              <div className="flex flex-col items-center mb-8">
+                <div className="relative">
+                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full blur-xl opacity-50 animate-pulse"></div>
+                  <Avatar className="w-28 h-28 mb-4 relative ring-4 ring-purple-500/30 shadow-lg shadow-purple-500/20">
+                    <AvatarImage src={formData.photo || profile.photo || undefined} alt={profile.username} />
+                    <AvatarFallback className="bg-gradient-to-br from-purple-600 to-purple-800 text-white text-3xl font-bold">
+                      {getInitials(formData.firstName || profile.firstName, formData.lastName || profile.lastName, formData.username || profile.username)}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </div>
+
+            {/* Form with improved spacing and styling */}
+            <form onSubmit={handleSubmit} className="space-y-5">
               {/* Email (read-only) */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-300">
+              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-semibold text-gray-200">
                     Email
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowChangeEmailForm(true)}
-                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                    className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-all hover:underline"
                   >
                     Change Email
                   </button>
@@ -225,23 +261,26 @@ export default function ProfilePage() {
                   type="email"
                   value={profile.email}
                   disabled
-                  className="w-full p-3 bg-gray-800 text-gray-400 border border-gray-600 rounded-lg cursor-not-allowed"
+                  className="w-full p-3 bg-gray-800/50 text-gray-300 border border-gray-700 rounded-lg cursor-not-allowed focus:outline-none"
                 />
                 {profile.isEmailVerified && (
-                  <p className="mt-1 text-xs text-green-400">✓ Email verified</p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <span className="text-green-400 text-sm">✓</span>
+                    <p className="text-xs text-green-400 font-medium">Email verified</p>
+                  </div>
                 )}
               </div>
 
               {/* Password */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-300">
+              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+                <div className="flex items-center justify-between mb-3">
+                  <label className="block text-sm font-semibold text-gray-200">
                     Password
                   </label>
                   <button
                     type="button"
                     onClick={() => setShowChangePasswordForm(true)}
-                    className="text-xs text-purple-400 hover:text-purple-300 transition-colors"
+                    className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-all hover:underline"
                   >
                     Change Password
                   </button>
@@ -250,32 +289,35 @@ export default function ProfilePage() {
                   type="password"
                   value="••••••••"
                   disabled
-                  className="w-full p-3 bg-gray-800 text-gray-400 border border-gray-600 rounded-lg cursor-not-allowed"
+                  className="w-full p-3 bg-gray-800/50 text-gray-300 border border-gray-700 rounded-lg cursor-not-allowed focus:outline-none"
                 />
               </div>
 
               {/* Username */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Username *
+              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+                <label className="block text-sm font-semibold text-gray-200 mb-3">
+                  Username <span className="text-purple-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={formData.username || ''}
                   onChange={(e) => handleInputChange('username', e.target.value)}
                   placeholder="Enter username"
-                  className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.username ? 'border-red-500' : 'border-gray-600'
+                  className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                    errors.username ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
                   }`}
                 />
                 {errors.username && (
-                  <p className="mt-1 text-sm text-red-400">{errors.username}</p>
+                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                    <span>⚠</span>
+                    <span>{errors.username}</span>
+                  </p>
                 )}
               </div>
 
               {/* First Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+                <label className="block text-sm font-semibold text-gray-200 mb-3">
                   First Name
                 </label>
                 <input
@@ -283,18 +325,21 @@ export default function ProfilePage() {
                   value={formData.firstName || ''}
                   onChange={(e) => handleInputChange('firstName', e.target.value)}
                   placeholder="Enter first name"
-                  className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.firstName ? 'border-red-500' : 'border-gray-600'
+                  className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                    errors.firstName ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
                   }`}
                 />
                 {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-400">{errors.firstName}</p>
+                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                    <span>⚠</span>
+                    <span>{errors.firstName}</span>
+                  </p>
                 )}
               </div>
 
               {/* Last Name */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+                <label className="block text-sm font-semibold text-gray-200 mb-3">
                   Last Name
                 </label>
                 <input
@@ -302,18 +347,21 @@ export default function ProfilePage() {
                   value={formData.lastName || ''}
                   onChange={(e) => handleInputChange('lastName', e.target.value)}
                   placeholder="Enter last name"
-                  className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.lastName ? 'border-red-500' : 'border-gray-600'
+                  className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                    errors.lastName ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
                   }`}
                 />
                 {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-400">{errors.lastName}</p>
+                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                    <span>⚠</span>
+                    <span>{errors.lastName}</span>
+                  </p>
                 )}
               </div>
 
               {/* Phone */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+                <label className="block text-sm font-semibold text-gray-200 mb-3">
                   Phone
                 </label>
                 <input
@@ -321,36 +369,42 @@ export default function ProfilePage() {
                   value={formData.phone || ''}
                   onChange={(e) => handleInputChange('phone', e.target.value)}
                   placeholder="+11234567890"
-                  className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.phone ? 'border-red-500' : 'border-gray-600'
+                  className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                    errors.phone ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
                   }`}
                 />
                 {errors.phone && (
-                  <p className="mt-1 text-sm text-red-400">{errors.phone}</p>
+                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                    <span>⚠</span>
+                    <span>{errors.phone}</span>
+                  </p>
                 )}
               </div>
 
               {/* Date of Birth */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+                <label className="block text-sm font-semibold text-gray-200 mb-3">
                   Date of Birth
                 </label>
                 <input
                   type="date"
                   value={formData.dateOfBirth || ''}
                   onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                  className={`w-full p-3 bg-gray-800 text-white border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.dateOfBirth ? 'border-red-500' : 'border-gray-600'
+                  className={`w-full p-3 bg-gray-800/50 text-white border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                    errors.dateOfBirth ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
                   }`}
                 />
                 {errors.dateOfBirth && (
-                  <p className="mt-1 text-sm text-red-400">{errors.dateOfBirth}</p>
+                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                    <span>⚠</span>
+                    <span>{errors.dateOfBirth}</span>
+                  </p>
                 )}
               </div>
 
               {/* Photo URL */}
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
+              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+                <label className="block text-sm font-semibold text-gray-200 mb-3">
                   Photo URL
                 </label>
                 <input
@@ -358,39 +412,46 @@ export default function ProfilePage() {
                   value={formData.photo || ''}
                   onChange={(e) => handleInputChange('photo', e.target.value)}
                   placeholder="https://example.com/photo.jpg"
-                  className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.photo ? 'border-red-500' : 'border-gray-600'
+                  className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                    errors.photo ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
                   }`}
                 />
                 {errors.photo && (
-                  <p className="mt-1 text-sm text-red-400">{errors.photo}</p>
+                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                    <span>⚠</span>
+                    <span>{errors.photo}</span>
+                  </p>
                 )}
               </div>
 
               {/* Additional Info (read-only) */}
               {profile.referralCode && (
-                <div className="pt-4 border-t border-gray-700 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-gray-400">Referral Code:</span>
-                    <span className="text-white">{profile.referralCode}</span>
+                <div className="pt-4 border-t border-gray-700/50">
+                  <div className="p-4 rounded-lg bg-gradient-to-r from-purple-600/10 to-purple-800/10 border border-purple-500/20">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-semibold text-gray-300">Referral Code</span>
+                      <span className="text-sm font-mono font-bold text-purple-300 bg-purple-900/30 px-3 py-1 rounded border border-purple-500/30">
+                        {profile.referralCode}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
 
               {/* Actions */}
-              <div className="flex gap-3 pt-4">
+              <div className="flex gap-3 pt-6">
                 <Button
                   type="button"
                   onClick={handleClose}
                   variant="outline"
-                  className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
+                  className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800/50 hover:border-gray-600 transition-all"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={submitting}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 text-white disabled:opacity-50"
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white disabled:opacity-50 shadow-lg shadow-purple-500/30 transition-all"
                 >
                   {submitting ? (
                     <div className="flex items-center justify-center gap-2">
@@ -405,27 +466,30 @@ export default function ProfilePage() {
             </form>
           </div>
         </div>
+        </div>
       </div>
+      
+      <AppLayout>
+        {/* Change Email Form Modal */}
+        {profile && (
+          <ChangeEmailForm
+            isOpen={showChangeEmailForm}
+            onClose={() => setShowChangeEmailForm(false)}
+            currentEmail={profile.email}
+            onSuccess={handleEmailChangeSuccess}
+          />
+        )}
 
-      {/* Change Email Form Modal */}
-      {profile && (
-        <ChangeEmailForm
-          isOpen={showChangeEmailForm}
-          onClose={() => setShowChangeEmailForm(false)}
-          currentEmail={profile.email}
-          onSuccess={handleEmailChangeSuccess}
+        {/* Change Password Form Modal */}
+        <ChangePasswordForm
+          isOpen={showChangePasswordForm}
+          onClose={() => setShowChangePasswordForm(false)}
+          onSuccess={() => {
+            toast.success('Password changed successfully');
+          }}
         />
-      )}
-
-      {/* Change Password Form Modal */}
-      <ChangePasswordForm
-        isOpen={showChangePasswordForm}
-        onClose={() => setShowChangePasswordForm(false)}
-        onSuccess={() => {
-          toast.success('Password changed successfully');
-        }}
-      />
-    </AppLayout>
+      </AppLayout>
+    </>
   );
 }
 

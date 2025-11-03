@@ -140,3 +140,60 @@
 html {
   scroll-behavior: smooth;
 }
+
+/* Sparkle and Shimmer animations */
+@keyframes sparkle {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-40px) scale(0);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
+
+/* Custom Scrollbar (global) */
+/* Firefox */
+* {
+  scrollbar-width: thin; /* auto | thin | none */
+  scrollbar-color: #7B61FF33 #0f1014; /* thumb color | track color */
+}
+
+/* WebKit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(165,0,225,0.6) 0%, rgba(123,97,255,0.6) 100%);
+  border-radius: 9999px;
+  border: 2px solid rgba(20, 21, 25, 0.9);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(165,0,225,0.8) 0%, rgba(123,97,255,0.8) 100%);
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

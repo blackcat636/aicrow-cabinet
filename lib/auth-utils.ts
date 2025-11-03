@@ -26,8 +26,9 @@ export const decodeToken = (token: string): TokenPayload | null => {
         })
         .join('')
     );
+
     return JSON.parse(jsonPayload);
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -38,9 +39,13 @@ let isRefreshing = false;
 // Helper function to check if token is valid
 const isTokenValid = (token: string): boolean => {
   const decoded = decodeToken(token);
-  if (!decoded) return false;
+
+  if (!decoded) {
+    return false;
+  }
 
   const timeUntilExpiry = decoded.exp * 1000 - Date.now();
+
   return timeUntilExpiry > 300000; // 5 minutes
 };
 
@@ -51,8 +56,10 @@ export const refreshAccessToken = async (): Promise<boolean> => {
     while (isRefreshing) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
+
     // Check if we still need to refresh after waiting
     const currentToken = getAccessToken();
+
     if (currentToken && isTokenValid(currentToken)) {
       return true;
     }
@@ -74,9 +81,10 @@ export const refreshAccessToken = async (): Promise<boolean> => {
     if (data.status === 200 && data.data) {
       // Decode and log token expiration
       const decoded = decodeToken(data.data.accessToken);
+
       if (decoded) {
-        const expirationDate = new Date(decoded.exp * 1000);
-        const timeUntilExpiry = decoded.exp * 1000 - Date.now();
+        // Token decoded successfully (variables available for debugging if needed)
+        void decoded;
       }
 
       setTokens({
@@ -87,11 +95,13 @@ export const refreshAccessToken = async (): Promise<boolean> => {
 
       // Clear refreshing flag
       isRefreshing = false;
+
       return true;
     }
 
     // Clear refreshing flag
     isRefreshing = false;
+
     return false;
   } catch (error) {
     // Safe error details logging
@@ -126,12 +136,16 @@ export const refreshAccessToken = async (): Promise<boolean> => {
         documentCookies:
           typeof document !== 'undefined' ? document.cookie : 'N/A'
       };
-    } catch (logError) {
-      console.error('❌ Failed to log error details:', logError);
+
+      // Log error details for debugging (can be removed in production)
+      void errorDetails;
+    } catch {
+      // Silently fail if error logging fails
     }
 
     // Clear refreshing flag
     isRefreshing = false;
+
     return false;
   }
 };
@@ -145,6 +159,7 @@ export const ensureValidToken = async (): Promise<boolean> => {
   }
 
   const decoded = decodeToken(accessToken);
+
   if (!decoded) {
     return false;
   }
@@ -156,10 +171,11 @@ export const ensureValidToken = async (): Promise<boolean> => {
   if (timeUntilExpiry < 600) {
     try {
       const refreshed = await refreshAccessToken();
+
       if (!refreshed) {
         return false;
       }
-    } catch (error) {
+    } catch {
       return false;
     }
   }

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserWorkflow, WorkflowExecution, ExecutionsResponse } from '@/types/workflow';
@@ -24,6 +24,126 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export const runtime = 'edge';
 
+// Execution Card component with mouse tracking
+const ExecutionCard: React.FC<{
+  execution: WorkflowExecution;
+  getStatusColor: (status: string) => string;
+  getStatusIcon: (status: string) => React.ReactNode;
+  getStatusLabel: (status: string) => string;
+  getTriggerTypeLabel: (triggerType: string) => string;
+}> = ({ execution, getStatusColor, getStatusIcon, getStatusLabel, getTriggerTypeLabel }) => {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Mouse tracking for interactive background on card
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const rect = target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setMousePosition({ x, y });
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    setIsHovering(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false);
+  }, []);
+
+  return (
+    <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30">
+      <div 
+        ref={cardRef}
+        className="relative bg-black rounded-lg p-4 hover:shadow-md transition-shadow h-full w-full overflow-hidden group"
+        onMouseMove={handleMouseMove}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {/* Interactive gradient overlay that follows mouse */}
+        <div 
+          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
+          style={{
+            background: isHovering
+              ? `radial-gradient(500px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(165,0,225,0.4), rgba(123,97,255,0.2) 40%, transparent 70%)`
+              : 'none'
+          }}
+        />
+        
+        {/* Content with relative z-index */}
+        <div className="relative z-10">
+          {/* Header */}
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <Badge 
+                variant="secondary" 
+                className={getStatusColor(execution.status)}
+              >
+                <div className="flex items-center gap-1">
+                  {getStatusIcon(execution.status)}
+                  <span>{getStatusLabel(execution.status)}</span>
+                </div>
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {getTriggerTypeLabel(execution.triggerType)}
+              </Badge>
+              {execution.notificationSent && (
+                <Badge variant="outline" className="text-xs bg-green-600 text-white">
+                  Notified
+                </Badge>
+              )}
+            </div>
+            <div className="text-sm text-gray-400">
+              {new Date(execution.createdAt).toLocaleString()}
+            </div>
+          </div>
+
+          {/* Input Data */}
+          {execution.inputData && (
+            <div className="mb-3">
+              <h4 className="text-sm font-medium text-gray-300 mb-1">Input Data:</h4>
+              <div className="p-2 bg-gray-700 rounded text-xs font-mono text-gray-300 break-all">
+                {execution.inputData}
+              </div>
+            </div>
+          )}
+
+          {/* Output Data */}
+          {execution.outputData && (
+            <div className="mb-3">
+              <h4 className="text-sm font-medium text-gray-300 mb-1">Output Data:</h4>
+              <div className="p-2 bg-green-900/20 rounded text-xs font-mono text-green-300 break-all">
+                {execution.outputData}
+              </div>
+            </div>
+          )}
+
+          {/* Error Message */}
+          {execution.errorMessage && (
+            <div className="mb-3">
+              <h4 className="text-sm font-medium text-gray-300 mb-1">Error:</h4>
+              <div className="p-2 bg-red-900/20 rounded text-xs font-mono text-red-300 break-all">
+                {execution.errorMessage}
+              </div>
+            </div>
+          )}
+
+          {/* Execution Details */}
+          <div className="pt-3 border-t border-gray-600">
+            <div className="flex items-center justify-between text-xs text-gray-400">
+              <span>Execution ID: {execution.id}</span>
+              <span>N8N ID: {execution.n8nExecutionId}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default function WorkflowDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -44,8 +164,77 @@ export default function WorkflowDetailPage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [toggling, setToggling] = useState(false);
+  
+  // Mouse tracking for Workflow Information card
+  const [workflowInfoMousePosition, setWorkflowInfoMousePosition] = useState({ x: 0, y: 0 });
+  const [isWorkflowInfoHovering, setIsWorkflowInfoHovering] = useState(false);
+  const workflowInfoRef = useRef<HTMLDivElement>(null);
+  
+  // Mouse tracking for Input Data Template card
+  const [inputTemplateMousePosition, setInputTemplateMousePosition] = useState({ x: 0, y: 0 });
+  const [isInputTemplateHovering, setIsInputTemplateHovering] = useState(false);
+  const inputTemplateRef = useRef<HTMLDivElement>(null);
+  
+  // Mouse tracking for "No executions" card
+  const [noExecutionsMousePosition, setNoExecutionsMousePosition] = useState({ x: 0, y: 0 });
+  const [isNoExecutionsHovering, setIsNoExecutionsHovering] = useState(false);
+  const noExecutionsRef = useRef<HTMLDivElement>(null);
 
   const workflowId = params?.id ? parseInt(params.id as string) : null;
+
+  // Mouse tracking handlers for Workflow Information card
+  const handleWorkflowInfoMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const rect = target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setWorkflowInfoMousePosition({ x, y });
+  }, []);
+
+  const handleWorkflowInfoMouseEnter = useCallback(() => {
+    setIsWorkflowInfoHovering(true);
+  }, []);
+
+  const handleWorkflowInfoMouseLeave = useCallback(() => {
+    setIsWorkflowInfoHovering(false);
+  }, []);
+
+  // Mouse tracking handlers for Input Data Template card
+  const handleInputTemplateMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const rect = target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setInputTemplateMousePosition({ x, y });
+  }, []);
+
+  const handleInputTemplateMouseEnter = useCallback(() => {
+    setIsInputTemplateHovering(true);
+  }, []);
+
+  const handleInputTemplateMouseLeave = useCallback(() => {
+    setIsInputTemplateHovering(false);
+  }, []);
+
+  // Mouse tracking handlers for "No executions" card
+  const handleNoExecutionsMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.currentTarget;
+    const rect = target.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setNoExecutionsMousePosition({ x, y });
+  }, []);
+
+  const handleNoExecutionsMouseEnter = useCallback(() => {
+    setIsNoExecutionsHovering(true);
+  }, []);
+
+  const handleNoExecutionsMouseLeave = useCallback(() => {
+    setIsNoExecutionsHovering(false);
+  }, []);
 
   useEffect(() => {
     if (workflowId && isAuthenticated) {
@@ -259,13 +448,62 @@ export default function WorkflowDetailPage() {
     );
   }
 
+  // Skeleton loader for workflow detail page
+  const DetailSkeleton = () => (
+    <div className="h-full">
+      <div className="max-w-6xl mx-auto p-6 min-h-[600px]">
+        <div className="rounded-lg border border-gray-700 bg-[#141519]">
+          {/* Header skeleton */}
+          <div className="p-6 min-h-[120px]">
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-6 w-20 bg-gray-700 rounded animate-pulse"></div>
+              <div className="flex gap-2">
+                <div className="h-10 w-24 bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-10 w-28 bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-10 w-20 bg-gray-700 rounded animate-pulse"></div>
+                <div className="h-10 w-20 bg-gray-700 rounded animate-pulse"></div>
+              </div>
+            </div>
+            <div className="h-8 w-64 bg-gray-700 rounded mb-2 animate-pulse"></div>
+            <div className="h-5 w-96 bg-gray-700 rounded animate-pulse"></div>
+          </div>
+          {/* Content skeleton */}
+          <div className="p-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              {[1, 2].map((i) => (
+                <div key={i} className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+                  <div className="bg-black rounded-lg p-6 h-64 animate-pulse">
+                    <div className="h-6 w-48 bg-gray-700 rounded mb-4"></div>
+                    <div className="space-y-3">
+                      <div className="h-4 w-full bg-gray-700 rounded"></div>
+                      <div className="h-4 w-3/4 bg-gray-700 rounded"></div>
+                      <div className="h-4 w-5/6 bg-gray-700 rounded"></div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <DetailSkeleton />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <div className="h-full">
-        <div className="max-w-6xl mx-auto p-6">
+        <div className="max-w-6xl mx-auto p-6 min-h-[600px]">
           <div className="rounded-lg border border-gray-700 bg-[#141519]">
-            {/* Header */}
-            <div className="p-6">
+            {/* Header - fixed height to prevent layout shift */}
+            <div className="p-6 min-h-[120px]">
               {/* Top row with Back button and action buttons */}
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
@@ -376,10 +614,28 @@ export default function WorkflowDetailPage() {
               {/* Workflow Info */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 {/* Basic Info */}
-                <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
-                  <div className="bg-black rounded-lg p-6 h-full w-full">
-                    <h2 className="text-xl font-semibold text-white mb-4">Workflow Information</h2>
-                    <div className="space-y-3">
+                <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30">
+                  <div 
+                    ref={workflowInfoRef}
+                    className="relative bg-black rounded-lg p-6 h-full w-full overflow-hidden group"
+                    onMouseMove={handleWorkflowInfoMouseMove}
+                    onMouseEnter={handleWorkflowInfoMouseEnter}
+                    onMouseLeave={handleWorkflowInfoMouseLeave}
+                  >
+                    {/* Interactive gradient overlay that follows mouse */}
+                    <div 
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
+                      style={{
+                        background: isWorkflowInfoHovering
+                          ? `radial-gradient(500px circle at ${workflowInfoMousePosition.x}px ${workflowInfoMousePosition.y}px, rgba(165,0,225,0.4), rgba(123,97,255,0.2) 40%, transparent 70%)`
+                          : 'none'
+                      }}
+                    />
+                    
+                    {/* Content with relative z-index */}
+                    <div className="relative z-10">
+                      <h2 className="text-xl font-semibold text-white mb-4">Workflow Information</h2>
+                      <div className="space-y-3">
                       <div>
                         <span className="text-gray-400">Type:</span>
                         <Badge variant="outline" className="ml-2 text-xs border-gray-600 text-gray-300">
@@ -409,20 +665,40 @@ export default function WorkflowDetailPage() {
                         <span className="ml-2 text-gray-300">{new Date(workflow.updatedAt).toLocaleDateString()}</span>
                       </div>
                     </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Input Data Template */}
-                <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
-                  <div className="bg-black rounded-lg p-6 h-full w-full">
-                    <h2 className="text-xl font-semibold text-white mb-4">Input Data Template</h2>
-                    {workflow.inputDataTemplate ? (
-                      <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300 break-all">
-                        {workflow.inputDataTemplate}
-                      </div>
-                    ) : (
-                      <p className="text-gray-400 italic">No input data template configured</p>
-                    )}
+                <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30">
+                  <div 
+                    ref={inputTemplateRef}
+                    className="relative bg-black rounded-lg p-6 h-full w-full overflow-hidden group"
+                    onMouseMove={handleInputTemplateMouseMove}
+                    onMouseEnter={handleInputTemplateMouseEnter}
+                    onMouseLeave={handleInputTemplateMouseLeave}
+                  >
+                    {/* Interactive gradient overlay that follows mouse */}
+                    <div 
+                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
+                      style={{
+                        background: isInputTemplateHovering
+                          ? `radial-gradient(500px circle at ${inputTemplateMousePosition.x}px ${inputTemplateMousePosition.y}px, rgba(165,0,225,0.4), rgba(123,97,255,0.2) 40%, transparent 70%)`
+                          : 'none'
+                      }}
+                    />
+                    
+                    {/* Content with relative z-index */}
+                    <div className="relative z-10">
+                      <h2 className="text-xl font-semibold text-white mb-4">Input Data Template</h2>
+                      {workflow.inputDataTemplate ? (
+                        <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300 break-all">
+                          {workflow.inputDataTemplate}
+                        </div>
+                      ) : (
+                        <p className="text-gray-400 italic">No input data template configured</p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -441,87 +717,47 @@ export default function WorkflowDetailPage() {
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
                   </div>
                 ) : executions.items.length === 0 ? (
-                  <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
-                    <div className="bg-black rounded-lg p-10 text-center h-full w-full">
-                      <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
-                        <PlayIcon className="w-8 h-8 text-white" />
+                  <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30">
+                    <div 
+                      ref={noExecutionsRef}
+                      className="relative bg-black rounded-lg p-10 text-center h-full w-full overflow-hidden group"
+                      onMouseMove={handleNoExecutionsMouseMove}
+                      onMouseEnter={handleNoExecutionsMouseEnter}
+                      onMouseLeave={handleNoExecutionsMouseLeave}
+                    >
+                      {/* Interactive gradient overlay that follows mouse */}
+                      <div 
+                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
+                        style={{
+                          background: isNoExecutionsHovering
+                            ? `radial-gradient(500px circle at ${noExecutionsMousePosition.x}px ${noExecutionsMousePosition.y}px, rgba(165,0,225,0.4), rgba(123,97,255,0.2) 40%, transparent 70%)`
+                            : 'none'
+                        }}
+                      />
+                      
+                      {/* Content with relative z-index */}
+                      <div className="relative z-10">
+                        <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
+                          <PlayIcon className="w-8 h-8 text-white" />
+                        </div>
+                        <h3 className="text-lg font-medium text-white mb-2">No executions yet</h3>
+                        <p className="text-gray-300 mb-0">
+                          This workflow hasn't been executed yet. Click the Execute button to run it.
+                        </p>
                       </div>
-                      <h3 className="text-lg font-medium text-white mb-2">No executions yet</h3>
-                      <p className="text-gray-300 mb-0">
-                        This workflow hasn't been executed yet. Click the Execute button to run it.
-                      </p>
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     {executions.items.map((execution) => (
-                      <div key={execution.id} className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
-                        <div className="bg-black rounded-lg p-4 hover:shadow-md transition-shadow h-full w-full">
-                          {/* Header */}
-                          <div className="flex items-start justify-between mb-3">
-                            <div className="flex items-center gap-3">
-                              <Badge 
-                                variant="secondary" 
-                                className={getStatusColor(execution.status)}
-                              >
-                                <div className="flex items-center gap-1">
-                                  {getStatusIcon(execution.status)}
-                                  <span>{getStatusLabel(execution.status)}</span>
-                                </div>
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {getTriggerTypeLabel(execution.triggerType)}
-                              </Badge>
-                              {execution.notificationSent && (
-                                <Badge variant="outline" className="text-xs bg-green-600 text-white">
-                                  Notified
-                                </Badge>
-                              )}
-                            </div>
-                            <div className="text-sm text-gray-400">
-                              {new Date(execution.createdAt).toLocaleString()}
-                            </div>
-                          </div>
-
-                          {/* Input Data */}
-                          {execution.inputData && (
-                            <div className="mb-3">
-                              <h4 className="text-sm font-medium text-gray-300 mb-1">Input Data:</h4>
-                              <div className="p-2 bg-gray-700 rounded text-xs font-mono text-gray-300 break-all">
-                                {execution.inputData}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Output Data */}
-                          {execution.outputData && (
-                            <div className="mb-3">
-                              <h4 className="text-sm font-medium text-gray-300 mb-1">Output Data:</h4>
-                              <div className="p-2 bg-green-900/20 rounded text-xs font-mono text-green-300 break-all">
-                                {execution.outputData}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Error Message */}
-                          {execution.errorMessage && (
-                            <div className="mb-3">
-                              <h4 className="text-sm font-medium text-gray-300 mb-1">Error:</h4>
-                              <div className="p-2 bg-red-900/20 rounded text-xs font-mono text-red-300 break-all">
-                                {execution.errorMessage}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Execution Details */}
-                          <div className="pt-3 border-t border-gray-600">
-                            <div className="flex items-center justify-between text-xs text-gray-400">
-                              <span>Execution ID: {execution.id}</span>
-                              <span>N8N ID: {execution.n8nExecutionId}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
+                      <ExecutionCard
+                        key={execution.id}
+                        execution={execution}
+                        getStatusColor={getStatusColor}
+                        getStatusIcon={getStatusIcon}
+                        getStatusLabel={getStatusLabel}
+                        getTriggerTypeLabel={getTriggerTypeLabel}
+                      />
                     ))}
                   </div>
                 )}

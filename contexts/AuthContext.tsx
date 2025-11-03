@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
 import { User, LoginRequest, RegisterRequest } from '@/types/auth';
 import { 
   getAccessToken, 
@@ -164,6 +164,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, []);
 
+  // Memoize logout function
+  const logout = useCallback(async (): Promise<void> => {
+    setIsLoading(true);
+    
+    try {      
+      // Call our Next.js API route for logout
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        cache: 'no-cache'
+      });
+
+    } catch (error) {
+    } finally {
+      // Always clear local state
+      removeTokens();
+      setIsAuthenticated(false);
+      setUser(null);
+      setIsLoading(false);
+    }
+  }, []);
+
   // Auto refresh token
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -185,39 +209,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return () => {
       clearInterval(refreshInterval);
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, logout]);
 
-  // Logout function
-  const logout = async (): Promise<void> => {
-    setIsLoading(true);
-    
-    try {      
-      // Call our Next.js API route for logout
-      const response = await fetch('/api/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        cache: 'no-cache'
-      });
-
-    } catch (error) {
-    } finally {
-      // Always clear local state
-      removeTokens();
-      setIsAuthenticated(false);
-      setUser(null);
-      setIsLoading(false);
-    }
-  };
-
-  // Clear error function
-  const clearError = () => {
+  // Memoize clear error function
+  const clearError = useCallback(() => {
     setError(null);
-  };
+  }, []);
 
-  // Login function
-  const login = async (credentials: LoginRequest): Promise<void> => {
+  // Memoize login function
+  const login = useCallback(async (credentials: LoginRequest): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
@@ -271,10 +271,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  // Register function
-  const register = async (userData: RegisterRequest): Promise<any> => {
+  // Memoize register function
+  const register = useCallback(async (userData: RegisterRequest): Promise<any> => {
     setIsLoading(true);
     setError(null);
 
@@ -302,9 +302,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const value: AuthContextType = {
+  // Memoize context value to prevent unnecessary re-renders
+  const value: AuthContextType = useMemo(() => ({
     user,
     isAuthenticated,
     isLoading,
@@ -313,7 +314,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     clearError
-  };
+  }), [user, isAuthenticated, isLoading, error, login, register, logout, clearError]);
 
   return (
     <AuthContext.Provider value={value}>

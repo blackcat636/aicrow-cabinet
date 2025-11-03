@@ -1,33 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import {
-  FileTextIcon,
   LogOutIcon,
-  DashBoardIcon,
-  ClockIcon,
   MenuIcon,
   XIcon,
-  SettingsIcon,
   ChevronRightIcon,
-  WalletIcon,
+  ChevronDownIcon,
   WorkflowsIcon,
   ExecutionIcon,
   BalanceIcon,
-  SettingsNewIcon,
-  SearchIcon,
-  BellIcon,
-  HeartIcon,
-  MicIcon,
-  UserIcon
+  SettingsNewIcon
 } from '@/components/icons';
-import { siteConfig } from '@/config/site';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -47,99 +36,399 @@ const getInitials = (firstName?: string, lastName?: string, username?: string) =
   return 'U';
 };
 
+// Memoized TopNavItem component with shimmer effects and mouse tracking on letters
+const TopNavItem: React.FC<{
+  href: string;
+  icon?: React.ReactNode;
+  label: string;
+  isActive: boolean;
+  onClick?: () => void;
+}> = React.memo(({ href, icon, label, isActive, onClick }) => {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const labelRef = useRef<HTMLSpanElement>(null);
+
+  // Mouse tracking for interactive gradient on label text
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (!labelRef.current || isActive) return;
+    
+    const rect = labelRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setMousePosition({ x, y });
+  }, [isActive]);
+
+  const handleMouseEnter = useCallback(() => {
+    if (!isActive) {
+      setIsHovering(true);
+    }
+  }, [isActive]);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false);
+  }, []);
+
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`relative flex items-center ${icon ? 'gap-2' : 'gap-0'} px-4 py-2 rounded-lg transition-all duration-300 overflow-hidden ${
+        isActive
+          ? 'shadow-lg shadow-purple-500/30'
+          : 'text-gray-300 hover:bg-white/10 hover:text-white'
+      }`}
+    >
+      {/* Background shimmer effect on active */}
+      {isActive && (
+        <span 
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+          style={{ animation: 'shimmer 2s infinite' }}
+        />
+      )}
+      
+      {icon && (
+        <span className={`relative z-10 transition-all duration-300 ${isActive ? 'font-bold scale-110' : 'font-medium'}`}>
+          {icon}
+        </span>
+      )}
+      <span className="relative z-10 hidden lg:inline-block">
+        {/* Base text - always visible */}
+        <span 
+          ref={labelRef}
+          className={`transition-all duration-300 ${
+            isActive 
+              ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent' 
+              : 'font-medium text-gray-300'
+          }`}
+        >
+          {label}
+        </span>
+        
+        {/* Gradient overlay that follows mouse - only visible on hover */}
+        {!isActive && isHovering && (
+          <span
+            className="absolute inset-0 font-medium pointer-events-none"
+            style={{
+              backgroundImage: `radial-gradient(100px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(165,0,225,1) 0%, rgba(123,97,255,1) 18%, rgba(165,0,225,0.8) 32%, rgba(123,97,255,0.4) 48%, transparent 65%)`,
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            {label}
+          </span>
+        )}
+      </span>
+
+      {isActive && (
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#A500E1] to-[#7B61FF] animate-pulse"></span>
+      )}
+    </Link>
+  );
+});
+
+TopNavItem.displayName = 'TopNavItem';
+
+// Integrations Nav Button with mouse tracking on letters
+const IntegrationsNavButton: React.FC<{
+  isActive: boolean;
+  isOpen: boolean;
+  onToggle: () => void;
+}> = React.memo(({ isActive, isOpen, onToggle }) => {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const labelRef = useRef<HTMLSpanElement>(null);
+
+  // Mouse tracking for interactive gradient on label text
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!labelRef.current || isActive) return;
+    
+    const rect = labelRef.current.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    setMousePosition({ x, y });
+  }, [isActive]);
+
+  const handleMouseEnter = useCallback(() => {
+    if (!isActive) {
+      setIsHovering(true);
+    }
+  }, [isActive]);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsHovering(false);
+  }, []);
+
+  return (
+    <button
+      onClick={onToggle}
+      onMouseMove={handleMouseMove}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
+      className={`relative flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 overflow-hidden ${
+        isActive
+          ? 'shadow-lg shadow-purple-500/30'
+          : 'text-gray-300 hover:bg-white/10 hover:text-white'
+      }`}
+      aria-label="Integrations"
+      title="Інтеграції"
+    >
+      {/* Background shimmer effect on active */}
+      {isActive && (
+        <span 
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
+          style={{ animation: 'shimmer 2s infinite' }}
+        />
+      )}
+      
+      {/* Icon removed for cleaner text-only nav */}
+      <span className="relative z-10 hidden lg:inline-block">
+        {/* Base text - always visible */}
+        <span 
+          className={`transition-all duration-300 ${
+            isActive 
+              ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent' 
+              : 'font-medium text-gray-300'
+          }`}
+        >
+          Integrations
+        </span>
+        
+        {/* Gradient overlay that follows mouse - only visible on hover */}
+        {!isActive && isHovering && (
+          <span
+            ref={labelRef}
+            className="absolute inset-0 font-medium pointer-events-none"
+            style={{
+              backgroundImage: `radial-gradient(100px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(165,0,225,1) 0%, rgba(123,97,255,1) 18%, rgba(165,0,225,0.8) 32%, rgba(123,97,255,0.4) 48%, transparent 65%)`,
+              WebkitBackgroundClip: 'text',
+              backgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+            }}
+          >
+            Integrations
+          </span>
+        )}
+      </span>
+      {/* Caret icon removed */}
+      {isActive && (
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#A500E1] to-[#7B61FF] animate-pulse"></span>
+      )}
+    </button>
+  );
+});
+
+IntegrationsNavButton.displayName = 'IntegrationsNavButton';
+
+// Memoized Telegram icon component
+const TelegramIcon: React.FC<{ className?: string }> = React.memo(({ className }) => (
+  <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+  </svg>
+));
+
+TelegramIcon.displayName = 'TelegramIcon';
+
 export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isSettingsSubmenuOpen, setIsSettingsSubmenuOpen] = useState(false);
+  const [isIntegrationsDropdownOpen, setIsIntegrationsDropdownOpen] = useState(false);
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const integrationsDropdownRef = useRef<HTMLDivElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const handleLogout = async () => {
+  // Memoize active states to prevent unnecessary recalculations
+  const activeStates = useMemo(() => ({
+    workflows: pathname === '/workflows' || pathname === '/',
+    executions: pathname === '/executions',
+    balance: pathname === '/balance',
+    integrations: pathname.startsWith('/integrations'),
+    telegram: pathname === '/integrations/telegram'
+  }), [pathname]);
+
+  // Memoize user initials to prevent recalculation
+  const userInitials = useMemo(() => 
+    getInitials(user?.firstName, user?.lastName, user?.username),
+    [user?.firstName, user?.lastName, user?.username]
+  );
+
+  // Memoize logout handler
+  const handleLogout = useCallback(async () => {
     try {
       await logout();
     } catch (error) {
       console.error('Logout error:', error);
     }
-  };
+  }, [logout]);
 
-  const handleOpenSettings = () => {
-    setIsSettingsSubmenuOpen(!isSettingsSubmenuOpen);
-  };
+  // Memoize toggle functions
+  const toggleIntegrationsDropdown = useCallback(() => {
+    setIsIntegrationsDropdownOpen(prev => !prev);
+  }, []);
 
-  // Auto-open settings submenu when on settings pages
-  React.useEffect(() => {
-    if (pathname.startsWith('/settings')) {
-      setIsSettingsSubmenuOpen(true);
-    } else {
-      setIsSettingsSubmenuOpen(false);
-    }
-  }, [pathname]);
+  const closeIntegrationsDropdown = useCallback(() => {
+    setIsIntegrationsDropdownOpen(false);
+  }, []);
 
-  const getPageTitle = () => {
-    switch (pathname) {
-      case '/':
-        return 'Ai Pills User Account';
-      case '/workflows':
-        return 'Workflows';
-      case '/executions':
-        return 'Executions';
-      case '/balance':
-        return 'Balance';
-      case '/settings/telegram':
-        return 'Telegram Settings';
-      default:
-        return 'Ai Pills User Account';
-    }
-  };
+  const toggleMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(prev => !prev);
+  }, []);
 
-  const NavItem: React.FC<{
-    href: string;
-    icon: React.ReactNode;
-    label: string;
-    isActive: boolean;
-    onClick?: () => void;
-  }> = ({ href, icon, label, isActive, onClick }) => (
-    <Link
-      href={href}
-      onClick={onClick}
-      className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
-        isActive
-          ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
-          : 'text-gray-300 hover:bg-white/10 hover:text-white'
-      }`}
-    >
-      {icon}
-      <span className='font-medium'>{label}</span>
-    </Link>
-  );
+  const closeMobileMenu = useCallback(() => {
+    setIsMobileMenuOpen(false);
+  }, []);
+
+  // Fixed useEffect with proper cleanup
+  useEffect(() => {
+    if (!isIntegrationsDropdownOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (integrationsDropdownRef.current && !integrationsDropdownRef.current.contains(event.target as Node)) {
+        setIsIntegrationsDropdownOpen(false);
+      }
+    };
+
+    // Use capture phase for better performance
+    document.addEventListener('mousedown', handleClickOutside, true);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside, true);
+    };
+  }, [isIntegrationsDropdownOpen]);
+
+  // Close user menu on outside click
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside, true);
+    return () => document.removeEventListener('mousedown', handleClickOutside, true);
+  }, [isUserMenuOpen]);
 
   return (
     <div className='h-screen bg-black overflow-hidden'>
       {/* Global Top Navbar */}
-      <nav className='w-full px-8 py-4 bg-[#141519] border-b border-gray-700'>
-        <div className='flex items-center justify-between'>
-          <Link href='/' className='ml-[40px] hover:opacity-90'>
+      <nav className='w-full px-4 lg:px-8 py-4 bg-[#141519] shadow-2xl shadow-purple-500/10 relative overflow-visible z-50'>
+        <div className='flex items-center justify-between relative'>
+          {/* Logo */}
+          <Link href='/' className='hover:opacity-90 flex-shrink-0'>
             <Image src="/brand/aiPillsLogo.png" alt="AiPills logo" width={40} height={70} priority />
           </Link>
           
-          {/* User Avatar */}
-          <div className='flex items-center gap-4'>
-            <Link
-              href='/profile'
-              className='hidden md:block'
-            >
-              <Avatar className='w-10 h-10 cursor-pointer hover:ring-2 hover:ring-purple-500 transition-all'>
-                <AvatarImage 
-                  src={user?.photo || undefined} 
-                  alt={user?.username || 'User'} 
+          {/* Navigation Items - Centered */}
+          <div className='absolute left-1/2 transform -translate-x-1/2 overflow-visible'>
+            <div className='relative flex items-center gap-2 lg:gap-4 overflow-visible'>
+              <TopNavItem
+                href="/workflows"
+                label="Workflows"
+                isActive={activeStates.workflows}
+              />
+              <TopNavItem
+                href="/executions"
+                label="Executions"
+                isActive={activeStates.executions}
+              />
+              <TopNavItem
+                href="/balance"
+                label="Balance"
+                isActive={activeStates.balance}
+              />
+              
+              {/* Integrations Dropdown */}
+              <div className="relative z-50" ref={integrationsDropdownRef}>
+                <IntegrationsNavButton
+                  isActive={activeStates.integrations}
+                  isOpen={isIntegrationsDropdownOpen}
+                  onToggle={toggleIntegrationsDropdown}
                 />
-                <AvatarFallback className='bg-purple-600 text-white'>
-                  {getInitials(user?.firstName, user?.lastName, user?.username)}
-                </AvatarFallback>
-              </Avatar>
-            </Link>
+                
+                {/* Integrations Dropdown Menu */}
+                <div className={`absolute left-0 top-full mt-2 w-48 bg-[#141519] border border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden transition-all duration-500 ease-out ${
+                  isIntegrationsDropdownOpen 
+                    ? 'opacity-100 translate-y-0 pointer-events-auto scale-100' 
+                    : 'opacity-0 -translate-y-4 pointer-events-none scale-95'
+                }`}>
+                  <Link
+                    href="/integrations/telegram"
+                    onClick={closeIntegrationsDropdown}
+                    className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${
+                      activeStates.telegram
+                        ? 'bg-purple-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                    }`}
+                  >
+                    <div className="p-1 bg-blue-600 rounded">
+                      <TelegramIcon className="w-4 h-4 text-white" />
+                    </div>
+                    <span className='font-medium'>Telegram</span>
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Right Side - User */}
+          <div className='flex items-center gap-2 lg:gap-4 flex-shrink-0 ml-auto'>
+            {/* User Avatar with dropdown */}
+            <div className='hidden md:block relative' ref={userMenuRef}>
+              <button
+                className='rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500'
+                onClick={(e) => {
+                  e.preventDefault();
+                  setIsMobileMenuOpen(false);
+                  setIsIntegrationsDropdownOpen(false);
+                  setIsUserMenuOpen(prev => !prev);
+                }}
+                aria-haspopup='menu'
+                aria-expanded={isUserMenuOpen}
+              >
+                <Avatar className='w-10 h-10 cursor-pointer hover:ring-2 hover:ring-purple-500 transition-all'>
+                  <AvatarImage 
+                    src={user?.photo || undefined} 
+                    alt={user?.username || 'User'} 
+                  />
+                  <AvatarFallback className='bg-purple-600 text-white'>
+                    {userInitials}
+                  </AvatarFallback>
+                </Avatar>
+              </button>
+
+              {/* Dropdown */}
+              <div
+                className={`absolute right-0 mt-2 w-44 bg-[#141519] border border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden transition-all duration-200 ease-out ${isUserMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}
+                role='menu'
+                aria-hidden={!isUserMenuOpen}
+              >
+                <Link
+                  href='/profile'
+                  className='block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white'
+                  onClick={() => setIsUserMenuOpen(false)}
+                >
+                  Profile
+                </Link>
+                <div className='my-1 h-px bg-white/10' role='separator' />
+                <button
+                  onClick={() => { setIsUserMenuOpen(false); handleLogout(); }}
+                  className='w-full text-left px-4 py-2 text-sm text-red-500 hover:text-red-400'
+                >
+                  Log out
+                </button>
+              </div>
+            </div>
             
             <button
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onClick={toggleMobileMenu}
               className='p-2 text-gray-300 hover:text-white transition-colors md:hidden'
               aria-label='Toggle menu'
             >
@@ -153,117 +442,42 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </nav>
       {/* Desktop Layout */}
-      <div className='hidden md:flex h-[calc(100vh-100px)] ml-[100px] overflow-hidden'>
-        {/* Sidebar */}
-        <div className='w-[320px] xl:w-[360px] 2xl:w-[390px] 3xl:w-[420px] 4xl:w-[450px] pt-[40px] bg-[#141519] border-r border-gray-700 shadow-sm flex-shrink-0 h-full overflow-hidden'>
-          <div className='ml-7 flex flex-col h-full'>
-            {/* Welcome Header */}
-            <div className='w-[260px] xl:w-[300px] 2xl:w-[330px] 3xl:w-[360px] 4xl:w-[390px] mb-6'>
-              <h2 className='text-2xl font-semibold'>
-                <span className='text-[#85A0BD]'>Welcome,</span>{' '}
-                <span className='text-white'>{user?.username || 'User'}</span>
-              </h2>
-            </div>
-
-            <div className='mt-4 mb-6 h-px bg-white/10 w-[260px] xl:w-[300px] 2xl:w-[330px] 3xl:w-[360px] 4xl:w-[390px]'></div>
-
-            {/* Navigation */}
-            <nav className='space-y-6 w-[260px] xl:w-[300px] 2xl:w-[330px] 3xl:w-[360px] 4xl:w-[390px] overflow-auto'>
-              {/* Main Menu Section */}
-              <div className='space-y-3'>
-                <h3 className='text-xs font-medium text-gray-400 uppercase tracking-wider px-3'>Main Menu</h3>
-                <div className='space-y-3'>
-                  <NavItem
-                    href="/workflows"
-                    icon={<WorkflowsIcon className='w-5 h-5' />}
-                    label="Workflows"
-                    isActive={pathname === '/workflows' || pathname === '/'}
-                  />
-                  <NavItem
-                    href="/executions"
-                    icon={<ExecutionIcon className='w-5 h-5' />}
-                    label="Executions"
-                    isActive={pathname === '/executions'}
-                  />
-                  <NavItem
-                    href="/balance"
-                    icon={<BalanceIcon className='w-5 h-5' />}
-                    label="Balance"
-                    isActive={pathname === '/balance'}
-                  />
-                </div>
-              </div>
-
-              {/* Settings Section */}
-              <div className='space-y-3'>
-                <h3 className='text-xs font-medium text-gray-400 uppercase tracking-wider px-3'>Settings</h3>
-                <div className='space-y-3'>
-                  <div className="relative">
-                    <button
-                      onClick={handleOpenSettings}
-                      className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                        pathname.startsWith('/settings')
-                          ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
-                          : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      <SettingsNewIcon className='w-5 h-5' />
-                      <span className='font-medium'>Settings</span>
-                      <ChevronRightIcon className={`w-4 h-4 ml-auto transition-transform ${isSettingsSubmenuOpen ? 'rotate-90' : ''}`} />
-                    </button>
-                    
-                    {/* Settings Submenu */}
-                    {isSettingsSubmenuOpen && (
-                      <div className="ml-4 mt-2 space-y-1 border-l border-gray-600 pl-4">
-                        <Link
-                          href="/settings/telegram"
-                          className={`w-full flex items-center gap-3 p-2 rounded-lg text-sm transition-colors ${
-                            pathname === '/settings/telegram'
-                              ? 'bg-purple-600 text-white'
-                              : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                          }`}
-                        >
-                          <div className="p-1 bg-blue-600 rounded">
-                            <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                            </svg>
-                          </div>
-                          <span>Telegram</span>
-                        </Link>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </nav>
-
-            {/* Logout */}
-            <div className='mt-auto w-[260px] xl:w-[300px] 2xl:w-[330px] 3xl:w-[360px] 4xl:w-[390px] pb-6'>
-              <button
-              onClick={handleLogout}
-              className='w-full flex items-center gap-3 p-3 rounded-lg bg-[#A500E1] text-white hover:bg-[#8F00C7] transition-colors'
-              >
-                <LogOutIcon className='w-5 h-5' />
-                <span className='font-medium'>Log-out</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className='flex-1 pt-[40px] pb-8 pr-[100px] pl-5 bg-black h-full overflow-y-auto'>
-          <div className="max-w-6xl mx-auto">
+      <div className='hidden md:flex h-[calc(100vh-88px)] overflow-hidden'>
+        {/* Main Content with gradient background */}
+        <div className='flex-1 pt-8 pb-8 px-4 lg:px-8 h-full overflow-y-auto relative'>
+          {/* Dark purple gradient background - starts with navbar color and transitions smoothly */}
+          <div 
+            className="fixed inset-0 top-[88px] pointer-events-none"
+            style={{
+              background: 'linear-gradient(180deg, #141519 0%, #141519 20%, rgba(20, 21, 25, 0.995) 25%, rgba(25, 22, 35, 0.9) 32%, rgba(35, 28, 50, 0.75) 40%, rgba(45, 32, 65, 0.6) 48%, rgba(70, 40, 90, 0.5) 55%, rgba(101, 43, 155, 0.45) 62%, rgba(80, 35, 110, 0.55) 68%, rgba(65, 21, 100, 0.65) 75%, rgba(45, 15, 70, 0.8) 82%, rgba(35, 10, 55, 0.9) 88%, rgba(20, 7, 35, 0.95) 94%, rgba(15, 5, 25, 1) 100%)',
+              zIndex: 0,
+            }}
+          />
+          <div 
+            className="relative z-10 max-w-6xl mx-auto" 
+            style={{ 
+              minHeight: '600px',
+              containIntrinsicSize: '1152px 600px'
+            }}
+          >
             {children}
           </div>
         </div>
       </div>
 
       {/* Mobile Layout */}
-      <div className='md:hidden bg-black h-[calc(100vh-100px)] overflow-hidden'>
-
-        {/* Mobile Sidebar Overlay */}
+      <div className='md:hidden h-[calc(100vh-88px)] overflow-hidden relative'>
+        {/* Dark purple gradient background for mobile */}
+        <div 
+          className="fixed inset-0 top-[88px] pointer-events-none"
+          style={{
+            background: 'linear-gradient(180deg, #141519 0%, #141519 10%, rgba(20, 21, 25, 0.98) 15%, rgba(50, 20, 80, 0.4) 25%, rgba(101, 43, 155, 0.5) 40%, rgba(65, 21, 100, 0.7) 55%, rgba(35, 10, 55, 0.9) 75%, rgba(15, 5, 25, 1) 100%)',
+            zIndex: 0,
+          }}
+        />
+        {/* Mobile Menu Overlay */}
         {isMobileMenuOpen && (
-          <div className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={() => setIsMobileMenuOpen(false)}>
+          <div className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={closeMobileMenu}>
           <div className="fixed left-0 top-0 h-full w-80 bg-[#141519] border-r border-gray-700 shadow-xl" onClick={(e) => e.stopPropagation()}>
               <div className="p-4 flex flex-col h-full">
                 {/* Welcome Header */}
@@ -281,67 +495,80 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                   <div className='space-y-2'>
                     <h3 className='text-xs font-medium text-gray-400 uppercase tracking-wider px-3'>Main Menu</h3>
                     <div className='space-y-2'>
-                      <NavItem
+                      <Link
                         href="/workflows"
-                        icon={<WorkflowsIcon className='w-5 h-5' />}
-                        label="Workflows"
-                        isActive={pathname === '/workflows' || pathname === '/'}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      />
-                      <NavItem
+                        onClick={closeMobileMenu}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
+                          activeStates.workflows
+                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <WorkflowsIcon className='w-5 h-5' />
+                        <span className='font-medium'>Workflows</span>
+                      </Link>
+                      <Link
                         href="/executions"
-                        icon={<ExecutionIcon className='w-5 h-5' />}
-                        label="Executions"
-                        isActive={pathname === '/executions'}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      />
-                      <NavItem
+                        onClick={closeMobileMenu}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
+                          activeStates.executions
+                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <ExecutionIcon className='w-5 h-5' />
+                        <span className='font-medium'>Executions</span>
+                      </Link>
+                      <Link
                         href="/balance"
-                        icon={<BalanceIcon className='w-5 h-5' />}
-                        label="Balance"
-                        isActive={pathname === '/balance'}
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      />
+                        onClick={closeMobileMenu}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
+                          activeStates.balance
+                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <BalanceIcon className='w-5 h-5' />
+                        <span className='font-medium'>Balance</span>
+                      </Link>
                     </div>
                   </div>
 
-                  {/* Settings Section */}
+                  {/* Integrations Section */}
                   <div className='space-y-2'>
-                    <h3 className='text-xs font-medium text-gray-400 uppercase tracking-wider px-3'>Settings</h3>
+                    <h3 className='text-xs font-medium text-gray-400 uppercase tracking-wider px-3'>Integrations</h3>
                     <div className='space-y-2'>
                       <div className="relative">
                         <button
                           onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            handleOpenSettings();
+                            closeMobileMenu();
+                            toggleIntegrationsDropdown();
                           }}
                           className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors ${
-                            pathname.startsWith('/settings')
+                            activeStates.integrations
                               ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
                               : 'text-gray-300 hover:bg-white/10 hover:text-white'
                           }`}
                         >
                           <SettingsNewIcon className='w-5 h-5' />
-                          <span className='font-medium'>Settings</span>
-                          <ChevronRightIcon className={`w-4 h-4 ml-auto transition-transform ${isSettingsSubmenuOpen ? 'rotate-90' : ''}`} />
+                          <span className='font-medium'>Integrations</span>
+                          <ChevronRightIcon className={`w-4 h-4 ml-auto transition-transform ${isIntegrationsDropdownOpen ? 'rotate-90' : ''}`} />
                         </button>
                         
-                        {/* Settings Submenu */}
-                        {isSettingsSubmenuOpen && (
+                        {/* Integrations Submenu */}
+                        {isIntegrationsDropdownOpen && (
                           <div className="ml-4 mt-2 space-y-1 border-l border-gray-600 pl-4">
                             <Link
-                              href="/settings/telegram"
-                              onClick={() => setIsMobileMenuOpen(false)}
+                              href="/integrations/telegram"
+                              onClick={closeMobileMenu}
                               className={`w-full flex items-center gap-3 p-2 rounded-lg text-sm transition-colors ${
-                                pathname === '/settings/telegram'
+                                activeStates.telegram
                                   ? 'bg-purple-600 text-white'
                                   : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                               }`}
                             >
                               <div className="p-1 bg-blue-600 rounded">
-                                <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                                </svg>
+                                <TelegramIcon className="w-4 h-4 text-white" />
                               </div>
                               <span>Telegram</span>
                             </Link>
@@ -356,7 +583,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 <div className='mt-auto'>
                   <button
                     onClick={() => {
-                      setIsMobileMenuOpen(false);
+                      closeMobileMenu();
                       handleLogout();
                     }}
                     className='w-full flex items-center gap-3 p-3 rounded-lg bg-[#A500E1] text-white hover:bg-[#8F00C7] transition-colors'
@@ -371,8 +598,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
         )}
 
         {/* Mobile Main Content */}
-        <div className="p-4 h-full overflow-y-auto">
-          <header className='mb-4'></header>
+        <div className="relative z-10 p-4 h-full overflow-y-auto">
           {children}
         </div>
       </div>

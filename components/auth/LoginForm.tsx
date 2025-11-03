@@ -8,15 +8,20 @@ import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
 import { ResetPasswordForm } from './ResetPasswordForm';
 
 interface LoginFormProps {
-  isOpen: boolean;
-  onClose: () => void;
+  // When variant is 'modal', uses isOpen/onClose overlay; when 'embedded', always renders inline
+  variant?: 'modal' | 'embedded';
+  isOpen?: boolean;
+  onClose?: () => void;
   onSwitchToRegister: () => void;
+  className?: string;
 }
 
 export const LoginForm: React.FC<LoginFormProps> = ({
-  isOpen,
+  variant = 'modal',
+  isOpen = false,
   onClose,
-  onSwitchToRegister
+  onSwitchToRegister,
+  className
 }) => {
   const { login, isLoading, error, clearError } = useAuth();
   const [formData, setFormData] = useState({
@@ -54,7 +59,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     try {
       clearError();
       await login(formData as LoginRequest);
-      onClose();
+      if (isModal && onClose) {
+        onClose();
+      }
     } catch (err) {
     }
   };
@@ -66,25 +73,28 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     }
   };
 
-  if (!isOpen) return null;
+  const isModal = variant === 'modal';
+  if (isModal && !isOpen) return null;
 
   return (
     <>
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-900 rounded-lg max-w-md w-full border border-gray-700">
+    <div className={isModal ? "fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50" : ""}>
+      <div className={(isModal ? "bg-gray-900 rounded-lg max-w-md w-full border border-gray-700" : "") + (className ? ` ${className}` : '')}>
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-white">Sign In</h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-red-900/20"
-          >
-            <XIcon className="w-5 h-5" />
-          </button>
-        </div>
+        {isModal && (
+          <div className="flex items-center justify-between p-6 border-b border-gray-700">
+            <h2 className="text-xl font-semibold text-white">Sign In</h2>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-red-900/20"
+            >
+              <XIcon className="w-5 h-5" />
+            </button>
+          </div>
+        )}
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className={isModal ? "p-6 space-y-4" : "space-y-4"}>
           {/* Error Message */}
           {error && (
             <div className="p-3 bg-red-900/20 border border-red-600 rounded-lg">
@@ -102,8 +112,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
               placeholder="Enter your email"
-              className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                errors.email ? 'border-red-500' : 'border-gray-600'
+              className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border ${isModal ? 'rounded-lg' : 'rounded-full'} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                errors.email ? 'border-red-500' : 'border-white/30'
               }`}
             />
             {errors.email && (
@@ -122,8 +132,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 placeholder="Enter your password"
-                className={`w-full p-3 pr-10 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                  errors.password ? 'border-red-500' : 'border-gray-600'
+                className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border ${isModal ? 'rounded-lg' : 'rounded-full'} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                  errors.password ? 'border-red-500' : 'border-white/30'
                 }`}
               />
               <button
@@ -144,11 +154,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           </div>
 
           {/* Actions */}
-          <div className="pt-4">
+          <div className="pt-4 flex justify-center">
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg shadow-purple-500/25"
+              className={`${isModal ? 'w-full' : 'w-auto'} inline-flex items-center justify-center px-8 py-2.5 bg-purple-600 text-white ${isModal ? 'rounded-lg' : 'rounded-full'} hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg shadow-purple-500/25`}
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
@@ -161,40 +171,55 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </button>
           </div>
 
-          {/* Forgot Password */}
+          {/* Forgot Password + Create account (embedded) */}
           <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setShowResetPassword(true)}
-              className="text-sm text-gray-400 hover:text-purple-400 font-medium transition-colors"
-            >
-              Forgot password?
-            </button>
-          </div>
-
-          {/* Switch to Register */}
-          <div className="text-center pt-4 border-t border-gray-700">
-            <p className="text-sm text-gray-300">
-              Don't have an account?{' '}
+            <div className="inline-flex items-center gap-4">
               <button
                 type="button"
-                onClick={onSwitchToRegister}
-                className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                onClick={() => setShowResetPassword(true)}
+                className="text-sm text-gray-400 hover:text-purple-400 font-medium transition-colors"
               >
-                Sign up
+                Forgot password?
               </button>
-            </p>
+              {!isModal && (
+                <button
+                  type="button"
+                  onClick={onSwitchToRegister}
+                  className="text-sm text-gray-400 hover:text-purple-400 font-medium transition-colors"
+                >
+                  Create account
+                </button>
+              )}
+            </div>
           </div>
+
+          {/* Switch to Register (only in modal to avoid duplicates in embedded) */}
+          {isModal && (
+            <div className="text-center pt-4 border-t border-gray-700">
+              <p className="text-sm text-gray-300">
+                Don't have an account?{' '}
+                <button
+                  type="button"
+                  onClick={onSwitchToRegister}
+                  className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                >
+                  Sign up
+                </button>
+              </p>
+            </div>
+          )}
         </form>
       </div>
     </div>
 
     {/* Reset Password Form */}
-    <ResetPasswordForm
-      isOpen={showResetPassword}
-      onClose={() => setShowResetPassword(false)}
-      initialEmail={formData.email}
-    />
+    {isModal && (
+      <ResetPasswordForm
+        isOpen={showResetPassword}
+        onClose={() => setShowResetPassword(false)}
+        initialEmail={formData.email}
+      />
+    )}
     </>
   );
 };

@@ -17,6 +17,20 @@ export default function Home() {
   const [showRegisterForm, setShowRegisterForm] = useState(false);
   const [showVerifyForm, setShowVerifyForm] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
+  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  useEffect(() => {
+    // Debug logs for background image availability
+    const bgUrl = '/auth_background.png';
+    console.log('[AuthBG] Using background:', bgUrl);
+    fetch(bgUrl, { method: 'HEAD' })
+      .then(res => {
+        console.log('[AuthBG] HEAD status:', res.status, res.ok);
+        const size = res.headers.get('content-length');
+        const type = res.headers.get('content-type');
+        console.log('[AuthBG] content-length:', size, 'content-type:', type);
+      })
+      .catch(err => console.error('[AuthBG] HEAD error:', err));
+  }, []);
 
   
   // Redirect authenticated users to workflows page
@@ -41,57 +55,58 @@ export default function Home() {
   // Show login/register if not authenticated
   if (!isAuthenticated) {
     return (
-      <div className="h-full bg-black flex items-center justify-center">
-        <div className="max-w-md w-full bg-gray-800 rounded-lg shadow-sm p-8 border border-gray-700">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white mb-2">Ai Pills User Account</h1>
-            <p className="text-gray-300">Welcome to Workflow Management System</p>
-          </div>
-          
-          <div className="space-y-4">
-            <button
-              onClick={() => setShowLoginForm(true)}
-              className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors font-medium shadow-lg shadow-purple-500/25"
-            >
-              Sign In
-            </button>
-            
-            <button
-              onClick={() => setShowRegisterForm(true)}
-              className="w-full py-3 border border-gray-600 text-gray-300 rounded-lg hover:bg-gray-700 hover:text-white transition-colors font-medium"
-            >
-              Create Account
-            </button>
+      <div className="min-h-screen relative">
+        {/* Background */}
+        <div className="absolute inset-0 z-0">
+          <img
+            src="/auth_background.png"
+            alt="auth background"
+            className="absolute inset-0 w-full h-full object-cover z-0"
+            onLoad={() => console.log('[AuthBG] onLoad fired: /auth_background.png')}
+            onError={(e) => console.error('[AuthBG] onError for /auth_background.png', e)}
+          />
+          <div className="absolute inset-0 bg-black/30 z-10" />
+        </div>
+
+        {/* Centered container */}
+        <div className="min-h-screen flex items-center justify-center p-4 relative z-20">
+          <div className="w-full max-w-md bg-white/5 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold text-white">Ai Pills User Account</h1>
+                <p className="text-gray-300 text-sm">Welcome to Workflow Management System</p>
+              </div>
+            </div>
+
+            {/* Dynamic-height content: render only active form */}
+            <div className="px-6 py-6">
+              {activeTab === 'login' ? (
+                <div className="max-w-sm w-full mx-auto">
+                  <LoginForm
+                    variant="embedded"
+                    onSwitchToRegister={() => setActiveTab('register')}
+                  />
+                </div>
+              ) : (
+                <div className="max-w-sm w-full mx-auto">
+                  <RegisterForm
+                    variant="embedded"
+                    onSwitchToLogin={() => setActiveTab('login')}
+                    onRegistrationSuccess={(email) => {
+                      setVerificationEmail(email);
+                      setShowVerifyForm(true);
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Footer actions removed to avoid duplicate register buttons */}
           </div>
         </div>
 
-        {/* Auth Forms */}
-        <LoginForm
-          isOpen={showLoginForm}
-          onClose={() => setShowLoginForm(false)}
-          onSwitchToRegister={() => {
-            setShowLoginForm(false);
-            setShowRegisterForm(true);
-          }}
-        />
-        
-        <RegisterForm
-          isOpen={showRegisterForm}
-          onClose={() => {
-            setShowRegisterForm(false);
-            setVerificationEmail('');
-          }}
-          onSwitchToLogin={() => {
-            setShowRegisterForm(false);
-            setShowLoginForm(true);
-          }}
-          onRegistrationSuccess={(email) => {
-            setShowRegisterForm(false);
-            setVerificationEmail(email);
-            setShowVerifyForm(true);
-          }}
-        />
-        
+        {/* Verify Email Modal */}
         <VerifyEmailForm
           isOpen={showVerifyForm}
           onClose={() => {
@@ -102,7 +117,6 @@ export default function Home() {
           onVerified={() => {
             setShowVerifyForm(false);
             setVerificationEmail('');
-            // Redirect to workflows page instead of reload
             router.push('/workflows');
           }}
         />

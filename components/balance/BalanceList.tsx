@@ -12,7 +12,9 @@ export const BalanceList: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchBalances = async () => {
+  const isMountedRef = React.useRef(false);
+
+  const fetchBalances = React.useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
@@ -30,21 +32,45 @@ export const BalanceList: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchBalances();
   }, []);
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex items-center gap-2">
-          <RefreshCw className="h-4 w-4 animate-spin" />
-          <span>Loading balance...</span>
+  useEffect(() => {
+    if (!isMountedRef.current) {
+      isMountedRef.current = true;
+      fetchBalances();
+    }
+  }, [fetchBalances]);
+
+  // Skeleton loader to prevent layout shift
+  const SkeletonLoader = () => (
+    <div className="space-y-6 min-h-[400px]">
+      <div className="rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm">
+        {/* Header skeleton - fixed height */}
+        <div className="flex items-center justify-between p-6 min-h-[100px]">
+          <div className="ml-6">
+            <div className="h-8 w-48 bg-gray-700 rounded mb-2 animate-pulse"></div>
+            <div className="h-5 w-64 bg-gray-700 rounded animate-pulse"></div>
+          </div>
+        </div>
+        {/* Cards skeleton */}
+        <div className="p-6">
+          <div className="grid grid-cols-1 gap-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+                <div className="bg-black rounded-lg p-5 h-40 animate-pulse">
+                  <div className="h-6 w-32 bg-gray-700 rounded mb-4"></div>
+                  <div className="h-12 w-48 bg-gray-700 rounded mx-auto"></div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
-    );
+    </div>
+  );
+
+  if (isLoading) {
+    return <SkeletonLoader />;
   }
 
   if (error) {
@@ -60,12 +86,12 @@ export const BalanceList: React.FC = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-h-[400px]">
       {/* Balance Cards */}
       {balances.length === 0 ? (
-        <div className="rounded-lg border border-gray-700 bg-[#141519]">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6">
+        <div className="rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm">
+          {/* Header - fixed height */}
+          <div className="flex items-center justify-between p-6 min-h-[100px]">
             <div className="ml-6">
               <h2 className="text-2xl font-bold text-white">Your Balance</h2>
               <p className="text-gray-300 mt-1">Check balances and recent transactions</p>
@@ -86,9 +112,9 @@ export const BalanceList: React.FC = () => {
           </div>
         </div>
       ) : (
-        <div className="rounded-lg border border-gray-700 bg-[#141519]">
-          {/* Header */}
-          <div className="flex items-center justify-between p-6">
+        <div className="rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm">
+          {/* Header - fixed height */}
+          <div className="flex items-center justify-between p-6 min-h-[100px]">
             <div className="ml-6">
               <h2 className="text-2xl font-bold text-white">Your Balance</h2>
               <p className="text-gray-300 mt-1">Check balances and recent transactions</p>

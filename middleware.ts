@@ -4,7 +4,14 @@ import { decodeToken } from '@/lib/auth-utils';
 import { authApi } from '@/lib/apiAuth';
 
 // Define protected routes that require authentication
-const protectedRoutes = ['/workflows', '/executions', '/profile', '/dashboard'];
+const protectedRoutes = [
+  '/workflows',
+  '/executions',
+  '/profile',
+  '/dashboard',
+  '/balance',
+  '/integrations'
+];
 const authRoutes = ['/']; // Main page handles login/register
 
 export async function middleware(request: NextRequest) {
