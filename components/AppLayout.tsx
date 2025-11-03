@@ -176,6 +176,7 @@ const IntegrationsNavButton: React.FC<{
           : 'text-gray-300 hover:bg-white/10 hover:text-white'
       }`}
       aria-label="Integrations"
+      aria-expanded={isOpen}
       title="Інтеграції"
     >
       {/* Background shimmer effect on active */}
@@ -215,7 +216,19 @@ const IntegrationsNavButton: React.FC<{
           </span>
         )}
       </span>
-      {/* Caret icon removed */}
+      {/* Caret icon to indicate dropdown */}
+      <svg
+        className={`w-4 h-4 transition-transform ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M6 9l6 6 6-6" />
+      </svg>
       {isActive && (
         <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#A500E1] to-[#7B61FF] animate-pulse"></span>
       )}
