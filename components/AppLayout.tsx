@@ -82,14 +82,6 @@ const TopNavItem: React.FC<{
           : 'text-gray-300 hover:bg-white/10 hover:text-white'
       }`}
     >
-      {/* Background shimmer effect on active */}
-      {isActive && (
-        <span 
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-          style={{ animation: 'shimmer 2s infinite' }}
-        />
-      )}
-      
       {icon && (
         <span className={`relative z-10 transition-all duration-300 ${isActive ? 'font-bold scale-110' : 'font-medium'}`}>
           {icon}
@@ -177,16 +169,7 @@ const IntegrationsNavButton: React.FC<{
       }`}
       aria-label="Integrations"
       aria-expanded={isOpen}
-      title="Інтеграції"
     >
-      {/* Background shimmer effect on active */}
-      {isActive && (
-        <span 
-          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent"
-          style={{ animation: 'shimmer 2s infinite' }}
-        />
-      )}
-      
       {/* Icon removed for cleaner text-only nav */}
       <span className="relative z-10 hidden lg:inline-block">
         {/* Base text - always visible */}
@@ -258,7 +241,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
 
   // Memoize active states to prevent unnecessary recalculations
   const activeStates = useMemo(() => ({
-    workflows: pathname === '/workflows' || pathname === '/',
+    workflows: pathname === '/workflows' || pathname === '/' || pathname.startsWith('/workflows/'),
     executions: pathname === '/executions',
     balance: pathname === '/balance',
     integrations: pathname.startsWith('/integrations'),

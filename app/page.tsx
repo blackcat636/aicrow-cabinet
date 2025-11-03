@@ -18,21 +18,7 @@ export default function Home() {
   const [showVerifyForm, setShowVerifyForm] = useState(false);
   const [verificationEmail, setVerificationEmail] = useState('');
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
-  useEffect(() => {
-    // Debug logs for background image availability
-    const bgUrl = '/auth_background.png';
-    console.log('[AuthBG] Using background:', bgUrl);
-    fetch(bgUrl, { method: 'HEAD' })
-      .then(res => {
-        console.log('[AuthBG] HEAD status:', res.status, res.ok);
-        const size = res.headers.get('content-length');
-        const type = res.headers.get('content-type');
-        console.log('[AuthBG] content-length:', size, 'content-type:', type);
-      })
-      .catch(err => console.error('[AuthBG] HEAD error:', err));
-  }, []);
 
-  
   // Redirect authenticated users to workflows page
   useEffect(() => {
     if (isAuthenticated && !showLoginForm && !showRegisterForm && !showVerifyForm) {
@@ -56,17 +42,13 @@ export default function Home() {
   if (!isAuthenticated) {
     return (
       <div className="min-h-screen relative">
-        {/* Background */}
-        <div className="absolute inset-0 z-0">
-          <img
-            src="/auth_background.png"
-            alt="auth background"
-            className="absolute inset-0 w-full h-full object-cover z-0"
-            onLoad={() => console.log('[AuthBG] onLoad fired: /auth_background.png')}
-            onError={(e) => console.error('[AuthBG] onError for /auth_background.png', e)}
-          />
-          <div className="absolute inset-0 bg-black/30 z-10" />
-        </div>
+        {/* Background - same gradient as main site */}
+        <div 
+          className="fixed inset-0 pointer-events-none z-0"
+          style={{
+            background: 'linear-gradient(180deg, #141519 0%, #141519 20%, rgba(20, 21, 25, 0.995) 25%, rgba(25, 22, 35, 0.9) 32%, rgba(35, 28, 50, 0.75) 40%, rgba(45, 32, 65, 0.6) 48%, rgba(70, 40, 90, 0.5) 55%, rgba(101, 43, 155, 0.45) 62%, rgba(80, 35, 110, 0.55) 68%, rgba(65, 21, 100, 0.65) 75%, rgba(45, 15, 70, 0.8) 82%, rgba(35, 10, 55, 0.9) 88%, rgba(20, 7, 35, 0.95) 94%, rgba(15, 5, 25, 1) 100%)',
+          }}
+        />
 
         {/* Centered container */}
         <div className="min-h-screen flex items-center justify-center p-4 relative z-20">

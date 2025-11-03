@@ -1,15 +1,12 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import { AppLayout } from '@/components/AppLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { XIcon } from '@/components/icons';
 import { userApi } from '@/lib/apiUser';
 import { UserProfile, UpdateProfileRequest } from '@/types/user';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
 import { ChangeEmailForm } from '@/components/profile/ChangeEmailForm';
 import { ChangePasswordForm } from '@/components/profile/ChangePasswordForm';
 
@@ -24,8 +21,6 @@ const getInitials = (firstName: string, lastName: string, username: string) => {
 };
 
 export default function ProfilePage() {
-  const router = useRouter();
-  const { user: authUser } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -71,10 +66,6 @@ export default function ProfilePage() {
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
-
-    if (!formData.username?.trim()) {
-      newErrors.username = 'Username is required';
-    }
 
     if (formData.phone && !/^\+?[1-9]\d{1,14}$/.test(formData.phone.replace(/\s/g, ''))) {
       newErrors.phone = 'Invalid phone number format';
@@ -137,339 +128,249 @@ export default function ProfilePage() {
     }
   };
 
-  const handleClose = () => {
-    router.back();
-  };
-
   const handleEmailChangeSuccess = () => {
     // Reload page to refresh authentication context with new email
-    window.location.reload();
+    loadProfile();
   };
-
-  // Handle click outside modal and ESC key
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        handleClose();
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {
     return (
-      <>
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999]">
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
             <p className="text-gray-300">Loading profile...</p>
           </div>
         </div>
-      </>
+      </AppLayout>
     );
   }
 
   if (!profile) {
     return (
-      <>
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[9999]">
+      <AppLayout>
+        <div className="flex items-center justify-center min-h-[400px]">
           <div className="bg-gray-900 rounded-xl max-w-md w-full border border-gray-700 shadow-2xl p-6">
             <p className="text-gray-300 text-center">Failed to load profile</p>
             <Button
-              onClick={handleClose}
+              onClick={() => loadProfile()}
               className="mt-4 w-full bg-purple-600 hover:bg-purple-700"
             >
-              Close
+              Retry
             </Button>
           </div>
         </div>
-      </>
+      </AppLayout>
     );
   }
 
   return (
-    <>
-      {/* Modal-like overlay - above everything including navbar */}
-      <div 
-        className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
-        onClick={(e) => {
-          // Close modal when clicking on overlay (background), not on modal content
-          if (e.target === e.currentTarget) {
-            handleClose();
-          }
-        }}
-      >
-        <div 
-          className="p-[1px] rounded-2xl bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] max-w-2xl w-full shadow-2xl shadow-purple-500/30 max-h-[90vh] overflow-hidden"
-          onClick={(e) => {
-            // Prevent closing when clicking inside modal
-            e.stopPropagation();
-          }}
-        >
-          <div className="bg-[#141519] rounded-2xl overflow-y-auto max-h-[90vh]">
-            {/* Header with gradient accent */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-600/10 via-purple-700/5 to-transparent">
-              <h2 className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent">
-                User Profile
-              </h2>
-              <button
-                onClick={handleClose}
-                className="p-2 text-gray-400 hover:text-white transition-all rounded-full hover:bg-gray-800/50 hover:ring-2 hover:ring-purple-500/30"
-                aria-label="Close"
-              >
-                <XIcon className="w-5 h-5" />
-              </button>
+    <AppLayout>
+      <div className="mx-auto">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent">
+            User Profile
+          </h1>
+          <p className="text-gray-400 mt-2">Manage your account settings and preferences</p>
+        </div>
+
+        {/* Content */}
+        <div className="p-6 rounded-2xl bg-[#141519] border border-gray-700/50 space-y-6">
+          {/* Avatar Section with enhanced styling */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="relative">
+              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full blur-xl opacity-50 animate-pulse"></div>
+              <Avatar className="w-28 h-28 mb-4 relative ring-4 ring-purple-500/30 shadow-lg shadow-purple-500/20">
+                <AvatarImage src={formData.photo || profile.photo || undefined} alt={profile.username} />
+                <AvatarFallback className="bg-gradient-to-br from-purple-600 to-purple-800 text-white text-3xl font-bold">
+                  {getInitials(formData.firstName || profile.firstName, formData.lastName || profile.lastName, formData.username || profile.username)}
+                </AvatarFallback>
+              </Avatar>
             </div>
+          </div>
 
-            {/* Content */}
-            <div className="p-6 space-y-6">
-              {/* Avatar Section with enhanced styling */}
-              <div className="flex flex-col items-center mb-8">
-                <div className="relative">
-                  <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full blur-xl opacity-50 animate-pulse"></div>
-                  <Avatar className="w-28 h-28 mb-4 relative ring-4 ring-purple-500/30 shadow-lg shadow-purple-500/20">
-                    <AvatarImage src={formData.photo || profile.photo || undefined} alt={profile.username} />
-                    <AvatarFallback className="bg-gradient-to-br from-purple-600 to-purple-800 text-white text-3xl font-bold">
-                      {getInitials(formData.firstName || profile.firstName, formData.lastName || profile.lastName, formData.username || profile.username)}
-                    </AvatarFallback>
-                  </Avatar>
-                </div>
-              </div>
-
-            {/* Form with improved spacing and styling */}
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {/* Email (read-only) */}
-              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-semibold text-gray-200">
-                    Email
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowChangeEmailForm(true)}
-                    className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-all hover:underline"
-                  >
-                    Change Email
-                  </button>
-                </div>
-                <input
-                  type="email"
-                  value={profile.email}
-                  disabled
-                  className="w-full p-3 bg-gray-800/50 text-gray-300 border border-gray-700 rounded-lg cursor-not-allowed focus:outline-none"
-                />
-                {profile.isEmailVerified && (
-                  <div className="mt-2 flex items-center gap-2">
-                    <span className="text-green-400 text-sm">✓</span>
-                    <p className="text-xs text-green-400 font-medium">Email verified</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Password */}
-              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-                <div className="flex items-center justify-between mb-3">
-                  <label className="block text-sm font-semibold text-gray-200">
-                    Password
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowChangePasswordForm(true)}
-                    className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-all hover:underline"
-                  >
-                    Change Password
-                  </button>
-                </div>
-                <input
-                  type="password"
-                  value="••••••••"
-                  disabled
-                  className="w-full p-3 bg-gray-800/50 text-gray-300 border border-gray-700 rounded-lg cursor-not-allowed focus:outline-none"
-                />
-              </div>
-
-              {/* Username */}
-              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-                <label className="block text-sm font-semibold text-gray-200 mb-3">
-                  Username <span className="text-purple-400">*</span>
+          {/* Form with improved spacing and styling */}
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Email (read-only) */}
+            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-semibold text-gray-200">
+                  Email
                 </label>
-                <input
-                  type="text"
-                  value={formData.username || ''}
-                  onChange={(e) => handleInputChange('username', e.target.value)}
-                  placeholder="Enter username"
-                  className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
-                    errors.username ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
-                  }`}
-                />
-                {errors.username && (
-                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                    <span>⚠</span>
-                    <span>{errors.username}</span>
-                  </p>
-                )}
+                <button
+                  type="button"
+                  onClick={() => setShowChangeEmailForm(true)}
+                  className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-all hover:underline"
+                >
+                  Change Email
+                </button>
               </div>
-
-              {/* First Name */}
-              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-                <label className="block text-sm font-semibold text-gray-200 mb-3">
-                  First Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.firstName || ''}
-                  onChange={(e) => handleInputChange('firstName', e.target.value)}
-                  placeholder="Enter first name"
-                  className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
-                    errors.firstName ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
-                  }`}
-                />
-                {errors.firstName && (
-                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                    <span>⚠</span>
-                    <span>{errors.firstName}</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Last Name */}
-              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-                <label className="block text-sm font-semibold text-gray-200 mb-3">
-                  Last Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.lastName || ''}
-                  onChange={(e) => handleInputChange('lastName', e.target.value)}
-                  placeholder="Enter last name"
-                  className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
-                    errors.lastName ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
-                  }`}
-                />
-                {errors.lastName && (
-                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                    <span>⚠</span>
-                    <span>{errors.lastName}</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Phone */}
-              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-                <label className="block text-sm font-semibold text-gray-200 mb-3">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  value={formData.phone || ''}
-                  onChange={(e) => handleInputChange('phone', e.target.value)}
-                  placeholder="+11234567890"
-                  className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
-                    errors.phone ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
-                  }`}
-                />
-                {errors.phone && (
-                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                    <span>⚠</span>
-                    <span>{errors.phone}</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Date of Birth */}
-              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-                <label className="block text-sm font-semibold text-gray-200 mb-3">
-                  Date of Birth
-                </label>
-                <input
-                  type="date"
-                  value={formData.dateOfBirth || ''}
-                  onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                  className={`w-full p-3 bg-gray-800/50 text-white border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
-                    errors.dateOfBirth ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
-                  }`}
-                />
-                {errors.dateOfBirth && (
-                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                    <span>⚠</span>
-                    <span>{errors.dateOfBirth}</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Photo URL */}
-              <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-                <label className="block text-sm font-semibold text-gray-200 mb-3">
-                  Photo URL
-                </label>
-                <input
-                  type="url"
-                  value={formData.photo || ''}
-                  onChange={(e) => handleInputChange('photo', e.target.value)}
-                  placeholder="https://example.com/photo.jpg"
-                  className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
-                    errors.photo ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
-                  }`}
-                />
-                {errors.photo && (
-                  <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                    <span>⚠</span>
-                    <span>{errors.photo}</span>
-                  </p>
-                )}
-              </div>
-
-              {/* Additional Info (read-only) */}
-              {profile.referralCode && (
-                <div className="pt-4 border-t border-gray-700/50">
-                  <div className="p-4 rounded-lg bg-gradient-to-r from-purple-600/10 to-purple-800/10 border border-purple-500/20">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-semibold text-gray-300">Referral Code</span>
-                      <span className="text-sm font-mono font-bold text-purple-300 bg-purple-900/30 px-3 py-1 rounded border border-purple-500/30">
-                        {profile.referralCode}
-                      </span>
-                    </div>
-                  </div>
+              <input
+                type="email"
+                value={profile.email}
+                disabled
+                className="w-full p-3 bg-gray-800/50 text-gray-300 border border-gray-700 rounded-lg cursor-not-allowed focus:outline-none"
+              />
+              {profile.isEmailVerified && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="text-green-400 text-sm">✓</span>
+                  <p className="text-xs text-green-400 font-medium">Email verified</p>
                 </div>
               )}
+            </div>
 
-              {/* Actions */}
-              <div className="flex gap-3 pt-6">
-                <Button
+            {/* Password */}
+            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-sm font-semibold text-gray-200">
+                  Password
+                </label>
+                <button
                   type="button"
-                  onClick={handleClose}
-                  variant="outline"
-                  className="flex-1 border-gray-700 text-gray-300 hover:bg-gray-800/50 hover:border-gray-600 transition-all"
+                  onClick={() => setShowChangePasswordForm(true)}
+                  className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-all hover:underline"
                 >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={submitting}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white disabled:opacity-50 shadow-lg shadow-purple-500/30 transition-all"
-                >
-                  {submitting ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      Saving...
-                    </div>
-                  ) : (
-                    'Save Changes'
-                  )}
-                </Button>
+                  Change Password
+                </button>
               </div>
-            </form>
-          </div>
+              <input
+                type="password"
+                value="••••••••"
+                disabled
+                className="w-full p-3 bg-gray-800/50 text-gray-300 border border-gray-700 rounded-lg cursor-not-allowed focus:outline-none"
+              />
+            </div>
+
+            {/* First Name */}
+            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+              <label className="block text-sm font-semibold text-gray-200 mb-3">
+                First Name
+              </label>
+              <input
+                type="text"
+                value={formData.firstName || ''}
+                onChange={(e) => handleInputChange('firstName', e.target.value)}
+                placeholder="Enter first name"
+                className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                  errors.firstName ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
+                }`}
+              />
+              {errors.firstName && (
+                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                  <span>⚠</span>
+                  <span>{errors.firstName}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Last Name */}
+            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+              <label className="block text-sm font-semibold text-gray-200 mb-3">
+                Last Name
+              </label>
+              <input
+                type="text"
+                value={formData.lastName || ''}
+                onChange={(e) => handleInputChange('lastName', e.target.value)}
+                placeholder="Enter last name"
+                className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                  errors.lastName ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
+                }`}
+              />
+              {errors.lastName && (
+                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                  <span>⚠</span>
+                  <span>{errors.lastName}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Phone */}
+            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+              <label className="block text-sm font-semibold text-gray-200 mb-3">
+                Phone
+              </label>
+              <input
+                type="tel"
+                value={formData.phone || ''}
+                onChange={(e) => handleInputChange('phone', e.target.value)}
+                placeholder="+11234567890"
+                className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                  errors.phone ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
+                }`}
+              />
+              {errors.phone && (
+                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                  <span>⚠</span>
+                  <span>{errors.phone}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Date of Birth */}
+            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+              <label className="block text-sm font-semibold text-gray-200 mb-3">
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                value={formData.dateOfBirth || ''}
+                onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
+                className={`w-full p-3 bg-gray-800/50 text-white border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                  errors.dateOfBirth ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
+                }`}
+              />
+              {errors.dateOfBirth && (
+                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                  <span>⚠</span>
+                  <span>{errors.dateOfBirth}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Photo URL */}
+            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+              <label className="block text-sm font-semibold text-gray-200 mb-3">
+                Photo URL
+              </label>
+              <input
+                type="url"
+                value={formData.photo || ''}
+                onChange={(e) => handleInputChange('photo', e.target.value)}
+                placeholder="https://example.com/photo.jpg"
+                className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                  errors.photo ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
+                }`}
+              />
+              {errors.photo && (
+                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
+                  <span>⚠</span>
+                  <span>{errors.photo}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-6 md:col-span-2">
+              <Button
+                type="submit"
+                disabled={submitting}
+                className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white disabled:opacity-50 shadow-lg shadow-purple-500/30 transition-all"
+              >
+                {submitting ? (
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Saving...
+                  </div>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </div>
+          </form>
         </div>
-        </div>
-      </div>
-      
-      <AppLayout>
+
         {/* Change Email Form Modal */}
         {profile && (
           <ChangeEmailForm
@@ -488,8 +389,8 @@ export default function ProfilePage() {
             toast.success('Password changed successfully');
           }}
         />
-      </AppLayout>
-    </>
+      </div>
+    </AppLayout>
   );
 }
 

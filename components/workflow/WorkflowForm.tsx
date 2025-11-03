@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Workflow, AttachWorkflowRequest, CredentialType, CredentialData } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
 import { XIcon, CheckIcon } from '@/components/icons';
@@ -62,6 +63,18 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
       setErrors({});
     }
   }, [isOpen, editingWorkflow]);
+
+  // Close on Escape key like profile modal
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown, { passive: true } as any);
+    return () => window.removeEventListener('keydown', handleKeyDown as any);
+  }, [isOpen, onClose]);
 
   const loadAvailableWorkflows = async () => {
     try {
@@ -153,9 +166,23 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-700">
+  return createPortal(
+    <div 
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+      onClick={(e) => {
+        // Close modal when clicking on overlay (background), not on modal content
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div 
+        className="bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-700"
+        onClick={(e) => {
+          // Prevent closing when clicking inside modal
+          e.stopPropagation();
+        }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 className="text-xl font-semibold text-white">
@@ -408,6 +435,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
           </div>
         </form>
       </div>
-    </div>
-  );
+    </div>,
+    typeof document !== 'undefined' ? document.body : ({} as any)
+  ) as unknown as JSX.Element;
 };
