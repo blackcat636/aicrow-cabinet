@@ -96,17 +96,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
       newErrors.workflowId = 'Please select a workflow';
     }
 
-    if (!formData.credentialType) {
-      newErrors.credentialType = 'Please select a credential type';
-    }
-
-    if (formData.credentialType === 'email' && !formData.credentialData.email) {
-      newErrors.email = 'Email address is required';
-    }
-
-    if (formData.credentialType === 'webhook' && !formData.credentialData.webhookUrl) {
-      newErrors.webhookUrl = 'Webhook URL is required';
-    }
+    // Credential validation removed - using default values
 
     // Validate length limits
     if (formData.name && formData.name.length > 100) {
@@ -319,70 +309,6 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
             </div>
           </div>
 
-          {/* Credential Type */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Credential Type *
-            </label>
-            <div className="grid grid-cols-3 gap-3">
-              {['telegram', 'email', 'webhook'].map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => handleCredentialTypeChange(type as CredentialType)}
-                  className={`p-3 border rounded-lg text-center transition-colors ${
-                    formData.credentialType === type
-                      ? 'border-purple-500 bg-purple-600 text-white shadow-lg shadow-purple-500/25'
-                      : 'border-gray-600 hover:bg-gray-800 text-gray-300 hover:border-gray-500'
-                  }`}
-                >
-                  <div className="font-medium capitalize">{type}</div>
-                </button>
-              ))}
-            </div>
-            {errors.credentialType && (
-              <p className="mt-1 text-sm text-red-400">{errors.credentialType}</p>
-            )}
-          </div>
-
-          {/* Credential Data */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {formData.credentialType === 'telegram' && 'Telegram Chat ID'}
-              {formData.credentialType === 'email' && 'Email Address *'}
-              {formData.credentialType === 'webhook' && 'Webhook URL *'}
-            </label>
-            <input
-              type={formData.credentialType === 'email' ? 'email' : 'text'}
-              value={
-                formData.credentialType === 'telegram' ? formData.credentialData.chatId || '' :
-                formData.credentialType === 'email' ? formData.credentialData.email || '' :
-                formData.credentialData.webhookUrl || ''
-              }
-              onChange={(e) => {
-                const field = formData.credentialType === 'telegram' ? 'chatId' :
-                           formData.credentialType === 'email' ? 'email' : 'webhookUrl';
-                handleCredentialDataChange(field, e.target.value);
-              }}
-              placeholder={
-                formData.credentialType === 'telegram' ? 'Enter Telegram Chat ID (optional)' :
-                formData.credentialType === 'email' ? 'Enter email address' :
-                'Enter webhook URL'
-              }
-              className={`w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                errors[formData.credentialType === 'telegram' ? 'chatId' : 
-                      formData.credentialType === 'email' ? 'email' : 'webhookUrl'] 
-                  ? 'border-red-500' : 'border-gray-600'
-              }`}
-            />
-            {errors[formData.credentialType === 'telegram' ? 'chatId' : 
-                   formData.credentialType === 'email' ? 'email' : 'webhookUrl'] && (
-              <p className="mt-1 text-sm text-red-400">
-                {errors[formData.credentialType === 'telegram' ? 'chatId' : 
-                       formData.credentialType === 'email' ? 'email' : 'webhookUrl']}
-              </p>
-            )}
-          </div>
 
           {/* Input Data Template */}
           <div>
@@ -392,7 +318,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
             <textarea
               value={formData.inputDataTemplate || ''}
               onChange={(e) => setFormData({ ...formData, inputDataTemplate: e.target.value })}
-              placeholder='{"userId": "{userId}", "action": "daily_report"} (optional)'
+              placeholder='Enter you prompt'
               rows={4}
               className={`w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm ${
                 errors.inputDataTemplate ? 'border-red-500' : 'border-gray-600'

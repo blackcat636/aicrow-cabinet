@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { BalanceData } from '@/types/balance';
 import { balanceApi } from '@/lib/apiBalance';
 import { BalanceCard } from './BalanceCard';
+import { TransactionHistory } from './TransactionHistory';
 import { Card, CardContent } from '@/components/ui/card';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 
@@ -129,6 +130,9 @@ export const BalanceList: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Transaction History */}
+      <TransactionHistory balances={balances} />
     </div>
   );
 };

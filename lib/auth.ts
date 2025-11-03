@@ -140,15 +140,22 @@ export const removeTokens = () => {
 // Get auth headers for API requests
 export const getAuthHeaders = (): HeadersInit => {
   const accessToken = getAccessToken();
+  const deviceId = getDeviceId();
 
   if (!accessToken) {
     return {};
   }
 
-  return {
+  const headers: HeadersInit = {
     Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json'
   };
+
+  if (deviceId) {
+    headers['x-device-id'] = deviceId;
+  }
+
+  return headers;
 };
 
 // Function for automatic token refresh on API requests
@@ -163,14 +170,45 @@ export const fetchWithAuth = async (
     // First check if we need to refresh the token
     await ensureValidToken();
 
+    const authHeaders = getAuthHeaders();
+    const finalHeaders = {
+      ...authHeaders,
+      ...options.headers
+    };
+
+    // Log request details (without sensitive data)
+    const authHeadersRecord = authHeaders as Record<string, string>;
+    const authToken = authHeadersRecord.Authorization;
+    const tokenPreview = authToken
+      ? `Bearer ${authToken.substring(7, 20)}...`
+      : 'No token';
+
+    console.log('🌐 [fetchWithAuth] Making request:', {
+      url,
+      method: options.method || 'GET',
+      hasAuth: !!authToken,
+      tokenPreview,
+      hasDeviceId: !!authHeadersRecord['x-device-id'],
+      deviceId: authHeadersRecord['x-device-id'] || 'none',
+      retryCount,
+      allHeaders: Object.keys(finalHeaders),
+      headerCount: Object.keys(finalHeaders).length
+    });
+
     // Execute request with current token
     const response = await fetch(url, {
       ...options,
-      headers: {
-        ...getAuthHeaders(),
-        ...options.headers
-      },
+      headers: finalHeaders,
       cache: 'no-cache'
+    });
+
+    console.log('📨 [fetchWithAuth] Response:', {
+      url,
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      retryCount,
+      headers: Object.fromEntries(response.headers.entries())
     });
 
     // If we got 401, try to refresh token and retry request

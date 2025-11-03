@@ -35,3 +35,33 @@ export interface BalanceStats {
   totalWithdrawn: number;
   currencies: BalanceData[];
 }
+
+// Transaction Types
+export interface TransactionMetadata {
+  timestamp?: string;
+  admin_email?: string;
+  deposit_type?: string;
+  admin_user_id?: number;
+  admin_username?: string;
+  [key: string]: any;
+}
+
+export interface Transaction {
+  id: number;
+  amount: string;
+  currency: Currency;
+  type: 'DEPOSIT' | 'WITHDRAWAL' | 'TRANSFER' | 'FEE' | string;
+  status: 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | string;
+  balance_before: string;
+  balance_after: string;
+  description: string;
+  reference_id: string | null;
+  metadata: TransactionMetadata | null;
+  fee_amount: string | null;
+  created_at: string;
+}
+
+export interface TransactionResponse {
+  status: number;
+  data: Transaction | Transaction[];
+}

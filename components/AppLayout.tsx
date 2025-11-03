@@ -117,7 +117,7 @@ const TopNavItem: React.FC<{
       </span>
 
       {isActive && (
-        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#A500E1] to-[#7B61FF] animate-pulse"></span>
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#A500E1] to-[#7B61FF]"></span>
       )}
     </Link>
   );
@@ -213,7 +213,7 @@ const IntegrationsNavButton: React.FC<{
         <path d="M6 9l6 6 6-6" />
       </svg>
       {isActive && (
-        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#A500E1] to-[#7B61FF] animate-pulse"></span>
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#A500E1] to-[#7B61FF]"></span>
       )}
     </button>
   );
