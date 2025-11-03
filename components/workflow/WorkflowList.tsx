@@ -189,6 +189,32 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
 
   return (
     <div className="space-y-6 relative min-h-[400px]">
+      {/* Stats */}
+      {workflows.length > 0 && (
+        <div className="bg-[#141519]/80 backdrop-blur-sm rounded-lg p-4 border border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">
+                {stats.total}
+              </div>
+              <div className="text-sm text-gray-300">Total Workflows</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {stats.active}
+              </div>
+              <div className="text-sm text-gray-300">Active</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {stats.inactive}
+              </div>
+              <div className="text-sm text-gray-300">Inactive</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Workflows Grid */}
       {workflows.length === 0 ? (
         <div className="rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm">
@@ -250,32 +276,6 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
                 isExecuting={executingWorkflowId === workflow.id}
               />
             ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Stats */}
-      {workflows.length > 0 && (
-        <div className="bg-[#141519]/80 backdrop-blur-sm rounded-lg p-4 border border-gray-700">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white">
-                {stats.total}
-              </div>
-              <div className="text-sm text-gray-300">Total Workflows</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {stats.active}
-              </div>
-              <div className="text-sm text-gray-300">Active</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {stats.inactive}
-              </div>
-              <div className="text-sm text-gray-300">Inactive</div>
             </div>
           </div>
         </div>

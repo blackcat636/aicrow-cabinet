@@ -174,6 +174,38 @@ export const ExecutionHistory: React.FC = () => {
 
   return (
     <div className="space-y-6 min-h-[400px]">
+      {/* Stats */}
+      {executionsData.items.length > 0 && (
+        <div className="bg-[#141519]/80 backdrop-blur-sm rounded-lg p-4 border border-gray-700">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-white">
+                {stats.total}
+              </div>
+              <div className="text-sm text-gray-300">Total Executions</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {stats.completed}
+              </div>
+              <div className="text-sm text-gray-300">Completed</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">
+                {stats.failed}
+              </div>
+              <div className="text-sm text-gray-300">Failed</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-purple-600">
+                {stats.inProgress}
+              </div>
+              <div className="text-sm text-gray-300">In Progress</div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Executions List */}
       {executionsData.items.length === 0 ? (
         <div className="rounded-lg border border-gray-700 bg-[#141519]">
@@ -210,38 +242,6 @@ export const ExecutionHistory: React.FC = () => {
               {executionsData.items.map((execution) => (
                 <ExecutionCard key={execution.id} execution={execution} onViewWorkflow={handleViewWorkflow} />
               ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Stats */}
-      {executionsData.items.length > 0 && (
-        <div className="bg-[#141519]/80 backdrop-blur-sm rounded-lg p-4 border border-gray-700">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-white">
-                {stats.total}
-              </div>
-              <div className="text-sm text-gray-300">Total Executions</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {stats.completed}
-              </div>
-              <div className="text-sm text-gray-300">Completed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
-                {stats.failed}
-              </div>
-              <div className="text-sm text-gray-300">Failed</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-purple-600">
-                {stats.inProgress}
-              </div>
-              <div className="text-sm text-gray-300">In Progress</div>
             </div>
           </div>
         </div>
