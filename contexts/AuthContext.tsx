@@ -213,6 +213,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Memoize clear error function
   const clearError = useCallback(() => {
+    console.log('🧹 [AuthContext] clearError called - clearing error state');
     setError(null);
   }, []);
 
@@ -278,6 +279,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(true);
     setError(null);
 
+    console.log('🔵 [AuthContext] Starting registration:', {
+      email: userData.email,
+      hasPassword: !!userData.password,
+      hasConfirmPassword: !!userData.confirmPassword
+    });
+
     try {
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -288,19 +295,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         cache: 'no-cache'
       });
 
+      console.log('📡 [AuthContext] Response received:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        url: '/api/auth/register'
+      });
+
       const data = await response.json();
+      console.log('📥 [AuthContext] Response data:', {
+        data,
+        hasError: !!data.error,
+        hasMessage: !!data.message,
+        errorValue: data.error,
+        messageValue: data.message
+      });
 
       if (!response.ok) {
-        throw new Error(data.error || 'Registration failed');
+        const errorMessage = data.error || 'Registration failed';
+        console.log('❌ [AuthContext] Registration failed:', {
+          status: response.status,
+          errorMessage,
+          dataError: data.error,
+          dataMessage: data.message
+        });
+        throw new Error(errorMessage);
       }
 
+      console.log('✅ [AuthContext] Registration successful:', data);
       // Return result for email verification handling
       return data;
     } catch (error: any) {
-      setError(error.message || 'Registration failed');
+      const errorMessage = error.message || 'Registration failed';
+      console.error('💥 [AuthContext] Exception caught:', {
+        error,
+        errorMessage,
+        message: error.message,
+        stack: error.stack
+      });
+      setError(errorMessage);
       throw error;
     } finally {
       setIsLoading(false);
+      console.log('🏁 [AuthContext] Registration finished');
     }
   }, []);
 

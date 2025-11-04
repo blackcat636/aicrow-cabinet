@@ -9,7 +9,6 @@ import { RegisterRequest } from "@/types/auth";
 import { XIcon, EyeIcon, EyeOffIcon } from "@/components/icons";
 
 interface RegisterFormProps {
-  // When variant is 'modal', uses isOpen/onClose overlay; when 'embedded', always renders inline
   variant?: "modal" | "embedded";
   isOpen?: boolean;
   onClose?: () => void;
@@ -39,12 +38,16 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [registrationEmail, setRegistrationEmail] = useState("");
   const registrationEmailRef = useRef("");
 
-  // Clear error when form opens
-  useEffect(() => {
-    if (variant === "modal" ? isOpen : true) {
-      clearError();
+  // Clear error when form data changes (user is typing)
+  const handleInputChange = (field: keyof RegisterRequest, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+    
+    // Clear field-specific error
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: "" }));
     }
-  }, [variant, isOpen, clearError]);
+    
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -68,7 +71,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     }
 
     setErrors(newErrors);
-
     return Object.keys(newErrors).length === 0;
   };
 
@@ -80,8 +82,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     }
 
     try {
-      clearError();
+      // Don't clear error here - let it persist if registration fails
       const result = await register(formData);
+
+      // Registration successful - clear any previous errors
+      clearError();
 
       // Check if email verification is required
       if (result?.requiresVerification) {
@@ -96,7 +101,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         if (onRegistrationSuccess) {
           onRegistrationSuccess(emailToUse);
         } else {
-          // Fallback: show form directly
           setShowVerifyEmail(true);
         }
       } else {
@@ -104,21 +108,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           onClose();
         }
       }
-    } catch (err) {
-      // Error is handled by AuthContext
+    } catch (err: any) {
+      // Error is already set in AuthContext, just log it
+      console.error('Registration failed:', err.message);
     }
   };
 
   const handleEmailVerified = () => {
     window.location.reload();
-  };
-
-  const handleInputChange = (field: keyof RegisterRequest, value: string) => {
-    setFormData((prev) => ({ ...prev, [field]: value }));
-    // Clear field error when user starts typing
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: "" }));
-    }
   };
 
   const isModal = variant === "modal";
@@ -133,7 +130,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
   return (
     <>
-      {/* Always render both forms, control visibility via isOpen */}
       <VerifyEmailForm
         email={emailToUse}
         isOpen={showVerifyEmail && !!emailToUse}
@@ -172,7 +168,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 </h2>
                 <button
                   className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-red-900/20"
-                  onClick={onClose}
+                  onClick={() => {
+                    clearError();
+                    onClose?.();
+                  }}
                 >
                   <XIcon className="w-5 h-5" />
                 </button>
@@ -270,6 +269,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   Password must be at least 8 characters long
                 </p>
               </div>
+
               {/* Confirm Password */}
               <div>
                 <label
@@ -343,7 +343,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   <button
                     className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
                     type="button"
-                    onClick={onSwitchToLogin}
+                    onClick={() => {
+                      clearError();
+                      onSwitchToLogin();
+                    }}
                   >
                     Sign in
                   </button>
