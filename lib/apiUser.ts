@@ -102,6 +102,53 @@ export const userApi = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Update social up - get access URL
+  updateSocialUp: async (): Promise<{ access_url: string; success: boolean; duration: string }> => {
+    try {
+      const url = `${API_BASE_URL}/automations/user/update-social-up`;
+      const response = await fetchWithAuth(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        let errorMessage = 'Failed to get social up access URL';
+        
+        if (response.status === 401) {
+          errorMessage = 'Unauthorized access';
+        } else if (response.status === 403) {
+          errorMessage = 'Access forbidden';
+        } else {
+          try {
+            const errorData = await response.json();
+            if (errorData.message) {
+              errorMessage = errorData.message;
+            } else if (errorData.error) {
+              errorMessage = errorData.error;
+            }
+          } catch (e) {
+            errorMessage = response.statusText || 'Failed to get social up access URL';
+          }
+        }
+
+        const error = new Error(errorMessage);
+        (error as any).status = response.status;
+        throw error;
+      }
+
+      const result = await response.json();
+      // Handle both response formats: { status: 200, data: {...} } or direct { access_url, success, duration }
+      if (result.status === 200 && result.data) {
+        return result.data;
+      }
+      return result;
+    } catch (error) {
+      throw error;
+    }
   }
 };
 

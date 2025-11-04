@@ -35,6 +35,7 @@ export default function ProfilePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showChangeEmailForm, setShowChangeEmailForm] = useState(false);
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
+  const [socialUpLoading, setSocialUpLoading] = useState(false);
 
   useEffect(() => {
     loadProfile();
@@ -131,6 +132,24 @@ export default function ProfilePage() {
   const handleEmailChangeSuccess = () => {
     // Reload page to refresh authentication context with new email
     loadProfile();
+  };
+
+  // Social Up handler
+  const handleSocialUp = async () => {
+    try {
+      setSocialUpLoading(true);
+      const result = await userApi.updateSocialUp();
+      
+      // Open URL in new window
+      if (result.access_url) {
+        window.open(result.access_url, '_blank', 'noopener,noreferrer');
+        toast.success('Connection link opened in new window. The link will be valid for 1 hour.');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to get social up access URL');
+    } finally {
+      setSocialUpLoading(false);
+    }
   };
 
   if (loading) {
@@ -369,6 +388,41 @@ export default function ProfilePage() {
               </Button>
             </div>
           </form>
+
+          {/* Social Up Section */}
+          <div className="mt-6 p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-200 mb-1">
+                  Connect Social Media Accounts
+                </h3>
+                <p className="text-xs text-gray-400">
+                  Connect your social media accounts for automated posting
+                </p>
+              </div>
+              <Button
+                type="button"
+                onClick={handleSocialUp}
+                disabled={socialUpLoading}
+                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white disabled:opacity-50 shadow-lg shadow-purple-500/30 transition-all px-6"
+              >
+                {socialUpLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Loading...
+                  </div>
+                ) : (
+                  'Connect'
+                )}
+              </Button>
+            </div>
+            <div className="mt-3 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
+              <p className="text-xs text-yellow-300 flex items-center gap-2">
+                <span>⚠️</span>
+                <span>The connection link will be valid for 1 hour only. Please complete the connection process within this time.</span>
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Change Email Form Modal */}
