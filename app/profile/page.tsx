@@ -48,13 +48,22 @@ export default function ProfilePage() {
       setProfile(data);
       
       // Set form data - handle empty strings and null values
+      // Convert date from YYYY-MM-DD to MM/DD/YYYY for display
+      let displayDate = '';
+      if (data.dateOfBirth) {
+        const dateParts = data.dateOfBirth.split('-');
+        if (dateParts.length === 3) {
+          displayDate = `${dateParts[1]}/${dateParts[2]}/${dateParts[0]}`;
+        }
+      }
+      
       const newFormData = {
         username: data.username || '',
         firstName: data.firstName || '',
         lastName: data.lastName || '',
         phone: data.phone || '',
         photo: data.photo || '',
-        dateOfBirth: data.dateOfBirth || ''
+        dateOfBirth: displayDate || ''
       };
       
       setFormData(newFormData);
@@ -200,12 +209,14 @@ export default function ProfilePage() {
           <div className="flex flex-col items-center mb-8">
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full blur-xl opacity-50 animate-pulse"></div>
-              <Avatar className="w-28 h-28 mb-4 relative ring-4 ring-purple-500/30 shadow-lg shadow-purple-500/20">
-                <AvatarImage src={formData.photo || profile.photo || undefined} alt={profile.username} />
-                <AvatarFallback className="bg-gradient-to-br from-purple-600 to-purple-800 text-white text-3xl font-bold">
-                  {getInitials(formData.firstName || profile.firstName, formData.lastName || profile.lastName, formData.username || profile.username)}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative">
+                <Avatar className="w-28 h-28 mb-4 relative ring-4 ring-purple-500/30 shadow-lg shadow-purple-500/20">
+                  <AvatarImage src={formData.photo || profile.photo || undefined} alt={profile.username} />
+                  <AvatarFallback className="bg-gradient-to-br from-purple-600 to-purple-800 text-white text-3xl font-bold">
+                    {getInitials(formData.firstName || profile.firstName, formData.lastName || profile.lastName, formData.username || profile.username)}
+                  </AvatarFallback>
+                </Avatar>
+              </div>
             </div>
           </div>
 
@@ -330,42 +341,49 @@ export default function ProfilePage() {
             {/* Date of Birth */}
             <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
               <label className="block text-sm font-semibold text-gray-200 mb-3">
-                Date of Birth
+                Date of Birth (MM/DD/YYYY)
               </label>
               <input
-                type="date"
+                type="text"
                 value={formData.dateOfBirth || ''}
-                onChange={(e) => handleInputChange('dateOfBirth', e.target.value)}
-                className={`w-full p-3 bg-gray-800/50 text-white border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
+                onChange={(e) => {
+                  let value = e.target.value;
+                  // Remove non-numeric characters except slashes
+                  value = value.replace(/[^\d/]/g, '');
+                  // Auto-format as MM/DD/YYYY
+                  if (value.length > 2 && value.charAt(2) !== '/') {
+                    value = value.slice(0, 2) + '/' + value.slice(2);
+                  }
+                  if (value.length > 5 && value.charAt(5) !== '/') {
+                    value = value.slice(0, 5) + '/' + value.slice(5);
+                  }
+                  // Limit to MM/DD/YYYY format (10 characters)
+                  if (value.length <= 10) {
+                    // Store as MM/DD/YYYY for display
+                    setFormData(prev => ({ ...prev, dateOfBirth: value }));
+                  }
+                }}
+                placeholder="MM/DD/YYYY"
+                id="dateOfBirth"
+                className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
                   errors.dateOfBirth ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
                 }`}
+                onBlur={(e) => {
+                  // Convert MM/DD/YYYY to YYYY-MM-DD for storage
+                  const value = e.target.value;
+                  const parts = value.split('/');
+                  if (parts.length === 3 && parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
+                    const dateStr = `${parts[2]}-${parts[0]}-${parts[1]}`;
+                    handleInputChange('dateOfBirth', dateStr);
+                  } else if (value.length === 0) {
+                    handleInputChange('dateOfBirth', '');
+                  }
+                }}
               />
               {errors.dateOfBirth && (
                 <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
                   <span>⚠</span>
                   <span>{errors.dateOfBirth}</span>
-                </p>
-              )}
-            </div>
-
-            {/* Photo URL */}
-            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-              <label className="block text-sm font-semibold text-gray-200 mb-3">
-                Photo URL
-              </label>
-              <input
-                type="url"
-                value={formData.photo || ''}
-                onChange={(e) => handleInputChange('photo', e.target.value)}
-                placeholder="https://example.com/photo.jpg"
-                className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
-                  errors.photo ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
-                }`}
-              />
-              {errors.photo && (
-                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                  <span>⚠</span>
-                  <span>{errors.photo}</span>
                 </p>
               )}
             </div>

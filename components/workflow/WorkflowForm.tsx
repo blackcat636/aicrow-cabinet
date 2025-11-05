@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Workflow, AttachWorkflowRequest, CredentialType, CredentialData } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
+import { telegramApi } from '@/lib/apiTelegram';
+import { TelegramStatusResponse } from '@/types/telegram';
 import { XIcon, CheckIcon } from '@/components/icons';
 
 interface WorkflowFormProps {
@@ -11,17 +13,21 @@ interface WorkflowFormProps {
   onClose: () => void;
   onSuccess: () => void;
   editingWorkflow?: any; // UserWorkflow for editing
+  preselectedWorkflow?: Workflow; // Preselected workflow from workflows page
 }
 
 export const WorkflowForm: React.FC<WorkflowFormProps> = ({
   isOpen,
   onClose,
   onSuccess,
-  editingWorkflow
+  editingWorkflow,
+  preselectedWorkflow
 }) => {
   const [availableWorkflows, setAvailableWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [isActive, setIsActive] = useState(false);
+  const [telegramStatus, setTelegramStatus] = useState<TelegramStatusResponse['data'] | null>(null);
   
   const [formData, setFormData] = useState<AttachWorkflowRequest>({
     workflowId: 0,
@@ -35,12 +41,29 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   
-  // Get selected workflow details
-  const selectedWorkflow = availableWorkflows.find(w => w.id === formData.workflowId);
+  // Get selected workflow details - prioritize preselected workflow, then check editingWorkflow.workflow, then formData.workflowId
+  const selectedWorkflow = preselectedWorkflow 
+    || (editingWorkflow?.workflow ? {
+        id: editingWorkflow.workflow.id,
+        name: editingWorkflow.workflow.name,
+        description: editingWorkflow.workflow.description,
+        priceUsd: editingWorkflow.workflow.priceUsd
+      } as Workflow : null)
+    || availableWorkflows.find(w => w.id === formData.workflowId);
+  
+  // Check if we're editing and have a workflow selected
+  const isWorkflowSelected = editingWorkflow && formData.workflowId > 0 && (selectedWorkflow || editingWorkflow?.workflow);
 
   useEffect(() => {
     if (isOpen) {
-      loadAvailableWorkflows();
+      // Always load available workflows when editing to find the workflow
+      if (!preselectedWorkflow || editingWorkflow) {
+        loadAvailableWorkflows();
+      }
+      // Load telegram status
+      telegramApi.getStatus()
+        .then(response => setTelegramStatus(response.data))
+        .catch(() => setTelegramStatus({ isLinked: false, notificationsEnabled: false }));
       if (editingWorkflow) {
         setFormData({
           workflowId: editingWorkflow.workflowId,
@@ -50,6 +73,17 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
           credentialData: editingWorkflow.credentialData || {},
           inputDataTemplate: editingWorkflow.inputDataTemplate
         });
+        setIsActive(editingWorkflow.isActive || false);
+      } else if (preselectedWorkflow) {
+        setFormData({
+          workflowId: preselectedWorkflow.id,
+          name: '',
+          description: '',
+          credentialType: 'telegram',
+          credentialData: {},
+          inputDataTemplate: ''
+        });
+        setIsActive(false); // New workflows start inactive
       } else {
         setFormData({
           workflowId: 0,
@@ -59,10 +93,11 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
           credentialData: {},
           inputDataTemplate: ''
         });
+        setIsActive(false);
       }
       setErrors({});
     }
-  }, [isOpen, editingWorkflow]);
+  }, [isOpen, editingWorkflow, preselectedWorkflow]);
 
   // Close on Escape key like profile modal
   useEffect(() => {
@@ -121,10 +156,25 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
     try {
       setSubmitting(true);
       
+      // Ensure credentialData has chatId for telegram
+      if (formData.credentialType === 'telegram' && !formData.credentialData.chatId) {
+        // Try to get chatId from telegram status if available
+        // For now, we'll use empty object and let backend handle it
+        formData.credentialData = formData.credentialData || {};
+      }
+      
       if (editingWorkflow) {
         await workflowApi.updateUserWorkflow(editingWorkflow.id, formData);
+        // Toggle active status if changed
+        if (isActive !== editingWorkflow.isActive) {
+          await workflowApi.toggleUserWorkflow(editingWorkflow.id);
+        }
       } else {
-        await workflowApi.attachWorkflow(formData);
+        const newWorkflow = await workflowApi.attachWorkflow(formData);
+        // Activate workflow if isActive is true
+        if (isActive && newWorkflow.id) {
+          await workflowApi.toggleUserWorkflow(newWorkflow.id);
+        }
       }
       
       onSuccess();
@@ -158,7 +208,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
 
   return createPortal(
     <div 
-      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+      className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200"
       onClick={(e) => {
         // Close modal when clicking on overlay (background), not on modal content
         if (e.target === e.currentTarget) {
@@ -167,49 +217,65 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
       }}
     >
       <div 
-        className="bg-gray-900 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-gray-700"
+        className="p-[1px] rounded-2xl bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] shadow-2xl shadow-purple-500/20 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => {
           // Prevent closing when clicking inside modal
           e.stopPropagation();
         }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-white">
-            {editingWorkflow ? 'Edit Workflow' : 'Attach New Workflow'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-red-900/20"
-          >
-            <XIcon className="w-5 h-5" />
-          </button>
-        </div>
+        <div className="bg-[#141519] rounded-2xl w-full flex flex-col max-h-[90vh] overflow-hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-900/10 to-transparent">
+            <h2 className="text-2xl font-bold text-white bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent">
+              {editingWorkflow ? 'Edit Workflow' : 'Attach New Workflow'}
+            </h2>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-red-400 transition-all rounded-full hover:bg-red-900/20 hover:scale-110"
+            >
+              <XIcon className="w-5 h-5" />
+            </button>
+          </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+        {/* Form Container */}
+        <div className="flex flex-col flex-1 min-h-0 bg-[#141519]">
+        <form onSubmit={handleSubmit} className="p-6 space-y-6 flex-1 overflow-y-auto">
           {/* Workflow Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Select Workflow *
             </label>
-            {loading ? (
-              <div className="p-3 bg-gray-800 rounded border border-gray-600 text-center text-gray-300">
-                Loading workflows...
+            {preselectedWorkflow || isWorkflowSelected ? (
+              <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)]">
+                <div className="p-3 rounded-lg bg-[#141519] border border-purple-500/20 text-white flex items-center justify-between">
+                  <span className="text-left truncate w-full font-medium" title={selectedWorkflow?.name || editingWorkflow?.workflow?.name}>
+                    {selectedWorkflow?.name || editingWorkflow?.workflow?.name || 'Loading...'}
+                  </span>
+                  <svg className="w-4 h-4 flex-shrink-0 ml-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                </div>
+              </div>
+            ) : loading ? (
+              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700/50 text-center">
+                <div className="flex items-center justify-center gap-3">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-500"></div>
+                  <span className="text-gray-300">Loading workflows...</span>
+                </div>
               </div>
             ) : (
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setIsSelectOpen(!isSelectOpen)}
-                  className={`w-full p-3 border rounded-lg bg-gray-800 text-white flex items-center justify-between overflow-hidden ${
+                  className={`w-full p-3.5 border rounded-lg bg-gray-800/50 text-white flex items-center justify-between overflow-hidden transition-all hover:border-purple-500/50 focus:outline-none focus:ring-2 focus:ring-purple-500/50 ${
                     errors.workflowId ? 'border-red-500' : 'border-gray-600'
                   }`}
                 >
                   <span className="text-left truncate w-full" title={selectedWorkflow ? selectedWorkflow.name : undefined}>
                     {selectedWorkflow ? selectedWorkflow.name : 'Choose a workflow...'}
                   </span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </button>
@@ -220,16 +286,16 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
                       className="fixed inset-0 z-10"
                       onClick={() => setIsSelectOpen(false)}
                     ></div>
-                    <div className="absolute z-20 w-full mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg max-h-80 overflow-y-auto">
+                    <div className="absolute z-20 w-full mt-2 bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-h-80 overflow-y-auto backdrop-blur-sm">
                       <button
                         type="button"
                         onClick={() => {
                           setFormData({ ...formData, workflowId: 0 });
                           setIsSelectOpen(false);
                         }}
-                        className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors border-b border-gray-700"
+                        className="w-full px-4 py-3 text-left hover:bg-purple-900/20 transition-colors border-b border-gray-700/50"
                       >
-                        <span className="text-white font-medium">Choose a workflow...</span>
+                        <span className="text-gray-300 font-medium">Choose a workflow...</span>
                       </button>
                       {availableWorkflows.map((workflow) => (
                         <button
@@ -239,7 +305,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
                             setFormData({ ...formData, workflowId: workflow.id });
                             setIsSelectOpen(false);
                           }}
-                          className="w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors border-b border-gray-700"
+                          className="w-full px-4 py-3 text-left hover:bg-purple-900/20 transition-colors border-b border-gray-700/50 last:border-b-0"
                         >
                           <div className="text-white font-medium truncate" title={workflow.name}>{workflow.name}</div>
                           {workflow.description && (
@@ -259,6 +325,24 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
             )}
           </div>
 
+          {/* Selected Workflow Info */}
+          {selectedWorkflow && (
+            <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)]">
+              <div className="p-4 rounded-lg bg-[#141519] border border-purple-500/20">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-300">Price:</span>
+                {selectedWorkflow.priceUsd ? (
+                  <div className="px-4 py-1.5 bg-green-900/30 border border-green-500/50 rounded-lg text-green-300 text-sm font-semibold shadow-lg shadow-green-500/20">
+                    {parseFloat(selectedWorkflow.priceUsd).toFixed(2)}
+                  </div>
+                ) : (
+                  <div className="text-gray-400 text-sm">No price</div>
+                )}
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Custom Workflow Name */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -270,8 +354,8 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder="Enter a custom name for this workflow (optional)"
               maxLength={100}
-              className={`w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                errors.name ? 'border-red-500' : 'border-gray-600'
+              className={`w-full p-3.5 border rounded-lg bg-gray-800/50 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all ${
+                errors.name ? 'border-red-500' : 'border-gray-600 hover:border-gray-500'
               }`}
             />
             <div className="flex items-center justify-between mt-1">
@@ -295,8 +379,8 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
               placeholder="Enter a custom description for this workflow (optional)"
               rows={3}
               maxLength={500}
-              className={`w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                errors.description ? 'border-red-500' : 'border-gray-600'
+              className={`w-full p-3.5 border rounded-lg bg-gray-800/50 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all resize-none ${
+                errors.description ? 'border-red-500' : 'border-gray-600 hover:border-gray-500'
               }`}
             />
             <div className="flex items-center justify-between mt-1">
@@ -320,31 +404,28 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
               onChange={(e) => setFormData({ ...formData, inputDataTemplate: e.target.value })}
               placeholder='Enter you prompt'
               rows={4}
-              className={`w-full p-3 border rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 font-mono text-sm ${
-                errors.inputDataTemplate ? 'border-red-500' : 'border-gray-600'
+              className={`w-full p-3.5 border rounded-lg bg-gray-800/50 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 font-mono text-sm transition-all resize-none ${
+                errors.inputDataTemplate ? 'border-red-500' : 'border-gray-600 hover:border-gray-500'
               }`}
             />
-            <p className="mt-1 text-xs text-gray-400">
-              JSON template for workflow input data. Use {"{userId}"} for dynamic user ID. (Optional)
-            </p>
             {errors.inputDataTemplate && (
               <p className="mt-1 text-sm text-red-400">{errors.inputDataTemplate}</p>
             )}
           </div>
 
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-700">
+          {/* Actions - Fixed at bottom */}
+          <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-700/50 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-800 hover:border-gray-500 transition-colors"
+              className="px-6 py-2.5 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-800/50 hover:border-gray-500 transition-all font-medium"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-purple-500/25"
+              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-500 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02] active:scale-[0.98]"
             >
               {submitting ? (
                 <>
@@ -360,6 +441,8 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
             </button>
           </div>
         </form>
+        </div>
+        </div>
       </div>
     </div>,
     typeof document !== 'undefined' ? document.body : ({} as any)

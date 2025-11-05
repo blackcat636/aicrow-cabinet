@@ -96,11 +96,11 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
   const getCredentialData = useCallback(() => {
     switch (workflow.credentialType) {
       case 'telegram':
-        return `Chat ID: ${workflow.credentialData.chatId}`;
+        return `Chat ID: ${workflow.credentialData?.chatId || 'Not set'}`;
       case 'email':
-        return `Email: ${workflow.credentialData.email}`;
+        return `Email: ${workflow.credentialData?.email || 'Not set'}`;
       case 'webhook':
-        return `URL: ${workflow.credentialData.webhookUrl}`;
+        return `URL: ${workflow.credentialData?.webhookUrl || 'Not set'}`;
       default:
         return 'No credentials';
     }
@@ -112,11 +112,11 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
 
   return (
     <div 
-      className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] w-full overflow-hidden shadow-lg shadow-purple-500/30"
+      className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] w-full h-full overflow-hidden shadow-lg shadow-purple-500/30 flex flex-col"
     >
       <div 
         ref={cardRef}
-        className="relative bg-black rounded-lg p-5 hover:shadow-md transition-shadow w-full h-full overflow-hidden group"
+        className="relative bg-black rounded-lg p-5 hover:shadow-md transition-shadow w-full h-full overflow-hidden group flex flex-col flex-1"
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -132,7 +132,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
         />
         
         {/* Content with relative z-index */}
-        <div className="relative z-10">
+        <div className="relative z-10 flex-1 flex flex-col">
           {/* Header */}
           <div className="flex items-start justify-between mb-3">
         <div className="flex-1 min-w-0">
@@ -176,17 +176,16 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
           <Badge variant="outline" className="text-xs border-gray-600 text-gray-300">
             {credentialTypeLabel}
           </Badge>
-          <span className="text-xs text-gray-400">{credentialDataText}</span>
           {workflow.workflow?.priceUsd && (
             <Badge variant="outline" className="text-xs border-green-600 text-green-300 bg-green-900/20">
-              ${workflow.workflow.priceUsd}
+              {workflow.workflow.priceUsd}
             </Badge>
           )}
         </div>
       </div>
 
       {/* Actions */}
-      <div className="space-y-3">
+      <div className="space-y-3 flex-1 flex flex-col min-h-0">
         {/* Primary Actions */}
         <div className="flex items-center gap-2 flex-wrap">
           <button
@@ -226,8 +225,11 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
           
         </div>
 
-        {/* Secondary Actions */}
-        <div className="flex items-center justify-between">
+        {/* Spacer to push secondary actions to bottom */}
+        <div className="flex-1"></div>
+
+        {/* Secondary Actions - Fixed at bottom */}
+        <div className="flex items-center justify-between pt-3 flex-shrink-0">
           <div className="flex items-center gap-1">
             <button
               onClick={() => onToggle(workflow.id)}

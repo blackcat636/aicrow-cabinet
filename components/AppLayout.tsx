@@ -241,7 +241,8 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
 
   // Memoize active states to prevent unnecessary recalculations
   const activeStates = useMemo(() => ({
-    workflows: pathname === '/workflows' || pathname === '/' || pathname.startsWith('/workflows/'),
+    dashboard: pathname === '/dashboard' || pathname === '/' || pathname.startsWith('/dashboard/') || pathname.startsWith('/workflows/'),
+    workflows: pathname === '/workflows',
     executions: pathname === '/executions',
     balance: pathname === '/balance',
     integrations: pathname.startsWith('/integrations'),
@@ -326,19 +327,14 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
           <div className='absolute left-1/2 transform -translate-x-1/2 overflow-visible'>
             <div className='relative flex items-center gap-2 lg:gap-4 overflow-visible'>
               <TopNavItem
+                href="/dashboard"
+                label="Dashboard"
+                isActive={activeStates.dashboard}
+              />
+              <TopNavItem
                 href="/workflows"
                 label="Workflows"
                 isActive={activeStates.workflows}
-              />
-              <TopNavItem
-                href="/executions"
-                label="Executions"
-                isActive={activeStates.executions}
-              />
-              <TopNavItem
-                href="/balance"
-                label="Balance"
-                isActive={activeStates.balance}
               />
               
               {/* Integrations Dropdown */}
@@ -371,13 +367,24 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                   </Link>
                 </div>
               </div>
+              
+              <TopNavItem
+                href="/executions"
+                label="Executions"
+                isActive={activeStates.executions}
+              />
+              <TopNavItem
+                href="/balance"
+                label="Balance"
+                isActive={activeStates.balance}
+              />
             </div>
           </div>
           
           {/* Right Side - User */}
           <div className='flex items-center gap-2 lg:gap-4 flex-shrink-0 ml-auto'>
             {/* User Avatar with dropdown */}
-            <div className='hidden md:block relative' ref={userMenuRef}>
+            <div className='hidden md:flex items-center gap-3 relative' ref={userMenuRef}>
               <button
                 className='rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500'
                 onClick={(e) => {
@@ -399,6 +406,15 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                   </AvatarFallback>
                 </Avatar>
               </button>
+
+              <div className='flex flex-col leading-tight'>
+                <span className='text-sm font-semibold text-white'>
+                  {`${(user?.firstName || '').trim()} ${(user?.lastName || '').trim()}`.trim() || user?.username || 'User'}
+                </span>
+                <span className='text-xs text-gray-400'>
+                  {user?.email}
+                </span>
+              </div>
 
               {/* Dropdown */}
               <div
@@ -492,6 +508,18 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                     <h3 className='text-xs font-medium text-gray-400 uppercase tracking-wider px-3'>Main Menu</h3>
                     <div className='space-y-2'>
                       <Link
+                        href="/dashboard"
+                        onClick={closeMobileMenu}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
+                          activeStates.dashboard
+                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <WorkflowsIcon className='w-5 h-5' />
+                        <span className='font-medium'>Dashboard</span>
+                      </Link>
+                      <Link
                         href="/workflows"
                         onClick={closeMobileMenu}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
@@ -503,37 +531,8 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         <WorkflowsIcon className='w-5 h-5' />
                         <span className='font-medium'>Workflows</span>
                       </Link>
-                      <Link
-                        href="/executions"
-                        onClick={closeMobileMenu}
-                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
-                          activeStates.executions
-                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
-                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        <ExecutionIcon className='w-5 h-5' />
-                        <span className='font-medium'>Executions</span>
-                      </Link>
-                      <Link
-                        href="/balance"
-                        onClick={closeMobileMenu}
-                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
-                          activeStates.balance
-                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
-                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        <BalanceIcon className='w-5 h-5' />
-                        <span className='font-medium'>Balance</span>
-                      </Link>
-                    </div>
-                  </div>
-
-                  {/* Integrations Section */}
-                  <div className='space-y-2'>
-                    <h3 className='text-xs font-medium text-gray-400 uppercase tracking-wider px-3'>Integrations</h3>
-                    <div className='space-y-2'>
+                      
+                      {/* Integrations Section */}
                       <div className="relative">
                         <button
                           onClick={() => {
@@ -571,6 +570,31 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                           </div>
                         )}
                       </div>
+                      
+                      <Link
+                        href="/executions"
+                        onClick={closeMobileMenu}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
+                          activeStates.executions
+                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <ExecutionIcon className='w-5 h-5' />
+                        <span className='font-medium'>Executions</span>
+                      </Link>
+                      <Link
+                        href="/balance"
+                        onClick={closeMobileMenu}
+                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
+                          activeStates.balance
+                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <BalanceIcon className='w-5 h-5' />
+                        <span className='font-medium'>Balance</span>
+                      </Link>
                     </div>
                   </div>
                 </nav>

@@ -19,10 +19,10 @@ export default function Home() {
   const [verificationEmail, setVerificationEmail] = useState('');
   const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
 
-  // Redirect authenticated users to workflows page
+  // Redirect authenticated users to dashboard page
   useEffect(() => {
     if (isAuthenticated && !showLoginForm && !showRegisterForm && !showVerifyForm) {
-      router.replace('/workflows');
+      router.replace('/dashboard');
     }
   }, [isAuthenticated, router, showLoginForm, showRegisterForm, showVerifyForm]);
 
@@ -99,7 +99,7 @@ export default function Home() {
           onVerified={() => {
             setShowVerifyForm(false);
             setVerificationEmail('');
-            router.push('/workflows');
+            router.push('/dashboard');
           }}
         />
       </div>

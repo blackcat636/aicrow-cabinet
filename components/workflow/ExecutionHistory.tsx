@@ -120,7 +120,7 @@ export const ExecutionHistory: React.FC = () => {
 
   // Memoize view workflow handler
   const handleViewWorkflow = useCallback((workflowId: number) => {
-    router.push(`/workflows/${workflowId}`);
+    router.push(`/dashboard/workflows/${workflowId}`);
   }, [router]);
 
   // Skeleton loader to prevent layout shift
