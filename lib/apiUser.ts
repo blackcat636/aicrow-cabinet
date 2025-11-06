@@ -1,6 +1,7 @@
 import { UserProfile, UpdateProfileRequest, UpdateProfileResponse } from '@/types/user';
 import { API_CONFIG } from '@/config/api';
 import { fetchWithAuth } from '@/lib/auth';
+import { getAvatarUrl } from '@/lib/avatars';
 
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
@@ -44,7 +45,18 @@ export const userApi = {
           if ((key === 'phone' || key === 'photo' || key === 'dateOfBirth') && value === '') {
             cleanedData[key] = null;
           } else {
-            cleanedData[key] = value;
+            if (key === 'photo' && typeof value === 'string') {
+              let url = getAvatarUrl(value) ?? value;
+              // Convert relative path to absolute URL for backend validation
+              if (typeof window !== 'undefined' && url?.startsWith('/')) {
+                try {
+                  url = new URL(url, window.location.origin).toString();
+                } catch {}
+              }
+              cleanedData[key] = url;
+            } else {
+              cleanedData[key] = value;
+            }
           }
         }
       });

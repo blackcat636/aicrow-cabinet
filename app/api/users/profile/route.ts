@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTokens } from '@/lib/auth';
 import { API_CONFIG } from '@/config/api';
+import { getAvatarUrl } from '@/lib/avatars';
 
 export const runtime = 'edge';
 
@@ -68,6 +69,17 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
+    // Normalize photo field to absolute URL if needed
+    if (body && typeof body.photo === 'string') {
+      let url = getAvatarUrl(body.photo) ?? body.photo;
+      if (url?.startsWith('/')) {
+        try {
+          const origin = request.nextUrl.origin;
+          url = new URL(url, origin).toString();
+        } catch {}
+      }
+      body.photo = url;
+    }
 
     const response = await fetch(`${API_URL}/users/profile`, {
       method: 'PUT',

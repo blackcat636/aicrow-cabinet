@@ -9,6 +9,8 @@ import { UserProfile, UpdateProfileRequest } from '@/types/user';
 import { toast } from 'sonner';
 import { ChangeEmailForm } from '@/components/profile/ChangeEmailForm';
 import { ChangePasswordForm } from '@/components/profile/ChangePasswordForm';
+import { AvatarManager } from '@/components/profile/AvatarManager';
+import { getAvatarUrl } from '@/lib/avatars';
 
 const getInitials = (firstName: string, lastName: string, username: string) => {
   if (firstName && lastName) {
@@ -36,6 +38,10 @@ export default function ProfilePage() {
   const [showChangeEmailForm, setShowChangeEmailForm] = useState(false);
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
   const [socialUpLoading, setSocialUpLoading] = useState(false);
+  const [showAvatarManager, setShowAvatarManager] = useState(false);
+
+  // Resolve avatar src: supports default names, dicebear ids and direct URLs
+  const resolveAvatarSrc = (value?: string | null): string | undefined => getAvatarUrl(value);
 
   // Helper: convert MM/DD/YYYY to YYYY-MM-DD (returns undefined if invalid)
   const toIsoDate = (display: string | undefined): string | undefined => {
@@ -226,8 +232,8 @@ export default function ProfilePage() {
             <div className="relative">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full blur-xl opacity-50 animate-pulse"></div>
               <div className="relative">
-                <Avatar className="w-28 h-28 mb-4 relative ring-4 ring-purple-500/30 shadow-lg shadow-purple-500/20">
-                  <AvatarImage src={formData.photo || profile.photo || undefined} alt={profile.username} />
+                <Avatar className="w-28 h-28 mb-4 relative ring-4 ring-purple-500/30 shadow-lg shadow-purple-500/20 cursor-pointer" onClick={() => setShowAvatarManager(true)}>
+                  <AvatarImage src={resolveAvatarSrc(formData.photo || profile.photo)} alt={profile.username} />
                   <AvatarFallback className="bg-gradient-to-br from-purple-600 to-purple-800 text-white text-3xl font-bold">
                     {getInitials(formData.firstName || profile.firstName, formData.lastName || profile.lastName, formData.username || profile.username)}
                   </AvatarFallback>
@@ -235,6 +241,8 @@ export default function ProfilePage() {
               </div>
             </div>
           </div>
+
+          
 
           {/* Form with improved spacing and styling */}
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
@@ -416,10 +424,10 @@ export default function ProfilePage() {
           <div className="mt-6 p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-gray-200 mb-1">
+                <h3 className="text-sm font-semibold text-gray-200 mb-1">\
                   Connect Social Media Accounts
                 </h3>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-400">\
                   Connect your social media accounts for automated posting
                 </p>
               </div>
@@ -466,8 +474,45 @@ export default function ProfilePage() {
             toast.success('Password changed successfully');
           }}
         />
+
+        {/* Avatar Manager Modal */}
+        {showAvatarManager && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) setShowAvatarManager(false);
+            }}
+          >
+            <div className="bg-gray-900 rounded-xl w-full max-w-2xl border border-gray-700 shadow-2xl overflow-hidden">
+              <div className="flex items-center justify-between p-6 border-b border-gray-700">
+                <h2 className="text-xl font-semibold text-white">Change avatar</h2>
+                <button
+                  onClick={() => setShowAvatarManager(false)}
+                  className="px-3 py-1 text-gray-300 hover:text-white rounded-lg hover:bg-gray-800"
+                >
+                  ×
+                </button>
+              </div>
+              <div className="p-6">
+                <AvatarManager
+                  current={profile.photo}
+                  onSelect={async (value) => {
+                    try {
+                      const updated = await userApi.updateProfile({ photo: value as any });
+                      setProfile(updated);
+                      setFormData((prev) => ({ ...prev, photo: value ?? '' }));
+                      toast.success('Avatar updated');
+                      setShowAvatarManager(false);
+                    } catch (e: any) {
+                      toast.error(e?.message || 'Failed to update avatar');
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </AppLayout>
   );
 }
-
