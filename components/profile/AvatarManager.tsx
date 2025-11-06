@@ -15,9 +15,6 @@ interface AvatarManagerProps {
 }
 
 export function AvatarManager({ current, onSelect }: AvatarManagerProps) {
-  const [tab, setTab] = useState<"upload" | "generated">("generated");
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [genStyle, setGenStyle] = useState<DicebearStyle>("adventurer");
   const [genSeed, setGenSeed] = useState<string>("user");
@@ -25,64 +22,10 @@ export function AvatarManager({ current, onSelect }: AvatarManagerProps) {
     "alpha","bravo","charlie","delta","echo","foxtrot","golf","hotel","india","juliet","kilo","lima","mike","november","oscar","papa","quebec","romeo","sierra","tango","uniform","victor","whiskey","xray","yankee","zulu"
   ];
 
-  const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0] || null;
-    setFile(f);
-    if (f) {
-      const url = URL.createObjectURL(f);
-      setPreview(url);
-    } else {
-      setPreview(null);
-    }
-  };
-
   return (
     <div className="w-full">
-      {/* Tabs header */}
-      <div className="flex gap-2 border-b border-gray-700/50 mb-4">
-        <button
-          type="button"
-          className={`px-3 py-2 text-sm font-medium rounded-t-md ${
-            tab === "upload" ? "bg-gray-800 text-white" : "text-gray-400 hover:text-gray-200"
-          }`}
-          onClick={() => setTab("upload")}
-        >
-          Upload
-        </button>
-        <button
-          type="button"
-          className={`px-3 py-2 text-sm font-medium rounded-t-md ${
-            tab === "generated" ? "bg-gray-800 text-white" : "text-gray-400 hover:text-gray-200"
-          }`}
-          onClick={() => setTab("generated")}
-        >
-          Generated
-        </button>
-      </div>
-
-      {/* Upload tab placeholder */}
-      {tab === "upload" && (
-        <div className="space-y-3">
-          <input
-            type="file"
-            accept="image/png, image/jpeg, image/webp"
-            onChange={onFileChange}
-            className="block w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-500"
-          />
-          {preview && (
-            <div className="flex items-center gap-4">
-              <img src={preview} alt="preview" className="w-24 h-24 rounded-full object-cover" />
-              <span className="text-xs text-gray-400">Preview only. Server upload will be enabled after storage config.</span>
-            </div>
-          )}
-          <Button type="button" disabled>
-            Coming soon
-          </Button>
-        </div>
-      )}
-
       {/* Generated (DiceBear) tab */}
-      {tab === "generated" && (
+      {
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -158,7 +101,7 @@ export function AvatarManager({ current, onSelect }: AvatarManagerProps) {
             </Button>
           </div>
         </div>
-      )}
+      }
     </div>
   );
 }

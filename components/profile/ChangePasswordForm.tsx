@@ -4,6 +4,7 @@ import React, { useState, useLayoutEffect } from 'react';
 import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface ChangePasswordFormProps {
   isOpen: boolean;
@@ -32,6 +33,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [requestInProgress, setRequestInProgress] = useState(false);
   const abortControllerRef = React.useRef<AbortController | null>(null);
   const toastIdRef = React.useRef<string | number | null>(null);
@@ -348,10 +350,30 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
     }, 300);
   };
 
+  // Open confirm dialog on Esc
+  React.useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setConfirmOpen(true);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
+    <>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setConfirmOpen(true);
+        }
+      }}
+    >
       <div className="bg-gray-900 rounded-xl max-w-md w-full border border-gray-700 shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
@@ -516,6 +538,20 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
         </div>
       </div>
     </div>
+    <ConfirmDialog
+      isOpen={confirmOpen}
+      onClose={() => setConfirmOpen(false)}
+      onConfirm={() => {
+        setConfirmOpen(false);
+        handleClose();
+      }}
+      title="Discard changes?"
+      message="Are you sure you want to cancel and discard the changes?"
+      confirmText="Discard"
+      cancelText="Keep editing"
+      type="warning"
+    />
+    </>
   );
 };
 

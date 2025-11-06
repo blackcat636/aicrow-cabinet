@@ -7,6 +7,7 @@ import { workflowApi } from '@/lib/apiWorkflow';
 import { telegramApi } from '@/lib/apiTelegram';
 import { TelegramStatusResponse } from '@/types/telegram';
 import { XIcon, CheckIcon } from '@/components/icons';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 interface WorkflowFormProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSelectOpen, setIsSelectOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   
   // Get selected workflow details - prioritize preselected workflow, then check editingWorkflow.workflow, then formData.workflowId
   const selectedWorkflow = preselectedWorkflow 
@@ -99,17 +101,17 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
     }
   }, [isOpen, editingWorkflow, preselectedWorkflow]);
 
-  // Close on Escape key like profile modal
+  // On Esc show confirmation instead of closing immediately
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        onClose();
+        setConfirmOpen(true);
       }
     };
-    window.addEventListener('keydown', handleKeyDown, { passive: true } as any);
+    window.addEventListener('keydown', handleKeyDown as any);
     return () => window.removeEventListener('keydown', handleKeyDown as any);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   const loadAvailableWorkflows = async () => {
     try {
@@ -207,12 +209,13 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
   if (!isOpen) return null;
 
   return createPortal(
+    <>
     <div 
       className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 z-[9999] animate-in fade-in duration-200"
       onClick={(e) => {
-        // Close modal when clicking on overlay (background), not on modal content
+        // Open confirm dialog when clicking on overlay (background)
         if (e.target === e.currentTarget) {
-          onClose();
+          setConfirmOpen(true);
         }
       }}
     >
@@ -444,7 +447,21 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
         </div>
         </div>
       </div>
-    </div>,
+    </div>
+    <ConfirmDialog
+      isOpen={confirmOpen}
+      onClose={() => setConfirmOpen(false)}
+      onConfirm={() => {
+        setConfirmOpen(false);
+        onClose();
+      }}
+      title="Discard changes?"
+      message="Are you sure you want to cancel and discard the changes?"
+      confirmText="Discard"
+      cancelText="Keep editing"
+      type="warning"
+    />
+    </>,
     typeof document !== 'undefined' ? document.body : ({} as any)
   ) as unknown as JSX.Element;
 };

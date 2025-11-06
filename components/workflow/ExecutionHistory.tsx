@@ -16,13 +16,17 @@ import {
 // Move helper functions outside component to prevent recreation
 const getStatusColor = (status: string) => {
   switch (status) {
-    case '1': // completed
+    case '1':
+    case 'completed':
       return 'bg-green-600 text-white';
-    case '2': // failed
+    case '2':
+    case 'failed':
       return 'bg-red-600 text-white';
-    case '3': // running
+    case '3':
+    case 'running':
       return 'bg-purple-600 text-white';
-    case '0': // pending
+    case '0':
+    case 'pending':
       return 'bg-yellow-600 text-white';
     default:
       return 'bg-gray-600 text-white';
@@ -31,13 +35,17 @@ const getStatusColor = (status: string) => {
 
 const getStatusIcon = (status: string) => {
   switch (status) {
-    case '1': // completed
+    case '1':
+    case 'completed':
       return <CheckIcon className="w-4 h-4" />;
-    case '2': // failed
+    case '2':
+    case 'failed':
       return <XIcon className="w-4 h-4" />;
-    case '3': // running
+    case '3':
+    case 'running':
       return <PlayIcon className="w-4 h-4" />;
-    case '0': // pending
+    case '0':
+    case 'pending':
       return <ClockIcon className="w-4 h-4" />;
     default:
       return <ClockIcon className="w-4 h-4" />;
@@ -46,11 +54,20 @@ const getStatusIcon = (status: string) => {
 
 const getStatusLabel = (status: string) => {
   switch (status) {
-    case '1': return 'Completed';
-    case '2': return 'Failed';
-    case '3': return 'Running';
-    case '0': return 'Pending';
-    default: return 'Unknown';
+    case '1':
+    case 'completed':
+      return 'Completed';
+    case '2':
+    case 'failed':
+      return 'Failed';
+    case '3':
+    case 'running':
+      return 'Running';
+    case '0':
+    case 'pending':
+      return 'Pending';
+    default:
+      return 'Unknown';
   }
 };
 
@@ -112,9 +129,9 @@ export const ExecutionHistory: React.FC = () => {
     
     return {
       total: executionsData.total,
-      completed: executionsData.items.filter(e => e.status === '1').length,
-      failed: executionsData.items.filter(e => e.status === '2').length,
-      inProgress: executionsData.items.filter(e => e.status === '3' || e.status === '0').length
+      completed: executionsData.items.filter(e => e.status === '1' || e.status === 'completed').length,
+      failed: executionsData.items.filter(e => e.status === '2' || e.status === 'failed').length,
+      inProgress: executionsData.items.filter(e => e.status === '3' || e.status === '0' || e.status === 'running' || e.status === 'pending').length
     };
   }, [executionsData]);
 
@@ -321,13 +338,9 @@ const ExecutionCard: React.FC<{
                   Notified
                 </Badge>
               )}
-              <div className="flex items-center gap-1 text-sm text-gray-300">
-                <ClockIcon className="w-4 h-4" />
-                <span>Created: {new Date(execution.createdAt).toLocaleString()}</span>
-              </div>
             </div>
             <button
-              onClick={() => onViewWorkflow(execution.userWorkflowId)}
+              onClick={() => onViewWorkflow((execution.workflowId ?? execution.userWorkflowId) as number)}
               className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg transition-all font-medium hover:brightness-110 shadow-lg shadow-[#A500E1]/25 bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)]"
             >
               <EyeIcon className="w-4 h-4" />
@@ -355,6 +368,16 @@ const ExecutionCard: React.FC<{
             </div>
           )}
 
+          {/* Result Data */}
+          {execution.resultData && (
+            <div className="mb-4">
+              <h4 className="text-sm font-medium text-gray-300 mb-2">Result:</h4>
+              <div className="p-3 bg-gray-800 rounded text-sm font-mono text-gray-200 break-all">
+                {typeof execution.resultData === 'object' ? (execution.resultData.message ?? JSON.stringify(execution.resultData)) : String(execution.resultData)}
+              </div>
+            </div>
+          )}
+
           {/* Error Message */}
           {execution.errorMessage && (
             <div className="mb-4">
@@ -369,7 +392,7 @@ const ExecutionCard: React.FC<{
           <div className="pt-4 border-t border-gray-600">
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span>Execution ID: {execution.id}</span>
-              <span>User Workflow ID: {execution.userWorkflowId}</span>
+              <span>Workflow ID: {execution.workflowId ?? execution.userWorkflowId}</span>
             </div>
           </div>
         </div>

@@ -39,18 +39,20 @@ export interface WorkflowSchedule {
 
 export interface WorkflowExecution {
   id: number;
-  userWorkflowId: number;
-  n8nExecutionId: string;
+  workflowId?: number;
+  userWorkflowId?: number;
+  n8nExecutionId?: string;
   status: string;
   triggerType: TriggerType;
   inputData: string;
   outputData?: string | null;
+  resultData?: any;
   notificationSent: boolean;
   errorMessage?: string | null;
   priceUsd: string;
   startedAt?: string | null;
   completedAt?: string | null;
-  createdAt: string;
+  createdAt?: string;
 }
 
 export type CredentialType = 'telegram' | 'email' | 'webhook';

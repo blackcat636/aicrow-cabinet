@@ -96,8 +96,15 @@ const ExecutionCard: React.FC<{
                 </Badge>
               )}
             </div>
-            <div className="text-sm text-gray-400">
-              {new Date(execution.createdAt).toLocaleString()}
+            <div className="text-xs sm:text-sm text-gray-400 flex flex-col items-end gap-1">
+              <div>
+                <span className="text-gray-500 mr-1">Started:</span>
+                <span>{execution.startedAt ? new Date(execution.startedAt).toLocaleString() : '-'}</span>
+              </div>
+              <div>
+                <span className="text-gray-500 mr-1">Completed:</span>
+                <span>{execution.completedAt ? new Date(execution.completedAt).toLocaleString() : '-'}</span>
+              </div>
             </div>
           </div>
 
@@ -121,6 +128,16 @@ const ExecutionCard: React.FC<{
             </div>
           )}
 
+          {/* Result Data */}
+          {execution.resultData && (
+            <div className="mb-3">
+              <h4 className="text-sm font-medium text-gray-300 mb-1">Result:</h4>
+              <div className="p-2 bg-gray-800 rounded text-xs font-mono text-gray-200 break-all">
+                {typeof execution.resultData === 'object' ? (execution.resultData.message ?? JSON.stringify(execution.resultData)) : String(execution.resultData)}
+              </div>
+            </div>
+          )}
+
           {/* Error Message */}
           {execution.errorMessage && (
             <div className="mb-3">
@@ -135,6 +152,7 @@ const ExecutionCard: React.FC<{
           <div className="pt-3 border-t border-gray-600">
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span>Execution ID: {execution.id}</span>
+              <span>Workflow ID: {(execution.workflowId ?? execution.userWorkflowId) as number}</span>
             </div>
           </div>
         </div>
@@ -272,7 +290,7 @@ export default function WorkflowDetailPage() {
       // Filter executions for this specific workflow
       const filteredExecutions = {
         ...data,
-        items: data.items.filter(execution => execution.userWorkflowId === workflowId)
+        items: data.items.filter(execution => (execution.workflowId ?? execution.userWorkflowId) === workflowId)
       };
       setExecutions(filteredExecutions);
     } catch (err) {
@@ -355,31 +373,58 @@ export default function WorkflowDetailPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case '1': return 'bg-green-600 text-white';
-      case '2': return 'bg-red-600 text-white';
-      case '3': return 'bg-purple-600 text-white';
-      case '0': return 'bg-yellow-600 text-white';
-      default: return 'bg-gray-600 text-white';
+      case '1':
+      case 'completed':
+        return 'bg-green-600 text-white';
+      case '2':
+      case 'failed':
+        return 'bg-red-600 text-white';
+      case '3':
+      case 'running':
+        return 'bg-purple-600 text-white';
+      case '0':
+      case 'pending':
+        return 'bg-yellow-600 text-white';
+      default:
+        return 'bg-gray-600 text-white';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case '1': return <CheckIcon className="w-4 h-4" />;
-      case '2': return <XIcon className="w-4 h-4" />;
-      case '3': return <PlayIcon className="w-4 h-4" />;
-      case '0': return <ClockIcon className="w-4 h-4" />;
-      default: return <ClockIcon className="w-4 h-4" />;
+      case '1':
+      case 'completed':
+        return <CheckIcon className="w-4 h-4" />;
+      case '2':
+      case 'failed':
+        return <XIcon className="w-4 h-4" />;
+      case '3':
+      case 'running':
+        return <PlayIcon className="w-4 h-4" />;
+      case '0':
+      case 'pending':
+        return <ClockIcon className="w-4 h-4" />;
+      default:
+        return <ClockIcon className="w-4 h-4" />;
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case '1': return 'Completed';
-      case '2': return 'Failed';
-      case '3': return 'Running';
-      case '0': return 'Pending';
-      default: return 'Unknown';
+      case '1':
+      case 'completed':
+        return 'Completed';
+      case '2':
+      case 'failed':
+        return 'Failed';
+      case '3':
+      case 'running':
+        return 'Running';
+      case '0':
+      case 'pending':
+        return 'Pending';
+      default:
+        return 'Unknown';
     }
   };
 

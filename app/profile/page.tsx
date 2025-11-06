@@ -11,6 +11,7 @@ import { ChangeEmailForm } from '@/components/profile/ChangeEmailForm';
 import { ChangePasswordForm } from '@/components/profile/ChangePasswordForm';
 import { AvatarManager } from '@/components/profile/AvatarManager';
 import { getAvatarUrl } from '@/lib/avatars';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 const getInitials = (firstName: string, lastName: string, username: string) => {
   if (firstName && lastName) {
@@ -39,6 +40,7 @@ export default function ProfilePage() {
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
   const [socialUpLoading, setSocialUpLoading] = useState(false);
   const [showAvatarManager, setShowAvatarManager] = useState(false);
+  const [confirmAvatarClose, setConfirmAvatarClose] = useState(false);
 
   // Resolve avatar src: supports default names, dicebear ids and direct URLs
   const resolveAvatarSrc = (value?: string | null): string | undefined => getAvatarUrl(value);
@@ -262,7 +264,7 @@ export default function ProfilePage() {
               </div>
               <input
                 type="email"
-                value={profile.email}
+                value={profile.email ?? ''}
                 disabled
                 className="w-full p-3 bg-gray-800/50 text-gray-300 border border-gray-700 rounded-lg cursor-not-allowed focus:outline-none"
               />
@@ -480,14 +482,14 @@ export default function ProfilePage() {
           <div
             className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50"
             onClick={(e) => {
-              if (e.target === e.currentTarget) setShowAvatarManager(false);
+              if (e.target === e.currentTarget) setConfirmAvatarClose(true);
             }}
           >
             <div className="bg-gray-900 rounded-xl w-full max-w-2xl border border-gray-700 shadow-2xl overflow-hidden">
               <div className="flex items-center justify-between p-6 border-b border-gray-700">
                 <h2 className="text-xl font-semibold text-white">Change avatar</h2>
                 <button
-                  onClick={() => setShowAvatarManager(false)}
+                  onClick={() => setConfirmAvatarClose(true)}
                   className="px-3 py-1 text-gray-300 hover:text-white rounded-lg hover:bg-gray-800"
                 >
                   ×
@@ -512,6 +514,19 @@ export default function ProfilePage() {
             </div>
           </div>
         )}
+        <ConfirmDialog
+          isOpen={confirmAvatarClose}
+          onClose={() => setConfirmAvatarClose(false)}
+          onConfirm={() => {
+            setConfirmAvatarClose(false);
+            setShowAvatarManager(false);
+          }}
+          title="Discard changes?"
+          message="Are you sure you want to cancel and discard the changes?"
+          confirmText="Discard"
+          cancelText="Keep editing"
+          type="warning"
+        />
       </div>
     </AppLayout>
   );
