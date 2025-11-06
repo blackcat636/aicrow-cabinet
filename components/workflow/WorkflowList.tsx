@@ -6,6 +6,7 @@ import { workflowApi } from '@/lib/apiWorkflow';
 import { WorkflowCard } from './WorkflowCard';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PlusIcon } from '@/components/icons';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface WorkflowListProps {
   onAddWorkflow: () => void;
@@ -26,6 +27,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
   refreshTrigger,
   executingWorkflowId
 }) => {
+  const { isAuthenticated } = useAuth();
   const [workflows, setWorkflows] = useState<UserWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +46,12 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
 
   const loadWorkflows = React.useCallback(async () => {
     try {
+      if (!isAuthenticated) {
+        setWorkflows([]);
+        setLoading(false);
+        setError(null);
+        return;
+      }
       setLoading(true);
       setError(null);
       const data = await workflowApi.getMyWorkflows();
@@ -55,15 +63,15 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
-  // Load workflows on mount only
+  // Load workflows once after authentication is confirmed (guards StrictMode double invoke)
   useEffect(() => {
-    if (!isMountedRef.current) {
+    if (isAuthenticated && !isMountedRef.current) {
       isMountedRef.current = true;
       loadWorkflows();
     }
-  }, [loadWorkflows]);
+  }, [isAuthenticated, loadWorkflows]);
 
   // Refresh when refreshTrigger changes (but not on initial mount when it's 0)
   useEffect(() => {

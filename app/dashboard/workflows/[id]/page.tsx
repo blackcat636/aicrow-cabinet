@@ -168,6 +168,7 @@ export default function WorkflowDetailPage() {
   const [workflowInfoMousePosition, setWorkflowInfoMousePosition] = useState({ x: 0, y: 0 });
   const [isWorkflowInfoHovering, setIsWorkflowInfoHovering] = useState(false);
   const workflowInfoRef = useRef<HTMLDivElement>(null);
+  const didInitialLoadRef = useRef(false);
   
   // Mouse tracking for Input Data Template card
   const [inputTemplateMousePosition, setInputTemplateMousePosition] = useState({ x: 0, y: 0 });
@@ -236,7 +237,8 @@ export default function WorkflowDetailPage() {
   }, []);
 
   useEffect(() => {
-    if (workflowId && isAuthenticated) {
+    if (workflowId && isAuthenticated && !didInitialLoadRef.current) {
+      didInitialLoadRef.current = true;
       loadWorkflow();
       loadExecutions();
     }

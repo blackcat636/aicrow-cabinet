@@ -1,7 +1,10 @@
 // API Configuration
 export const API_CONFIG = {
   // Base URL for API requests
-  BASE_URL: 'https://api.tempdomain.site',
+  BASE_URL:
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.API_BASE_URL ||
+    'https://api.tempdomain.site',
 
   // API Endpoints
   ENDPOINTS: {

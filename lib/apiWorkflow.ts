@@ -24,7 +24,6 @@ export const workflowApi = {
 
       const data = await response.json();
 
-      // Handle different response formats
       if (data.workflows) {
         return data.workflows;
       } else if (data.data) {
@@ -32,11 +31,9 @@ export const workflowApi = {
       } else if (Array.isArray(data)) {
         return data;
       } else {
-        console.warn('⚠️ Unexpected response format:', data);
         return [];
       }
     } catch (error) {
-      console.error('Get available workflows API error:', error);
       throw error;
     }
   },
@@ -51,7 +48,6 @@ export const workflowApi = {
 
       const data = await response.json();
 
-      // Handle different response formats
       if (data.userWorkflows) {
         return data.userWorkflows;
       } else if (data.data) {
@@ -59,11 +55,9 @@ export const workflowApi = {
       } else if (Array.isArray(data)) {
         return data;
       } else {
-        console.warn('⚠️ Unexpected response format:', data);
         return [];
       }
     } catch (error) {
-      console.error('Get workflows API error:', error);
       throw error;
     }
   },
@@ -81,7 +75,6 @@ export const workflowApi = {
         name: data.name,
         description: data.description
       };
-
       const response = await fetchWithAuth(
         buildApiUrl('/automations/user/my-workflows'),
         {
@@ -93,7 +86,6 @@ export const workflowApi = {
       const result = await response.json();
       return result.userWorkflow || result;
     } catch (error) {
-      console.error('Attach workflow API error:', error);
       throw error;
     }
   },
@@ -114,7 +106,6 @@ export const workflowApi = {
       if (data.name !== undefined) apiData.name = data.name;
       if (data.description !== undefined)
         apiData.description = data.description;
-
       const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/my-workflows/${id}`),
         {
@@ -126,7 +117,6 @@ export const workflowApi = {
       const result = await response.json();
       return result.userWorkflow || result;
     } catch (error) {
-      console.error('Update user workflow API error:', error);
       throw error;
     }
   },
@@ -143,7 +133,6 @@ export const workflowApi = {
       const result = await response.json();
       return result.userWorkflow || result;
     } catch (error) {
-      console.error('Toggle user workflow API error:', error);
       throw error;
     }
   },
@@ -154,7 +143,6 @@ export const workflowApi = {
         method: 'DELETE'
       });
     } catch (error) {
-      console.error('Delete user workflow API error:', error);
       throw error;
     }
   },
@@ -176,7 +164,6 @@ export const workflowApi = {
       const data = await response.json();
       return data.schedules || data;
     } catch (error) {
-      console.error('Get schedules API error:', error);
       throw error;
     }
   },
@@ -199,7 +186,6 @@ export const workflowApi = {
       const result = await response.json();
       return result.schedule || result;
     } catch (error) {
-      console.error('Create schedule API error:', error);
       throw error;
     }
   },
@@ -220,7 +206,6 @@ export const workflowApi = {
       const result = await response.json();
       return result.schedule || result;
     } catch (error) {
-      console.error('Update schedule API error:', error);
       throw error;
     }
   },
@@ -231,7 +216,6 @@ export const workflowApi = {
         method: 'DELETE'
       });
     } catch (error) {
-      console.error('Delete schedule API error:', error);
       throw error;
     }
   },
@@ -265,7 +249,6 @@ export const workflowApi = {
       const result = await response.json();
       return result.execution || result;
     } catch (error) {
-      console.error('Execute workflow API error:', error);
       throw error;
     }
   },
@@ -278,9 +261,7 @@ export const workflowApi = {
         method: 'GET'
       });
 
-      // Handle 304 Not Modified - return empty response for now
       if (response.status === 304) {
-        console.warn('⚠️ 304 Not Modified - returning empty response');
         return {
           items: [],
           total: 0,
@@ -292,13 +273,11 @@ export const workflowApi = {
 
       const data = await response.json();
 
-      // Handle different response formats
       if (data.data) {
         return data.data;
       } else if (data.items) {
         return data;
       } else {
-        console.warn('⚠️ Unexpected response format:', data);
         return {
           items: [],
           total: 0,
@@ -308,7 +287,6 @@ export const workflowApi = {
         };
       }
     } catch (error) {
-      console.error('Get executions API error:', error);
       throw error;
     }
   },
@@ -325,7 +303,6 @@ export const workflowApi = {
       const result = await response.json();
       return result.execution || result;
     } catch (error) {
-      console.error('Get execution details API error:', error);
       throw error;
     }
   }

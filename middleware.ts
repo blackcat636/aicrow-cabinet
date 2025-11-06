@@ -12,7 +12,7 @@ const protectedRoutes = [
   '/balance',
   '/integrations'
 ];
-const authRoutes = ['/']; // Main page handles login/register
+const authRoutes = ['/login', '/signup']; // Public auth routes
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -21,11 +21,10 @@ export async function middleware(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.some((route) =>
     pathname.startsWith(route)
   );
-  const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+  const isAuthRoute = authRoutes.some((route) => pathname === route);
 
-  // Allow access to API routes, static files, and non-protected routes
+  // Allow access to API routes and static files only; process auth logic for pages
   if (
-    !isProtectedRoute ||
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/favicon')
@@ -36,12 +35,18 @@ export async function middleware(request: NextRequest) {
   // Get tokens from cookies
   const { accessToken, refreshToken, deviceId } = getTokens(request);
 
-  // If no tokens at all, redirect to home page (which handles login)
+  // If no tokens at all
   if (!accessToken && !refreshToken) {
+    // Allow public auth routes
     if (isAuthRoute) {
+      // If root '/', redirect to '/login' for clarity
+      if (pathname === '/') {
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
       return NextResponse.next();
     }
-    return NextResponse.redirect(new URL('/', request.url));
+    // Redirect unauthenticated users of protected routes to login
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Check if access token is valid
@@ -62,6 +67,10 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAccessTokenValid) {
+    // If user is authenticated and visits auth routes, redirect to dashboard
+    if (isAuthRoute) {
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    }
     // Access token is valid, allow request
     return NextResponse.next();
   }
@@ -75,35 +84,85 @@ export async function middleware(request: NextRequest) {
         // Token refreshed successfully, set new tokens and allow request
         const nextResponse = NextResponse.next();
 
-        // Set new tokens in cookies
+        // Set new tokens in cookies (HttpOnly)
         nextResponse.cookies.set('access_token', response.data.accessToken, {
           path: '/',
-          secure: true,
-          sameSite: 'strict'
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          httpOnly: true
         });
 
         nextResponse.cookies.set('refresh_token', response.data.refreshToken, {
           path: '/',
           maxAge: 365 * 24 * 60 * 60, // 1 year
-          secure: true,
-          sameSite: 'strict'
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          httpOnly: true
         });
 
         return nextResponse;
       } else {
-        // Refresh failed, tokens are invalid
+        // Refresh failed, tokens are invalid -> clear cookies and redirect to /login
+        const redirectResponse = NextResponse.redirect(new URL('/login', request.url));
+        redirectResponse.cookies.set('access_token', '', {
+          path: '/',
+          expires: new Date(0),
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          httpOnly: true
+        });
+        redirectResponse.cookies.set('refresh_token', '', {
+          path: '/',
+          expires: new Date(0),
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          httpOnly: true
+        });
+        redirectResponse.cookies.set('device_id', '', {
+          path: '/',
+          expires: new Date(0),
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        return redirectResponse;
       }
     } catch (error) {
       console.error(`❌ Middleware: Error refreshing token:`, error);
+      // On exception, clear cookies and redirect to /login
+      const redirectResponse = NextResponse.redirect(new URL('/login', request.url));
+      redirectResponse.cookies.set('access_token', '', {
+        path: '/',
+        expires: new Date(0),
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        httpOnly: true
+      });
+      redirectResponse.cookies.set('refresh_token', '', {
+        path: '/',
+        expires: new Date(0),
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        httpOnly: true
+      });
+      redirectResponse.cookies.set('device_id', '', {
+        path: '/',
+        expires: new Date(0),
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      return redirectResponse;
     }
   }
 
-  // Both access and refresh tokens are invalid, redirect to home page
+  // Both access and refresh tokens are invalid
   if (isAuthRoute) {
+    if (pathname === '/') {
+      return NextResponse.redirect(new URL('/login', request.url));
+    }
     return NextResponse.next();
   }
 
-  return NextResponse.redirect(new URL('/', request.url));
+  return NextResponse.redirect(new URL('/login', request.url));
 }
 
 export const config = {

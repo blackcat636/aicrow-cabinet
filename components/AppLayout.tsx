@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
 import {
@@ -233,6 +233,7 @@ TelegramIcon.displayName = 'TelegramIcon';
 export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
   const pathname = usePathname();
+  const router = useRouter();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isIntegrationsDropdownOpen, setIsIntegrationsDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -263,6 +264,12 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
       console.error('Logout error:', error);
     }
   }, [logout]);
+
+  // Close mobile menu and integrations submenu on route change
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsIntegrationsDropdownOpen(false);
+  }, [pathname]);
 
   // Memoize toggle functions
   const toggleIntegrationsDropdown = useCallback(() => {
@@ -323,8 +330,8 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
             <Image src="/brand/aiPillsLogo.png" alt="AiPills logo" width={40} height={70} priority />
           </Link>
           
-          {/* Navigation Items - Centered */}
-          <div className='absolute left-1/2 transform -translate-x-1/2 overflow-visible'>
+          {/* Navigation Items - Centered (desktop only) */}
+          <div className='absolute left-1/2 transform -translate-x-1/2 overflow-visible hidden md:block'>
             <div className='relative flex items-center gap-2 lg:gap-4 overflow-visible'>
               <TopNavItem
                 href="/dashboard"
@@ -336,7 +343,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 label="Workflows"
                 isActive={activeStates.workflows}
               />
-              
+
               {/* Integrations Dropdown */}
               <div className="relative z-50" ref={integrationsDropdownRef}>
                 <IntegrationsNavButton
@@ -344,7 +351,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                   isOpen={isIntegrationsDropdownOpen}
                   onToggle={toggleIntegrationsDropdown}
                 />
-                
+
                 {/* Integrations Dropdown Menu */}
                 <div className={`absolute left-0 top-full mt-2 w-48 bg-[#141519] border border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden transition-all duration-500 ease-out ${
                   isIntegrationsDropdownOpen 
@@ -367,7 +374,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                   </Link>
                 </div>
               </div>
-              
+
               <TopNavItem
                 href="/executions"
                 label="Executions"
@@ -440,9 +447,14 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
             </div>
             
             <button
-              onClick={toggleMobileMenu}
+              onClick={() => {
+                setIsUserMenuOpen(false);
+                setIsIntegrationsDropdownOpen(false);
+                toggleMobileMenu();
+              }}
               className='p-2 text-gray-300 hover:text-white transition-colors md:hidden'
               aria-label='Toggle menu'
+              aria-expanded={isMobileMenuOpen}
             >
               {isMobileMenuOpen ? (
                 <XIcon className='w-6 h-6' />
@@ -450,6 +462,80 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 <MenuIcon className='w-6 h-6' />
               )}
             </button>
+            {/* Fullscreen burger menu overlay */}
+            {isMobileMenuOpen && (
+              <div
+                className='fixed inset-0 z-[100] bg-[#0b0c10]/80 backdrop-blur-sm'
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <div
+                  className='absolute inset-0 bg-[#141519]/95'
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className='absolute top-4 right-4'>
+                    <button
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      aria-label='Close menu'
+                      className='p-2 text-gray-300 hover:text-white'
+                    >
+                      <XIcon className='w-7 h-7' />
+                    </button>
+                  </div>
+                  <nav className='h-full w-full flex flex-col items-center justify-center gap-6 px-6'>
+                    <Link href='/dashboard' onClick={() => setIsMobileMenuOpen(false)}>
+                      <span className={`text-2xl md:text-3xl transition-all ${
+                        activeStates.dashboard
+                          ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
+                          : 'font-medium text-gray-300 hover:text-white'
+                      }`}>
+                        Dashboard
+                      </span>
+                    </Link>
+                    <Link href='/workflows' onClick={() => setIsMobileMenuOpen(false)}>
+                      <span className={`text-2xl md:text-3xl transition-all ${
+                        activeStates.workflows
+                          ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
+                          : 'font-medium text-gray-300 hover:text-white'
+                      }`}>
+                        Workflows
+                      </span>
+                    </Link>
+                    <Link href='/executions' onClick={() => setIsMobileMenuOpen(false)}>
+                      <span className={`text-2xl md:text-3xl transition-all ${
+                        activeStates.executions
+                          ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
+                          : 'font-medium text-gray-300 hover:text-white'
+                      }`}>
+                        Executions
+                      </span>
+                    </Link>
+                    <Link href='/balance' onClick={() => setIsMobileMenuOpen(false)}>
+                      <span className={`text-2xl md:text-3xl transition-all ${
+                        activeStates.balance
+                          ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
+                          : 'font-medium text-gray-300 hover:text-white'
+                      }`}>
+                        Balance
+                      </span>
+                    </Link>
+                    <div className='flex flex-col items-center gap-2 mt-2'>
+                      <span className='text-sm uppercase tracking-wider text-gray-400'>Integrations</span>
+                      <Link
+                        href='/integrations/telegram'
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`text-2xl md:text-3xl transition-all ${
+                          activeStates.telegram
+                            ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
+                            : 'font-medium text-gray-300 hover:text-white'
+                        }`}
+                      >
+                        Telegram
+                      </Link>
+                    </div>
+                  </nav>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </nav>
@@ -488,9 +574,9 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
           }}
         />
         {/* Mobile Menu Overlay */}
-        {isMobileMenuOpen && (
+        {false && (
           <div className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={closeMobileMenu}>
-          <div className="fixed left-0 top-0 h-full w-80 bg-[#141519] border-r border-gray-700 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="fixed left-0 top-0 h-full w-80 bg-[#141519] border-r border-gray-700 shadow-xl" onClick={(e) => e.stopPropagation()}>
               <div className="p-4 flex flex-col h-full">
                 {/* Welcome Header */}
                 <div className='mb-4'>

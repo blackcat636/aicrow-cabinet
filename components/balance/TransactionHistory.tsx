@@ -18,35 +18,18 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCurrencyId, setSelectedCurrencyId] = useState<number | null>(null);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
 
-  // Set default currency when balances are loaded
   useEffect(() => {
-    console.log('🔄 [TransactionHistory] Balances updated:', {
-      balancesCount: balances.length,
-      balances: balances.map(b => ({ id: b.currency.id, code: b.currency.code, name: b.currency.name })),
-      currentSelectedCurrencyId: selectedCurrencyId
-    });
-    
     if (balances.length > 0 && !selectedCurrencyId) {
-      const firstCurrencyId = balances[0].currency.id;
-      console.log('🎯 [TransactionHistory] Setting default currency:', {
-        currencyId: firstCurrencyId,
-        currencyName: balances[0].currency.name
-      });
-      setSelectedCurrencyId(firstCurrencyId);
+      setSelectedCurrencyId(balances[0].currency.id);
     }
   }, [balances, selectedCurrencyId]);
 
-  // Fetch transactions when user is available (we'll filter by currency on client side)
   useEffect(() => {
     if (user?.id) {
-      console.log('💫 [TransactionHistory] User available, fetching transactions:', {
-        userId: user.id,
-        selectedCurrencyId
-      });
       fetchTransactions();
-    } else {
-      console.log('⏸️ [TransactionHistory] Waiting for user ID');
     }
   }, [user?.id]);
   
@@ -56,87 +39,37 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
       return transactions;
     }
     const filtered = transactions.filter(t => t.currency && t.currency.id === selectedCurrencyId);
-    console.log('🔍 [TransactionHistory] Filtering transactions:', {
-      selectedCurrencyId,
-      totalTransactions: transactions.length,
-      filteredCount: filtered.length
-    });
     return filtered;
   }, [transactions, selectedCurrencyId]);
 
   const fetchTransactions = async () => {
     if (!user?.id) {
-      console.error('❌ [TransactionHistory] No user ID available');
       setError('User ID not available');
       return;
     }
 
     const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
     
-    console.log('🚀 [TransactionHistory] fetchTransactions called:', {
-      userId,
-      userStringId: user.id,
-      timestamp: new Date().toISOString()
-    });
-    
     try {
       setIsLoading(true);
       setError(null);
-      console.log('⏳ [TransactionHistory] Loading started for user:', userId);
 
       const response = await balanceApi.getTransactions(userId);
-      console.log('📥 [TransactionHistory] Response received:', {
-        status: response.status,
-        hasData: !!response.data,
-        dataIsArray: Array.isArray(response.data),
-        dataLength: Array.isArray(response.data) ? response.data.length : (response.data ? 1 : 0)
-      });
 
       if (response.status === 200 && response.data) {
-        // Response data is now always an array (normalized in apiBalance)
         let transactionData = Array.isArray(response.data) ? response.data : [response.data];
         
-        // Filter transactions by selected currency if available
         if (selectedCurrencyId) {
-          const beforeFilter = transactionData.length;
           transactionData = transactionData.filter(
             t => t.currency && t.currency.id === selectedCurrencyId
           );
-          console.log('🔍 [TransactionHistory] Filtered transactions by currency:', {
-            selectedCurrencyId,
-            beforeFilter,
-            afterFilter: transactionData.length
-          });
         }
-        
-        console.log('✅ [TransactionHistory] Setting transactions:', {
-          count: transactionData.length,
-          transactions: transactionData.map(t => ({
-            id: t.id,
-            type: t.type,
-            status: t.status,
-            amount: t.amount,
-            currencyId: t.currency?.id,
-            createdAt: t.created_at
-          }))
-        });
         setTransactions(transactionData);
       } else {
-        console.error('❌ [TransactionHistory] Invalid response format:', response);
         throw new Error('Invalid response format');
       }
     } catch (err: any) {
-      console.error('❌ [TransactionHistory] Error fetching transactions:', {
-        error: err,
-        message: err.message,
-        status: err.status,
-        userId: user?.id,
-        stack: err.stack
-      });
-      
-      // If 404, it might mean no transactions exist - show empty state instead of error
       if (err.status === 404) {
-        console.log('ℹ️ [TransactionHistory] 404 - treating as no transactions');
         setTransactions([]);
         setError(null);
       } else {
@@ -144,7 +77,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
       }
     } finally {
       setIsLoading(false);
-      console.log('🏁 [TransactionHistory] Loading finished for user:', user?.id);
     }
   };
 
@@ -155,16 +87,13 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
     return numAmount.toFixed(precision);
   };
 
-  // Format date
+  // Format date: mm/dd/yyyy
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat('uk-UA', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date);
+    const d = new Date(dateString);
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    const yyyy = d.getFullYear();
+    return `${mm}/${dd}/${yyyy}`;
   };
 
   // Get transaction type color
@@ -248,9 +177,30 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
   // Get selected currency
   const selectedCurrency = balances.find(b => b.currency.id === selectedCurrencyId);
 
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setMousePosition({ x, y });
+  };
+
   return (
-    <div className="rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm">
-      <CardHeader className="pb-4">
+    <div
+      className="relative rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm overflow-hidden group"
+      onMouseMove={handleMouseMove}
+      onMouseEnter={() => setIsHovering(true)}
+      onMouseLeave={() => setIsHovering(false)}
+    >
+      {/* Interactive gradient overlay that follows mouse */}
+      <div
+        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
+        style={{
+          background: isHovering
+            ? `radial-gradient(500px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(165,0,225,0.35), rgba(123,97,255,0.25) 40%, transparent 70%)`
+            : 'none'
+        }}
+      />
+      <CardHeader className="pb-4 relative z-10">
         <div className="flex items-center justify-between">
           <div>
             <CardTitle className="text-2xl font-bold text-white">Transaction History</CardTitle>
@@ -274,7 +224,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
           )}
         </div>
       </CardHeader>
-      <CardContent className="px-6 pb-6">
+      <CardContent className="px-6 pb-6 relative z-10">
         {!selectedCurrencyId ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
@@ -298,9 +248,9 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
             {sortedTransactions.map((transaction) => (
               <div
                 key={transaction.id}
-                className="p-5 bg-black/40 backdrop-blur-sm rounded-lg border border-gray-700/50 hover:border-purple-500/50 transition-all"
+                className="p-5 bg-black/40 backdrop-blur-sm rounded-lg border border-gray-700/50 transition-all"
               >
-                <div className="flex items-start justify-between gap-4">
+                <div className="flex flex-col md:flex-row items-start md:items-start justify-between gap-4">
                   {/* Left side - Icon and Main Info */}
                   <div className="flex items-start gap-4 flex-1">
                     <div className="flex-shrink-0 mt-1">
@@ -349,10 +299,10 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                   </div>
 
                   {/* Right side - Amount and Balance Info */}
-                  <div className="flex-shrink-0 text-right">
+                  <div className="flex-shrink-0 md:text-right w-full md:w-auto mt-3 md:mt-0">
                     <div className="mb-2">
                       <p
-                        className={`text-2xl font-bold ${
+                        className={`text-2xl font-bold whitespace-normal break-all leading-tight ${
                           transaction.type === 'DEPOSIT'
                             ? 'text-green-400'
                             : transaction.type === 'WITHDRAWAL'
@@ -369,12 +319,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                     </div>
 
                     <div className="text-xs text-gray-400 space-y-1">
-                      <div>
-                        Before: {formatAmount(transaction.balance_before, transaction.currency)}
-                      </div>
-                      <div>
-                        After: {formatAmount(transaction.balance_after, transaction.currency)}
-                      </div>
                       {transaction.fee_amount && (
                         <div className="text-orange-400">
                           Fee: {formatAmount(transaction.fee_amount, transaction.currency)}
@@ -384,24 +328,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                   </div>
                 </div>
 
-                {/* Metadata section (if available) */}
-                {transaction.metadata && Object.keys(transaction.metadata).length > 0 && (
-                  <div className="mt-4 pt-4 border-t border-gray-700/50">
-                    <details className="group">
-                      <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-300 transition-colors">
-                        View Details
-                      </summary>
-                      <div className="mt-2 text-xs text-gray-500 space-y-1">
-                        {Object.entries(transaction.metadata).map(([key, value]) => (
-                          <div key={key} className="flex gap-2">
-                            <span className="font-medium capitalize">{key.replace(/_/g, ' ')}:</span>
-                            <span>{String(value)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </details>
-                  </div>
-                )}
+                {/* Metadata section removed as per design request */}
               </div>
             ))}
           </div>

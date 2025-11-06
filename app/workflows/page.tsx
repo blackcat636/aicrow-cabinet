@@ -23,9 +23,11 @@ export default function WorkflowsPage() {
   const [telegramStatus, setTelegramStatus] = useState<TelegramStatusResponse['data'] | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedWorkflow, setSelectedWorkflow] = useState<Workflow | null>(null);
+  const didInitialLoadRef = useRef(false);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && !didInitialLoadRef.current) {
+      didInitialLoadRef.current = true;
       loadData();
     }
   }, [isAuthenticated]);

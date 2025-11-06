@@ -78,18 +78,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   return (
     <>
-    <div className={isModal ? "fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50" : ""}>
-      <div className={(isModal ? "bg-gray-900 rounded-lg max-w-md w-full border border-gray-700" : "") + (className ? ` ${className}` : '')}>
+    <div className={isModal ? "fixed inset-0 flex items-center justify-center p-4 z-50" : ""}>
+      <div className={(isModal ? "bg-transparent rounded-2xl max-w-md w-full border border-white/10 shadow-2xl shadow-purple-500/20" : "") + (className ? ` ${className}` : '')}>
         {/* Header */}
         {isModal && (
-          <div className="flex items-center justify-between p-6 border-b border-gray-700">
-            <h2 className="text-xl font-semibold text-white">Sign In</h2>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-red-900/20"
-            >
-              <XIcon className="w-5 h-5" />
-            </button>
+          <div className="p-6 border-b border-white/10">
+            <h2 className="text-2xl font-bold text-white">Ai Pills User Account</h2>
+            <p className="text-sm text-gray-300 mt-1">Welcome to Workflow Management System</p>
           </div>
         )}
 
@@ -112,7 +107,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
               placeholder="Enter your email"
-              className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border ${isModal ? 'rounded-lg' : 'rounded-full'} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+              className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border ${isModal ? 'rounded-full' : 'rounded-lg'} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                 errors.email ? 'border-red-500' : 'border-white/30'
               }`}
             />
@@ -132,7 +127,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
                 placeholder="Enter your password"
-                className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border ${isModal ? 'rounded-lg' : 'rounded-full'} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border ${isModal ? 'rounded-full' : 'rounded-lg'} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                   errors.password ? 'border-red-500' : 'border-white/30'
                 }`}
               />
@@ -158,7 +153,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             <button
               type="submit"
               disabled={isLoading}
-              className={`${isModal ? 'w-full' : 'w-auto'} inline-flex items-center justify-center px-8 py-2.5 bg-purple-600 text-white ${isModal ? 'rounded-lg' : 'rounded-full'} hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg shadow-purple-500/25`}
+              className={`${isModal ? 'w-full' : 'w-auto'} inline-flex items-center justify-center px-8 py-2.5 bg-purple-600 text-white ${isModal ? 'rounded-full' : 'rounded-lg'} hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg shadow-purple-500/25`}
             >
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">

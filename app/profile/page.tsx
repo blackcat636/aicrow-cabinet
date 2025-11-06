@@ -37,6 +37,21 @@ export default function ProfilePage() {
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
   const [socialUpLoading, setSocialUpLoading] = useState(false);
 
+  // Helper: convert MM/DD/YYYY to YYYY-MM-DD (returns undefined if invalid)
+  const toIsoDate = (display: string | undefined): string | undefined => {
+    if (!display) return undefined;
+    const parts = display.split('/');
+    if (parts.length !== 3) return undefined;
+    const [mm, dd, yyyy] = parts;
+    if (mm?.length !== 2 || dd?.length !== 2 || yyyy?.length !== 4) return undefined;
+    // Basic sanity check
+    const month = Number(mm);
+    const day = Number(dd);
+    const year = Number(yyyy);
+    if (!month || !day || !year || month < 1 || month > 12 || day < 1 || day > 31) return undefined;
+    return `${yyyy}-${mm}-${dd}`;
+  };
+
   useEffect(() => {
     loadProfile();
   }, []);
@@ -108,7 +123,8 @@ export default function ProfilePage() {
         lastName: formData.lastName?.trim() || undefined,
         phone: formData.phone?.trim() || undefined,
         photo: formData.photo?.trim() || undefined,
-        dateOfBirth: formData.dateOfBirth?.trim() || undefined
+        // Send ISO format (YYYY-MM-DD) built from display value
+        dateOfBirth: toIsoDate(formData.dateOfBirth?.trim())
       };
       
       // Remove undefined values
@@ -368,17 +384,6 @@ export default function ProfilePage() {
                 className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
                   errors.dateOfBirth ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
                 }`}
-                onBlur={(e) => {
-                  // Convert MM/DD/YYYY to YYYY-MM-DD for storage
-                  const value = e.target.value;
-                  const parts = value.split('/');
-                  if (parts.length === 3 && parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
-                    const dateStr = `${parts[2]}-${parts[0]}-${parts[1]}`;
-                    handleInputChange('dateOfBirth', dateStr);
-                  } else if (value.length === 0) {
-                    handleInputChange('dateOfBirth', '');
-                  }
-                }}
               />
               {errors.dateOfBirth && (
                 <p className="mt-2 text-sm text-red-400 flex items-center gap-1">

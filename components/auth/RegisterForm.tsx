@@ -38,6 +38,15 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const [registrationEmail, setRegistrationEmail] = useState("");
   const registrationEmailRef = useRef("");
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const saved = window.sessionStorage.getItem("registrationEmail");
+    if (saved) {
+      if (!registrationEmailRef.current) registrationEmailRef.current = saved;
+      if (!registrationEmail) setRegistrationEmail(saved);
+    }
+  }, []);
+
   // Clear error when form data changes (user is typing)
   const handleInputChange = (field: keyof RegisterRequest, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -92,10 +101,11 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       if (result?.requiresVerification) {
         const emailToUse = result.email || formData.email;
 
-        // Save email in state, ref, and sessionStorage
         setRegistrationEmail(emailToUse);
         registrationEmailRef.current = emailToUse;
-        sessionStorage.setItem("registrationEmail", emailToUse);
+        if (typeof window !== "undefined") {
+          window.sessionStorage.setItem("registrationEmail", emailToUse);
+        }
 
         // Call parent callback if provided, otherwise show form directly
         if (onRegistrationSuccess) {
@@ -125,7 +135,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   const emailToUse =
     registrationEmail ||
     registrationEmailRef.current ||
-    sessionStorage.getItem("registrationEmail") ||
     "";
 
   return (
@@ -137,7 +146,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
           setShowVerifyEmail(false);
           setRegistrationEmail("");
           registrationEmailRef.current = "";
-          sessionStorage.removeItem("registrationEmail");
+          if (typeof window !== "undefined") {
+            window.sessionStorage.removeItem("registrationEmail");
+          }
           if (isModal && onClose) {
             onClose();
           }
@@ -149,32 +160,22 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         <div
           className={
             isModal
-              ? "fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50"
+              ? "fixed inset-0 flex items-center justify-center p-4 z-50"
               : ""
           }
         >
           <div
             className={
               (isModal
-                ? "bg-gray-900 rounded-lg max-w-md w-full border border-gray-700"
+                ? "bg-transparent rounded-2xl max-w-md w-full border border-white/10 shadow-2xl shadow-purple-500/20"
                 : "") + (className ? ` ${className}` : "")
             }
           >
             {/* Header */}
             {isModal && (
-              <div className="flex items-center justify-between p-6 border-b border-gray-700">
-                <h2 className="text-xl font-semibold text-white">
-                  Create Account
-                </h2>
-                <button
-                  className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-red-900/20"
-                  onClick={() => {
-                    clearError();
-                    onClose?.();
-                  }}
-                >
-                  <XIcon className="w-5 h-5" />
-                </button>
+              <div className="p-6 border-b border-white/10">
+                <h2 className="text-2xl font-bold text-white">Ai Pills User Account</h2>
+                <p className="text-sm text-gray-300 mt-1">Welcome to Workflow Management System</p>
               </div>
             )}
 

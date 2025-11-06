@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { User } from '@/types/auth';
 import { ensureValidToken, refreshAccessToken } from './auth-utils';
+import { decodeToken } from './auth-utils';
 
 // Types
 export interface AuthTokens {
@@ -85,6 +86,13 @@ export const setTokens = (tokens: AuthTokens) => {
   // Set device ID (1 year)
   setCookieValue('device_id', tokens.deviceId, 365 * 24 * 60 * 60);
 
+  // Also set client-readable duplicates to keep client auth working between refreshes
+  const decoded = decodeToken(tokens.accessToken);
+  const nowSec = Math.floor(Date.now() / 1000);
+  const accessClientMaxAge = decoded && decoded.exp ? Math.max(60, decoded.exp - nowSec) : 15 * 60;
+  setCookieValue('access_token_client', tokens.accessToken, accessClientMaxAge);
+  setCookieValue('refresh_token_client', tokens.refreshToken, 365 * 24 * 60 * 60);
+
   // Verify cookies were set
   setTimeout(() => {
     const savedAccessToken = getCookieValue('access_token');
@@ -116,13 +124,16 @@ export const getTokens = (request?: NextRequest) => {
 };
 
 export const getAccessToken = (): string | null => {
+  // Prefer HttpOnly token name; if not readable on client, fall back to client copy
   const token = getCookieValue('access_token');
-  return token;
+  if (token) return token;
+  return getCookieValue('access_token_client');
 };
 
 export const getRefreshToken = (): string | null => {
   const token = getCookieValue('refresh_token');
-  return token;
+  if (token) return token;
+  return getCookieValue('refresh_token_client');
 };
 
 export const removeTokens = () => {
@@ -135,6 +146,9 @@ export const removeTokens = () => {
   document.cookie = `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
   document.cookie = `refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
   document.cookie = `device_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
+  // Clear client-side duplicate cookies if present
+  document.cookie = `access_token_client=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
+  document.cookie = `refresh_token_client=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
 };
 
 // Get auth headers for API requests
@@ -158,8 +172,11 @@ export const getAuthHeaders = (): HeadersInit => {
   return headers;
 };
 
-// Function for automatic token refresh on API requests
-export const fetchWithAuth = async (
+// In-flight requests cache for GET deduplication
+const inflightRequests = new Map<string, Promise<Response>>();
+
+// Internal function with the original logic (no in-flight dedup)
+const doFetchWithAuth = async (
   url: string,
   options: RequestInit = {},
   retryCount = 0
@@ -176,39 +193,11 @@ export const fetchWithAuth = async (
       ...options.headers
     };
 
-    // Log request details (without sensitive data)
-    const authHeadersRecord = authHeaders as Record<string, string>;
-    const authToken = authHeadersRecord.Authorization;
-    const tokenPreview = authToken
-      ? `Bearer ${authToken.substring(7, 20)}...`
-      : 'No token';
-
-    console.log('🌐 [fetchWithAuth] Making request:', {
-      url,
-      method: options.method || 'GET',
-      hasAuth: !!authToken,
-      tokenPreview,
-      hasDeviceId: !!authHeadersRecord['x-device-id'],
-      deviceId: authHeadersRecord['x-device-id'] || 'none',
-      retryCount,
-      allHeaders: Object.keys(finalHeaders),
-      headerCount: Object.keys(finalHeaders).length
-    });
-
     // Execute request with current token
     const response = await fetch(url, {
       ...options,
       headers: finalHeaders,
       cache: 'no-cache'
-    });
-
-    console.log('📨 [fetchWithAuth] Response:', {
-      url,
-      status: response.status,
-      statusText: response.statusText,
-      ok: response.ok,
-      retryCount,
-      headers: Object.fromEntries(response.headers.entries())
     });
 
     // If we got 401, try to refresh token and retry request
@@ -236,9 +225,36 @@ export const fetchWithAuth = async (
     if (retryCount < maxRetries && error instanceof TypeError) {
       const delay = Math.pow(2, retryCount) * 1000;
       await new Promise((resolve) => setTimeout(resolve, delay));
-      return fetchWithAuth(url, options, retryCount + 1);
+      return doFetchWithAuth(url, options, retryCount + 1);
     }
 
     throw error;
   }
+};
+
+// Function for automatic token refresh on API requests with in-flight dedup for GET
+export const fetchWithAuth = async (
+  url: string,
+  options: RequestInit = {},
+  retryCount = 0
+): Promise<Response> => {
+  const method = (options.method || 'GET').toUpperCase();
+  if (method === 'GET') {
+    const key = url; // key can be extended with headers/query if needed
+    const existing = inflightRequests.get(key);
+    if (existing) {
+      // Return a cloned response so multiple consumers can read the body
+      return existing.then((res) => res.clone());
+    }
+    const promise = doFetchWithAuth(url, options, retryCount)
+      .finally(() => {
+        inflightRequests.delete(key);
+      });
+    inflightRequests.set(key, promise);
+    const res = await promise;
+    return res.clone();
+  }
+
+  // Non-GET requests bypass dedup
+  return doFetchWithAuth(url, options, retryCount);
 };

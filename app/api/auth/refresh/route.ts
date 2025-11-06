@@ -35,25 +35,43 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
 
-      // Set cookies manually
+      // Set cookies
       nextResponse.cookies.set('access_token', data.data.accessToken, {
         path: '/',
         maxAge: 60 * 60, // 1 hour
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        httpOnly: true
+      });
+
+      // Duplicate non-HttpOnly cookie for client-side usage (short-lived)
+      nextResponse.cookies.set('access_token_client', data.data.accessToken, {
+        path: '/',
+        maxAge: 15 * 60, // 15 minutes
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
 
       nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
         path: '/',
         maxAge: 365 * 24 * 60 * 60,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        httpOnly: true
+      });
+
+      // Duplicate non-HttpOnly cookie for client-side usage
+      nextResponse.cookies.set('refresh_token_client', data.data.refreshToken, {
+        path: '/',
+        maxAge: 365 * 24 * 60 * 60,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
 
       nextResponse.cookies.set('device_id', deviceId, {
         path: '/',
         maxAge: 365 * 24 * 60 * 60,
-        secure: true,
+        secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
 
@@ -61,46 +79,40 @@ export async function POST(request: NextRequest) {
     } else {
       // If refresh token is invalid, clear all tokens
       if (data.status === 401) {
-        console.error('❌ Invalid refresh token, clearing all cookies');
         const nextResponse = NextResponse.json(
           { error: 'Invalid refresh token' },
           { status: 401 }
         );
-        // Clear cookies manually
+        // Clear cookies
         nextResponse.cookies.set('access_token', '', {
           path: '/',
           expires: new Date(0),
-          secure: true,
-          sameSite: 'strict'
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          httpOnly: true
         });
         nextResponse.cookies.set('refresh_token', '', {
           path: '/',
           expires: new Date(0),
-          secure: true,
-          sameSite: 'strict'
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict',
+          httpOnly: true
         });
         nextResponse.cookies.set('device_id', '', {
           path: '/',
           expires: new Date(0),
-          secure: true,
+          secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict'
         });
         return nextResponse;
       }
 
-      console.error('❌ Refresh failed:', data);
       return NextResponse.json(
         { error: data.message || 'Token refresh failed' },
         { status: response.status }
       );
     }
   } catch (error) {
-    console.error('❌ API Refresh error:', error);
-    console.error('❌ Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
-    });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
