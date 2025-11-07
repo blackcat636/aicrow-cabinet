@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { UserWorkflow, WorkflowExecution, ExecutionsResponse } from '@/types/workflow';
@@ -18,11 +18,51 @@ import {
   PauseIcon,
   TrashIcon
 } from '@/components/icons';
+import { Search, Calendar, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { WorkflowForm } from '@/components/workflow/WorkflowForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export const runtime = 'edge';
+
+// Truncated text component with expand/collapse
+const TruncatedText: React.FC<{
+  text: string | any;
+  maxLength?: number;
+  className?: string;
+}> = ({ text, maxLength = 50, className = '' }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Ensure text is converted to string
+  const textString = typeof text === 'string' ? text : (text ? String(text) : '');
+  const textLength = textString.length;
+  const shouldTruncate = textLength > maxLength;
+  const displayText = isExpanded || !shouldTruncate 
+    ? textString 
+    : `${textString.slice(0, maxLength)}...`;
+
+  if (!shouldTruncate) {
+    return <div className={className}>{textString}</div>;
+  }
+  return (
+    <div className="w-full">
+      <div className={className}>
+        {displayText}
+      </div>
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          setIsExpanded(!isExpanded);
+        }}
+        className="mt-2 px-3 py-1.5 text-xs font-semibold text-white bg-purple-500 hover:bg-purple-600 transition-colors rounded-md border border-purple-400 shadow-sm"
+        type="button"
+      >
+        {isExpanded ? 'Less' : 'More'}
+      </button>
+    </div>
+  );
+};
 
 // Execution Card component with mouse tracking
 const ExecutionCard: React.FC<{
@@ -112,8 +152,12 @@ const ExecutionCard: React.FC<{
           {execution.inputData && (
             <div className="mb-3">
               <h4 className="text-sm font-medium text-gray-300 mb-1">Input Data:</h4>
-              <div className="p-2 bg-gray-700 rounded text-xs font-mono text-gray-300 break-all">
-                {execution.inputData}
+              <div className="p-2 bg-gray-700 rounded text-xs font-mono text-gray-300">
+                <TruncatedText 
+                  text={execution.inputData} 
+                  maxLength={50}
+                  className="break-all whitespace-pre-wrap"
+                />
               </div>
             </div>
           )}
@@ -122,8 +166,12 @@ const ExecutionCard: React.FC<{
           {execution.outputData && (
             <div className="mb-3">
               <h4 className="text-sm font-medium text-gray-300 mb-1">Output Data:</h4>
-              <div className="p-2 bg-green-900/20 rounded text-xs font-mono text-green-300 break-all">
-                {execution.outputData}
+              <div className="p-2 bg-green-900/20 rounded text-xs font-mono text-green-300">
+                <TruncatedText 
+                  text={execution.outputData} 
+                  maxLength={50}
+                  className="break-all whitespace-pre-wrap"
+                />
               </div>
             </div>
           )}
@@ -132,8 +180,27 @@ const ExecutionCard: React.FC<{
           {execution.resultData && (
             <div className="mb-3">
               <h4 className="text-sm font-medium text-gray-300 mb-1">Result:</h4>
-              <div className="p-2 bg-gray-800 rounded text-xs font-mono text-gray-200 break-all">
-                {typeof execution.resultData === 'object' ? (execution.resultData.message ?? JSON.stringify(execution.resultData)) : String(execution.resultData)}
+              <div className="p-2 bg-gray-800 rounded text-xs font-mono text-gray-200">
+                {(() => {
+                  let resultText: string;
+                  if (typeof execution.resultData === 'object' && execution.resultData !== null) {
+                    // Try to get message first, then result, then stringify the whole object
+                    resultText = (execution.resultData as any).message 
+                      ?? (execution.resultData as any).result 
+                      ?? (execution.resultData as any).data
+                      ?? JSON.stringify(execution.resultData, null, 2);
+                  } else {
+                    resultText = String(execution.resultData);
+                  }
+                  
+                  return (
+                    <TruncatedText 
+                      text={resultText}
+                      maxLength={50}
+                      className="break-all whitespace-pre-wrap"
+                    />
+                  );
+                })()}
               </div>
             </div>
           )}
@@ -181,6 +248,13 @@ export default function WorkflowDetailPage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [toggling, setToggling] = useState(false);
+  
+  // Filters for executions
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [dateFromNative, setDateFromNative] = useState<string>('');
+  const [dateToNative, setDateToNative] = useState<string>('');
+  const [inputDataSearch, setInputDataSearch] = useState<string>('');
   
   // Mouse tracking for Workflow Information card
   const [workflowInfoMousePosition, setWorkflowInfoMousePosition] = useState({ x: 0, y: 0 });
@@ -288,9 +362,11 @@ export default function WorkflowDetailPage() {
       setExecutionsLoading(true);
       const data = await workflowApi.getMyExecutions();
       // Filter executions for this specific workflow
+      const filteredItems = data.items.filter(execution => (execution.workflowId ?? execution.userWorkflowId) === workflowId);
       const filteredExecutions = {
         ...data,
-        items: data.items.filter(execution => (execution.workflowId ?? execution.userWorkflowId) === workflowId)
+        items: filteredItems,
+        total: filteredItems.length // Update total to reflect only this workflow's executions
       };
       setExecutions(filteredExecutions);
     } catch (err) {
@@ -370,6 +446,141 @@ export default function WorkflowDetailPage() {
     setShowEditForm(false);
     loadWorkflow();
   };
+
+  // Date formatting functions (same as TransactionHistory)
+  const formatToDisplay = (value: string): string => {
+    if (!value) return '';
+    const parts = value.split('-');
+    if (parts.length === 3) {
+      return `${parts[1]}/${parts[2]}/${parts[0]}`;
+    }
+    return value;
+  };
+
+  const formatToNative = (value: string): string => {
+    if (!value) return '';
+    const parts = value.split('/');
+    if (parts.length === 3) {
+      const month = parts[0].padStart(2, '0');
+      const day = parts[1].padStart(2, '0');
+      const year = parts[2];
+      return `${year}-${month}-${day}`;
+    }
+    return value;
+  };
+
+  const formatDateInput = (value: string): string => {
+    const digits = value.replace(/\D/g, '');
+    if (digits.length <= 2) {
+      return digits;
+    } else if (digits.length <= 4) {
+      return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    } else {
+      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+    }
+  };
+
+  const parseDateInput = (value: string): Date | null => {
+    if (!value) return null;
+    const parts = value.split('/');
+    if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
+      const month = parseInt(parts[0], 10) - 1;
+      const day = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
+      if (month >= 0 && month <= 11 && day >= 1 && day <= 31 && year >= 1900) {
+        const date = new Date(year, month, day);
+        if (date.getMonth() === month && date.getDate() === day && date.getFullYear() === year) {
+          return date;
+        }
+      }
+    }
+    const isoParts = value.split('-');
+    if (isoParts.length === 3) {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    return null;
+  };
+
+  const handleDateFromNativeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDateFromNative(value);
+    setDateFrom(formatToDisplay(value));
+  };
+
+  const handleDateToNativeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDateToNative(value);
+    setDateTo(formatToDisplay(value));
+  };
+
+  const handleDateFromTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatDateInput(value);
+    if (formatted.length <= 10) {
+      setDateFrom(formatted);
+      const native = formatToNative(formatted);
+      if (native && native.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        setDateFromNative(native);
+      }
+    }
+  };
+
+  const handleDateToTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    const formatted = formatDateInput(value);
+    if (formatted.length <= 10) {
+      setDateTo(formatted);
+      const native = formatToNative(formatted);
+      if (native && native.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        setDateToNative(native);
+      }
+    }
+  };
+
+  // Filter executions by date range and input data search
+  const filteredExecutions = useMemo(() => {
+    let filtered = executions.items;
+
+    // Filter by date range (using startedAt)
+    if (dateFromNative || dateFrom) {
+      const fromDate = parseDateInput(dateFromNative || dateFrom);
+      if (fromDate) {
+        fromDate.setHours(0, 0, 0, 0);
+        filtered = filtered.filter(execution => {
+          if (!execution.startedAt) return false;
+          const executionDate = new Date(execution.startedAt);
+          executionDate.setHours(0, 0, 0, 0);
+          return executionDate >= fromDate;
+        });
+      }
+    }
+
+    if (dateToNative || dateTo) {
+      const toDate = parseDateInput(dateToNative || dateTo);
+      if (toDate) {
+        toDate.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(execution => {
+          if (!execution.startedAt) return false;
+          const executionDate = new Date(execution.startedAt);
+          return executionDate <= toDate;
+        });
+      }
+    }
+
+    // Filter by input data search
+    if (inputDataSearch.trim()) {
+      const searchValue = inputDataSearch.trim().toLowerCase();
+      filtered = filtered.filter(execution => {
+        const inputData = execution.inputData || '';
+        return inputData.toLowerCase().includes(searchValue);
+      });
+    }
+
+    return filtered;
+  }, [executions.items, dateFromNative, dateFrom, dateToNative, dateTo, inputDataSearch]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -750,7 +961,173 @@ export default function WorkflowDetailPage() {
                 <div className="flex items-center justify-between mb-6 ml-6 mr-6">
                   <h2 className="text-xl font-semibold text-white">Execution History</h2>
                   <div className="text-sm text-gray-400">
-                    {executions.total} total executions
+                    {filteredExecutions.length} of {executions.items.length} executions
+                    {(dateFrom || dateTo || inputDataSearch) && (
+                      <span className="ml-2 text-purple-400">(filtered)</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Filters Section */}
+                <div className="mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                  <div className="flex flex-col lg:flex-row gap-4">
+                    {/* Input Data Search */}
+                    <div className="flex-1 min-w-0 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <input
+                        type="text"
+                        placeholder="Search by Input Data..."
+                        value={inputDataSearch}
+                        onChange={(e) => setInputDataSearch(e.target.value)}
+                        className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500"
+                      />
+                      {inputDataSearch && (
+                        <button
+                          onClick={() => setInputDataSearch('')}
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                          type="button"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Date Range Filters */}
+                    <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+                      <div className="relative w-full sm:w-48">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const input = document.getElementById('exec-date-from-picker') as HTMLInputElement;
+                            if (input) {
+                              input.style.pointerEvents = 'auto';
+                              if (typeof input.showPicker === 'function') {
+                                try {
+                                  const pickerResult = input.showPicker();
+                                  if (pickerResult !== undefined && pickerResult !== null && typeof (pickerResult as any).catch === 'function') {
+                                    (pickerResult as any).catch(() => input.click());
+                                  }
+                                } catch (error) {
+                                  input.click();
+                                }
+                              } else {
+                                input.click();
+                              }
+                              setTimeout(() => {
+                                input.style.pointerEvents = 'none';
+                              }, 100);
+                            }
+                          }}
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-400 transition-colors z-20 cursor-pointer"
+                          title="Open calendar"
+                        >
+                          <Calendar className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="date"
+                          value={dateFromNative}
+                          onChange={handleDateFromNativeChange}
+                          className="absolute inset-0 opacity-0 pointer-events-none z-10"
+                          id="exec-date-from-picker"
+                        />
+                        <input
+                          type="text"
+                          value={dateFrom}
+                          onChange={handleDateFromTextChange}
+                          placeholder="MM/DD/YYYY"
+                          maxLength={10}
+                          className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 relative z-0"
+                        />
+                        {dateFrom && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDateFrom('');
+                              setDateFromNative('');
+                            }}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors z-30"
+                            type="button"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <div className="relative w-full sm:w-48">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const input = document.getElementById('exec-date-to-picker') as HTMLInputElement;
+                            if (input) {
+                              input.style.pointerEvents = 'auto';
+                              if (typeof input.showPicker === 'function') {
+                                try {
+                                  const pickerResult = input.showPicker();
+                                  if (pickerResult !== undefined && pickerResult !== null && typeof (pickerResult as any).catch === 'function') {
+                                    (pickerResult as any).catch(() => input.click());
+                                  }
+                                } catch (error) {
+                                  input.click();
+                                }
+                              } else {
+                                input.click();
+                              }
+                              setTimeout(() => {
+                                input.style.pointerEvents = 'none';
+                              }, 100);
+                            }
+                          }}
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-400 transition-colors z-20 cursor-pointer"
+                          title="Open calendar"
+                        >
+                          <Calendar className="w-4 h-4" />
+                        </button>
+                        <input
+                          type="date"
+                          value={dateToNative}
+                          onChange={handleDateToNativeChange}
+                          className="absolute inset-0 opacity-0 pointer-events-none z-10"
+                          id="exec-date-to-picker"
+                        />
+                        <input
+                          type="text"
+                          value={dateTo}
+                          onChange={handleDateToTextChange}
+                          placeholder="MM/DD/YYYY"
+                          maxLength={10}
+                          className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 relative z-0"
+                        />
+                        {dateTo && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDateTo('');
+                              setDateToNative('');
+                            }}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors z-30"
+                            type="button"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Clear All Filters Button */}
+                    {(dateFrom || dateTo || inputDataSearch) && (
+                      <button
+                        onClick={() => {
+                          setDateFrom('');
+                          setDateTo('');
+                          setDateFromNative('');
+                          setDateToNative('');
+                          setInputDataSearch('');
+                        }}
+                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
+                      >
+                        <X className="w-4 h-4" />
+                        Clear
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -788,16 +1165,22 @@ export default function WorkflowDetailPage() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {executions.items.map((execution) => (
-                      <ExecutionCard
-                        key={execution.id}
-                        execution={execution}
-                        getStatusColor={getStatusColor}
-                        getStatusIcon={getStatusIcon}
-                        getStatusLabel={getStatusLabel}
-                        getTriggerTypeLabel={getTriggerTypeLabel}
-                      />
-                    ))}
+                    {filteredExecutions.length === 0 ? (
+                      <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700/50 text-center">
+                        <p className="text-gray-400">No executions match the current filters</p>
+                      </div>
+                    ) : (
+                      filteredExecutions.map((execution) => (
+                        <ExecutionCard
+                          key={execution.id}
+                          execution={execution}
+                          getStatusColor={getStatusColor}
+                          getStatusIcon={getStatusIcon}
+                          getStatusLabel={getStatusLabel}
+                          getTriggerTypeLabel={getTriggerTypeLabel}
+                        />
+                      ))
+                    )}
                   </div>
                 )}
               </div>

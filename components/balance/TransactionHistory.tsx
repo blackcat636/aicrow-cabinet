@@ -1,25 +1,143 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
-import { Transaction, BalanceData } from '@/types/balance';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { Transaction, BalanceData, Pagination } from '@/types/balance';
 import { balanceApi } from '@/lib/apiBalance';
 import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, ArrowUpCircle, ArrowDownCircle, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowUpCircle, ArrowDownCircle, Loader2, Search, Calendar, X } from 'lucide-react';
 
 interface TransactionHistoryProps {
   balances: BalanceData[];
 }
 
 export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances }) => {
-  const { user } = useAuth();
+  const { isLoading: authLoading } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedCurrencyId, setSelectedCurrencyId] = useState<number | null>(null);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [dateFromNative, setDateFromNative] = useState<string>('');
+  const [dateToNative, setDateToNative] = useState<string>('');
+  const [amountSearch, setAmountSearch] = useState<string>('');
+
+  // Convert YYYY-MM-DD to MM/DD/YYYY
+  const formatToDisplay = (value: string): string => {
+    if (!value) return '';
+    const parts = value.split('-');
+    if (parts.length === 3) {
+      return `${parts[1]}/${parts[2]}/${parts[0]}`;
+    }
+    return value;
+  };
+
+  // Convert MM/DD/YYYY to YYYY-MM-DD
+  const formatToNative = (value: string): string => {
+    if (!value) return '';
+    const parts = value.split('/');
+    if (parts.length === 3) {
+      const month = parts[0].padStart(2, '0');
+      const day = parts[1].padStart(2, '0');
+      const year = parts[2];
+      return `${year}-${month}-${day}`;
+    }
+    return value;
+  };
+
+  // Parse MM/DD/YYYY to Date object
+  const parseDateInput = (value: string): Date | null => {
+    if (!value) return null;
+    
+    // Try MM/DD/YYYY format first
+    const parts = value.split('/');
+    if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
+      const month = parseInt(parts[0], 10) - 1; // Month is 0-indexed
+      const day = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
+      
+      if (month >= 0 && month <= 11 && day >= 1 && day <= 31 && year >= 1900) {
+        const date = new Date(year, month, day);
+        if (date.getMonth() === month && date.getDate() === day && date.getFullYear() === year) {
+          return date;
+        }
+      }
+    }
+    
+    // Try YYYY-MM-DD format (from native date input)
+    const isoParts = value.split('-');
+    if (isoParts.length === 3) {
+      const date = new Date(value);
+      if (!isNaN(date.getTime())) {
+        return date;
+      }
+    }
+    
+    return null;
+  };
+
+  // Handle native date input change (from calendar)
+  const handleDateFromNativeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDateFromNative(value);
+    setDateFrom(formatToDisplay(value));
+  };
+
+  const handleDateToNativeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setDateToNative(value);
+    setDateTo(formatToDisplay(value));
+  };
+
+  // Format date input to MM/DD/YYYY
+  const formatDateInput = (value: string): string => {
+    // Remove all non-digits
+    const digits = value.replace(/\D/g, '');
+    
+    // Format as MM/DD/YYYY
+    if (digits.length <= 2) {
+      return digits;
+    } else if (digits.length <= 4) {
+      return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    } else {
+      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+    }
+  };
+
+  // Handle text input change (manual entry)
+  const handleDateFromTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatDateInput(e.target.value);
+    if (formatted.length <= 10) {
+      setDateFrom(formatted);
+      const native = formatToNative(formatted);
+      if (native && native.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        setDateFromNative(native);
+      }
+    }
+  };
+
+  const handleDateToTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatDateInput(e.target.value);
+    if (formatted.length <= 10) {
+      setDateTo(formatted);
+      const native = formatToNative(formatted);
+      if (native && native.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        setDateToNative(native);
+      }
+    }
+  };
+
+  // Debug: Log component mount
+  useEffect(() => {
+    console.log('📦 TransactionHistory: Component mounted', { 
+      balancesCount: balances.length 
+    });
+  }, []);
 
   useEffect(() => {
     if (balances.length > 0 && !selectedCurrencyId) {
@@ -27,44 +145,35 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
     }
   }, [balances, selectedCurrencyId]);
 
-  useEffect(() => {
-    if (user?.id) {
-      fetchTransactions();
-    }
-  }, [user?.id]);
-  
-  // Filter transactions by selected currency
-  const filteredTransactions = useMemo(() => {
-    if (!selectedCurrencyId) {
-      return transactions;
-    }
-    const filtered = transactions.filter(t => t.currency && t.currency.id === selectedCurrencyId);
-    return filtered;
-  }, [transactions, selectedCurrencyId]);
-
-  const fetchTransactions = async () => {
-    if (!user?.id) {
-      setError('User ID not available');
-      return;
-    }
-
-    const userId = typeof user.id === 'string' ? parseInt(user.id, 10) : user.id;
-    
+  const fetchTransactions = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
+      
+      console.log('🔄 TransactionHistory: Fetching transactions');
 
-      const response = await balanceApi.getTransactions(userId);
+      // API uses token-based authentication to determine user
+      const response = await balanceApi.getTransactions();
+      
+      console.log('✅ TransactionHistory: Response received', { 
+        status: response.status, 
+        transactionsCount: response.data?.transactions?.length || 0 
+      });
 
       if (response.status === 200 && response.data) {
-        let transactionData = Array.isArray(response.data) ? response.data : [response.data];
+        // Extract transactions and pagination from the new response structure
+        const transactionData = response.data.transactions || [];
+        const paginationData = response.data.pagination || null;
         
-        if (selectedCurrencyId) {
-          transactionData = transactionData.filter(
-            t => t.currency && t.currency.id === selectedCurrencyId
-          );
-        }
-        setTransactions(transactionData);
+        // Filter by currency if selected
+        const filtered = selectedCurrencyId
+          ? transactionData.filter(
+              t => t.currency && t.currency.id === selectedCurrencyId
+            )
+          : transactionData;
+        
+        setTransactions(filtered);
+        setPagination(paginationData);
       } else {
         throw new Error('Invalid response format');
       }
@@ -78,14 +187,76 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [selectedCurrencyId]);
 
+  useEffect(() => {
+    console.log('🔍 TransactionHistory useEffect triggered', { 
+      authLoading,
+      selectedCurrencyId 
+    });
+    
+    // Wait for auth to finish loading before making request
+    if (authLoading) {
+      console.log('⏳ TransactionHistory: Waiting for auth to load...');
+      return;
+    }
+    
+    // API uses token-based authentication to determine user
+    console.log('✅ TransactionHistory: Fetching transactions');
+    fetchTransactions();
+  }, [fetchTransactions, authLoading]);
+  
   // Format amount with currency symbol
   const formatAmount = (amount: string, currency: Transaction['currency']) => {
     const numAmount = parseFloat(amount);
     const precision = parseFloat(currency.precision);
     return numAmount.toFixed(precision);
   };
+
+  // Filter transactions by selected currency, date range, and amount
+  const filteredTransactions = useMemo(() => {
+    let filtered = transactions;
+
+    // Filter by currency
+    if (selectedCurrencyId) {
+      filtered = filtered.filter(t => t.currency && t.currency.id === selectedCurrencyId);
+    }
+
+    // Filter by date range
+    if (dateFromNative || dateFrom) {
+      const fromDate = parseDateInput(dateFromNative || dateFrom);
+      if (fromDate) {
+        fromDate.setHours(0, 0, 0, 0);
+        filtered = filtered.filter(t => {
+          const transactionDate = new Date(t.created_at);
+          transactionDate.setHours(0, 0, 0, 0);
+          return transactionDate >= fromDate;
+        });
+      }
+    }
+
+    if (dateToNative || dateTo) {
+      const toDate = parseDateInput(dateToNative || dateTo);
+      if (toDate) {
+        toDate.setHours(23, 59, 59, 999);
+        filtered = filtered.filter(t => {
+          const transactionDate = new Date(t.created_at);
+          return transactionDate <= toDate;
+        });
+      }
+    }
+
+    // Filter by amount search
+    if (amountSearch.trim()) {
+      const searchValue = amountSearch.trim().toLowerCase();
+      filtered = filtered.filter(t => {
+        const formattedAmount = formatAmount(t.amount, t.currency);
+        return formattedAmount.includes(searchValue) || t.amount.toLowerCase().includes(searchValue);
+      });
+    }
+
+    return filtered;
+  }, [transactions, selectedCurrencyId, dateFrom, dateTo, amountSearch, formatAmount]);
 
   // Format date: mm/dd/yyyy
   const formatDate = (dateString: string) => {
@@ -224,6 +395,195 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
           )}
         </div>
       </CardHeader>
+      
+      {/* Filters Section */}
+      <div className="px-6 pb-4 relative z-10 border-b border-gray-700/50">
+        <div className="flex flex-col md:flex-row gap-4">
+          {/* Amount Search */}
+          <div className="flex-1 relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by amount..."
+              value={amountSearch}
+              onChange={(e) => setAmountSearch(e.target.value)}
+              className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500"
+            />
+            {amountSearch && (
+              <button
+                onClick={() => setAmountSearch('')}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+
+          {/* Date Range Filters */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              {/* Calendar icon button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById('date-from-picker') as HTMLInputElement;
+                  if (input) {
+                    // Temporarily enable pointer events to allow calendar to open
+                    input.style.pointerEvents = 'auto';
+                    // Try showPicker() first (modern browsers)
+                    if (typeof input.showPicker === 'function') {
+                      try {
+                        const pickerResult = input.showPicker();
+                        // Check if it returns a Promise
+                        if (pickerResult !== undefined && pickerResult !== null && typeof (pickerResult as any).catch === 'function') {
+                          (pickerResult as any).catch(() => {
+                            // If showPicker fails, try click
+                            input.click();
+                          });
+                        }
+                      } catch (error) {
+                        // If showPicker throws, fallback to click
+                        input.click();
+                      }
+                    } else {
+                      // Fallback: trigger click on the input
+                      input.click();
+                    }
+                    // Disable pointer events after a short delay
+                    setTimeout(() => {
+                      input.style.pointerEvents = 'none';
+                    }, 100);
+                  }
+                }}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-400 transition-colors z-20 cursor-pointer"
+                title="Open calendar"
+              >
+                <Calendar className="w-4 h-4" />
+              </button>
+              {/* Hidden native date picker for calendar - positioned absolutely to match the visible input */}
+              <input
+                type="date"
+                value={dateFromNative}
+                onChange={handleDateFromNativeChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                id="date-from-picker"
+                style={{ pointerEvents: 'none' }}
+              />
+              {/* Display input in MM/DD/YYYY format */}
+              <input
+                type="text"
+                value={dateFrom}
+                onChange={handleDateFromTextChange}
+                placeholder="MM/DD/YYYY"
+                maxLength={10}
+                className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 relative z-0"
+              />
+              {dateFrom && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDateFrom('');
+                    setDateFromNative('');
+                  }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors z-30"
+                  type="button"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+            <div className="relative flex-1">
+              {/* Calendar icon button */}
+              <button
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById('date-to-picker') as HTMLInputElement;
+                  if (input) {
+                    // Temporarily enable pointer events to allow calendar to open
+                    input.style.pointerEvents = 'auto';
+                    // Try showPicker() first (modern browsers)
+                    if (typeof input.showPicker === 'function') {
+                      try {
+                        const pickerResult = input.showPicker();
+                        // Check if it returns a Promise
+                        if (pickerResult !== undefined && pickerResult !== null && typeof (pickerResult as any).catch === 'function') {
+                          (pickerResult as any).catch(() => {
+                            // If showPicker fails, try click
+                            input.click();
+                          });
+                        }
+                      } catch (error) {
+                        // If showPicker throws, fallback to click
+                        input.click();
+                      }
+                    } else {
+                      // Fallback: trigger click on the input
+                      input.click();
+                    }
+                    // Disable pointer events after a short delay
+                    setTimeout(() => {
+                      input.style.pointerEvents = 'none';
+                    }, 100);
+                  }
+                }}
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-400 transition-colors z-20 cursor-pointer"
+                title="Open calendar"
+              >
+                <Calendar className="w-4 h-4" />
+              </button>
+              {/* Hidden native date picker for calendar - positioned absolutely to match the visible input */}
+              <input
+                type="date"
+                value={dateToNative}
+                onChange={handleDateToNativeChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                id="date-to-picker"
+                style={{ pointerEvents: 'none' }}
+              />
+              {/* Display input in MM/DD/YYYY format */}
+              <input
+                type="text"
+                value={dateTo}
+                onChange={handleDateToTextChange}
+                placeholder="MM/DD/YYYY"
+                maxLength={10}
+                className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 relative z-0"
+              />
+              {dateTo && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setDateTo('');
+                    setDateToNative('');
+                  }}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors z-30"
+                  type="button"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Clear All Filters Button */}
+          {(dateFrom || dateTo || amountSearch) && (
+            <button
+              onClick={() => {
+                setDateFrom('');
+                setDateTo('');
+                setDateFromNative('');
+                setDateToNative('');
+                setAmountSearch('');
+              }}
+              className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
+            >
+              <X className="w-4 h-4" />
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
       <CardContent className="px-6 pb-6 relative z-10">
         {!selectedCurrencyId ? (
           <div className="text-center py-12">
@@ -324,6 +684,13 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                           Fee: {formatAmount(transaction.fee_amount, transaction.currency)}
                         </div>
                       )}
+                      {transaction.balance_before && transaction.balance_after && (
+                        <div className="mt-2 pt-2 border-t border-gray-700/50">
+                          <div className="text-gray-500">
+                            Balance: {formatAmount(transaction.balance_before, transaction.currency)} → {formatAmount(transaction.balance_after, transaction.currency)}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -331,6 +698,29 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                 {/* Metadata section removed as per design request */}
               </div>
             ))}
+            
+            {/* Pagination info */}
+            {(pagination || dateFrom || dateTo || amountSearch) && (
+              <div className="mt-6 pt-4 border-t border-gray-700/50 text-center text-sm text-gray-400">
+                {dateFrom || dateTo || amountSearch ? (
+                  <div>
+                    Showing {sortedTransactions.length} of {transactions.length} transactions
+                    {(dateFrom || dateTo || amountSearch) && (
+                      <span className="ml-2 text-purple-400">(filtered)</span>
+                    )}
+                  </div>
+                ) : (
+                  pagination && pagination.total > 0 && (
+                    <div>
+                      Showing {sortedTransactions.length} of {pagination.total} transactions
+                      {pagination.pages > 1 && (
+                        <span className="ml-2">(Page {pagination.page} of {pagination.pages})</span>
+                      )}
+                    </div>
+                  )
+                )}
+              </div>
+            )}
           </div>
         )}
       </CardContent>

@@ -61,7 +61,17 @@ export interface Transaction {
   created_at: string;
 }
 
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
 export interface TransactionResponse {
   status: number;
-  data: Transaction | Transaction[];
+  data: {
+    transactions: Transaction[];
+    pagination: Pagination;
+  };
 }

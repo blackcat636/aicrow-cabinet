@@ -61,12 +61,13 @@ export const balanceApi = {
     }
   },
 
-  // Get transactions list for specific user
-  getTransactions: async (userId: number | string): Promise<TransactionResponse> => {
+  // Get transactions list for current user (determined by auth token)
+  getTransactions: async (): Promise<TransactionResponse> => {
     try {
-      // Use path parameter with user ID: /balance/transactions/{userId}
-      const url = `${API_BASE_URL}/balance/transactions/${userId}`;
+      // API uses token-based authentication to determine user
+      const url = `${API_BASE_URL}/balance/transactions`;
       
+      console.log('🌐 balanceApi.getTransactions: Making request to:', url);
       
       const response = await fetchWithAuth(url, {
         method: 'GET',
@@ -74,6 +75,8 @@ export const balanceApi = {
           'Content-Type': 'application/json'
         }
       });
+      
+      console.log('🌐 balanceApi.getTransactions: Response status:', response.status);
 
 
       if (!response.ok) {
@@ -140,11 +143,20 @@ export const balanceApi = {
 
       const data = (await response.json()) as TransactionResponse;
       
-      // Ensure data is always an array for consistency
+      // Validate response structure
       if (data.status === 200 && data.data) {
-        if (!Array.isArray(data.data)) {
-          // Convert single transaction to array
-          data.data = [data.data as Transaction];
+        // Ensure transactions array exists
+        if (!data.data.transactions || !Array.isArray(data.data.transactions)) {
+          data.data.transactions = [];
+        }
+        // Ensure pagination exists
+        if (!data.data.pagination) {
+          data.data.pagination = {
+            page: 1,
+            limit: 20,
+            total: data.data.transactions.length,
+            pages: 1
+          };
         }
       }
       
