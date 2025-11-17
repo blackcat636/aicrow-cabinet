@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [showExecuteModal, setShowExecuteModal] = useState(false);
   const [executeModalWorkflowId, setExecuteModalWorkflowId] = useState<number | null>(null);
   const [executeModalWorkflowName, setExecuteModalWorkflowName] = useState<string>('');
+  const [executeUserWorkflowId, setExecuteUserWorkflowId] = useState<number | null>(null);
 
   
   // Show loading state
@@ -82,6 +83,7 @@ export default function DashboardPage() {
 
       // Open modal with workflow info
       setExecuteModalWorkflowId(workflow.workflowId);
+      setExecuteUserWorkflowId(workflow.id);
       setExecuteModalWorkflowName(workflow.name || workflow.workflow.name);
       setShowExecuteModal(true);
     } catch (error: any) {
@@ -91,10 +93,10 @@ export default function DashboardPage() {
   };
 
   const handleExecuteWithPayload = async (payload?: Record<string, any>) => {
-    if (!executeModalWorkflowId) return;
+    if (!executeUserWorkflowId) return;
     
     try {
-      setExecutingWorkflowId(executeModalWorkflowId);
+      setExecutingWorkflowId(executeUserWorkflowId);
       
       // Build request data
       const requestData: any = {};
@@ -104,7 +106,7 @@ export default function DashboardPage() {
       } else {
         // If no payload, get workflow and use inputDataTemplate as fallback
         const workflows = await workflowApi.getMyWorkflows();
-        const workflow = workflows.find(w => w.workflowId === executeModalWorkflowId);
+        const workflow = workflows.find(w => w.id === executeUserWorkflowId);
         if (workflow) {
           const inputData = workflow.inputDataTemplate || '{"message": "Hello", "timestamp": "' + new Date().toISOString() + '"}';
           requestData.inputData = inputData;
@@ -112,14 +114,13 @@ export default function DashboardPage() {
       }
       
       // Execute the workflow
-      await workflowApi.executeWorkflowManually(executeModalWorkflowId, requestData);
+      await workflowApi.executeWorkflowManually(executeUserWorkflowId, requestData);
       
       toast.success('Workflow executed successfully!');
-      setRefreshTrigger(prev => prev + 1); // Refresh the list
+      setRefreshTrigger(prev => prev + 1);
     } catch (error: any) {
       console.error('Error executing workflow:', error);
       
-      // Handle validation errors from backend
       if (error.message && typeof error.message === 'string' && error.message.includes('errors')) {
         try {
           const errorData = JSON.parse(error.message);
@@ -129,8 +130,13 @@ export default function DashboardPage() {
             });
             return;
           }
-        } catch {
-          // If parsing fails, continue with normal error handling
+        } catch (parseErr) {
+          // If parsing fails, surface a generic validation error
+          const msg =
+            (parseErr instanceof Error && parseErr.message) ||
+            'Failed to parse validation errors';
+          console.error('Error parsing execution errors:', parseErr);
+          toast.error(msg);
         }
       }
       
@@ -144,7 +150,7 @@ export default function DashboardPage() {
       } else {
         toast.error(error.message || 'Failed to execute workflow');
       }
-      throw error; // Re-throw to let modal handle it
+      throw error;
     } finally {
       setExecutingWorkflowId(null);
     }
@@ -177,6 +183,7 @@ export default function DashboardPage() {
           onClose={() => {
             setShowExecuteModal(false);
             setExecuteModalWorkflowId(null);
+            setExecuteUserWorkflowId(null);
             setExecuteModalWorkflowName('');
           }}
           onExecute={handleExecuteWithPayload}
