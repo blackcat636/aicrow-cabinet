@@ -35,6 +35,97 @@ export async function middleware(request: NextRequest) {
   // Get tokens from cookies
   const { accessToken, refreshToken, deviceId } = getTokens(request);
 
+  // If access token is missing but refresh token and device id exist, try to refresh immediately
+  if (!accessToken && refreshToken && deviceId) {
+    try {
+      const response = await authApi.refreshToken(refreshToken, deviceId);
+      if (response.status === 200 && response.data) {
+        const nextResponse = isAuthRoute
+          ? NextResponse.redirect(new URL('/dashboard', request.url))
+          : NextResponse.next();
+
+        const nowSec = Math.floor(Date.now() / 1000);
+        const accessExp = decodeToken(response.data.accessToken)?.exp;
+        const refreshExp = decodeToken(response.data.refreshToken)?.exp;
+        const accessMaxAge = accessExp
+          ? Math.max(0, accessExp - nowSec)
+          : 60 * 60;
+        const refreshMaxAge = refreshExp
+          ? Math.max(0, refreshExp - nowSec)
+          : 365 * 24 * 60 * 60;
+
+        nextResponse.cookies.set('access_token', response.data.accessToken, {
+          path: '/',
+          maxAge: accessMaxAge,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+
+        nextResponse.cookies.set('refresh_token', response.data.refreshToken, {
+          path: '/',
+          maxAge: refreshMaxAge,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+
+        nextResponse.cookies.set('device_id', deviceId, {
+          path: '/',
+          maxAge: 365 * 24 * 60 * 60,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+
+        return nextResponse;
+      } else {
+        const redirectResponse = NextResponse.redirect(
+          new URL('/login', request.url)
+        );
+        redirectResponse.cookies.set('access_token', '', {
+          path: '/',
+          expires: new Date(0),
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        redirectResponse.cookies.set('refresh_token', '', {
+          path: '/',
+          expires: new Date(0),
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        redirectResponse.cookies.set('device_id', '', {
+          path: '/',
+          expires: new Date(0),
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'strict'
+        });
+        return redirectResponse;
+      }
+    } catch (error) {
+      const redirectResponse = NextResponse.redirect(
+        new URL('/login', request.url)
+      );
+      redirectResponse.cookies.set('access_token', '', {
+        path: '/',
+        expires: new Date(0),
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      redirectResponse.cookies.set('refresh_token', '', {
+        path: '/',
+        expires: new Date(0),
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      redirectResponse.cookies.set('device_id', '', {
+        path: '/',
+        expires: new Date(0),
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+      return redirectResponse;
+    }
+  }
+
   // If no tokens at all
   if (!accessToken && !refreshToken) {
     // Allow public auth routes
@@ -84,26 +175,38 @@ export async function middleware(request: NextRequest) {
         // Token refreshed successfully, set new tokens and allow request
         const nextResponse = NextResponse.next();
 
-        // Set new tokens in cookies (HttpOnly)
+        // Derive cookie lifetimes from JWT exp
+        const nowSec = Math.floor(Date.now() / 1000);
+        const accessExp = decodeToken(response.data.accessToken)?.exp;
+        const refreshExp = decodeToken(response.data.refreshToken)?.exp;
+        const accessMaxAge = accessExp
+          ? Math.max(0, accessExp - nowSec)
+          : 60 * 60;
+        const refreshMaxAge = refreshExp
+          ? Math.max(0, refreshExp - nowSec)
+          : 365 * 24 * 60 * 60;
+
+        // Set new tokens in cookies
         nextResponse.cookies.set('access_token', response.data.accessToken, {
           path: '/',
+          maxAge: accessMaxAge,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          httpOnly: true
+          sameSite: 'strict'
         });
 
         nextResponse.cookies.set('refresh_token', response.data.refreshToken, {
           path: '/',
-          maxAge: 365 * 24 * 60 * 60, // 1 year
+          maxAge: refreshMaxAge,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          httpOnly: true
+          sameSite: 'strict'
         });
 
         return nextResponse;
       } else {
         // Refresh failed, tokens are invalid -> clear cookies and redirect to /login
-        const redirectResponse = NextResponse.redirect(new URL('/login', request.url));
+        const redirectResponse = NextResponse.redirect(
+          new URL('/login', request.url)
+        );
         redirectResponse.cookies.set('access_token', '', {
           path: '/',
           expires: new Date(0),
@@ -129,7 +232,9 @@ export async function middleware(request: NextRequest) {
     } catch (error) {
       console.error(`❌ Middleware: Error refreshing token:`, error);
       // On exception, clear cookies and redirect to /login
-      const redirectResponse = NextResponse.redirect(new URL('/login', request.url));
+      const redirectResponse = NextResponse.redirect(
+        new URL('/login', request.url)
+      );
       redirectResponse.cookies.set('access_token', '', {
         path: '/',
         expires: new Date(0),

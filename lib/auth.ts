@@ -77,21 +77,23 @@ const getCookieValue = (name: string): string | null => {
 export const setTokens = (tokens: AuthTokens) => {
   if (typeof window === 'undefined') return;
 
-  // Set access token (session cookie - expires when browser closes)
-  setCookieValue('access_token', tokens.accessToken, -1);
+  // Derive cookie lifetimes from JWT exp
+  const nowSec = Math.floor(Date.now() / 1000);
+  const accessExp = decodeToken(tokens.accessToken)?.exp;
+  const refreshExp = decodeToken(tokens.refreshToken)?.exp;
+  const accessMaxAge = accessExp ? Math.max(0, accessExp - nowSec) : 60 * 60;
+  const refreshMaxAge = refreshExp
+    ? Math.max(0, refreshExp - nowSec)
+    : 365 * 24 * 60 * 60;
 
-  // Set refresh token (1 year)
-  setCookieValue('refresh_token', tokens.refreshToken, 365 * 24 * 60 * 60);
+  // Set access token with maxAge synced to JWT exp (fallback 1h)
+  setCookieValue('access_token', tokens.accessToken, accessMaxAge);
+
+  // Set refresh token with maxAge synced to JWT exp (fallback 1y)
+  setCookieValue('refresh_token', tokens.refreshToken, refreshMaxAge);
 
   // Set device ID (1 year)
   setCookieValue('device_id', tokens.deviceId, 365 * 24 * 60 * 60);
-
-  // Also set client-readable duplicates to keep client auth working between refreshes
-  const decoded = decodeToken(tokens.accessToken);
-  const nowSec = Math.floor(Date.now() / 1000);
-  const accessClientMaxAge = decoded && decoded.exp ? Math.max(60, decoded.exp - nowSec) : 15 * 60;
-  setCookieValue('access_token_client', tokens.accessToken, accessClientMaxAge);
-  setCookieValue('refresh_token_client', tokens.refreshToken, 365 * 24 * 60 * 60);
 
   // Verify cookies were set
   setTimeout(() => {
@@ -124,16 +126,11 @@ export const getTokens = (request?: NextRequest) => {
 };
 
 export const getAccessToken = (): string | null => {
-  // Prefer HttpOnly token name; if not readable on client, fall back to client copy
-  const token = getCookieValue('access_token');
-  if (token) return token;
-  return getCookieValue('access_token_client');
+  return getCookieValue('access_token');
 };
 
 export const getRefreshToken = (): string | null => {
-  const token = getCookieValue('refresh_token');
-  if (token) return token;
-  return getCookieValue('refresh_token_client');
+  return getCookieValue('refresh_token');
 };
 
 export const removeTokens = () => {
@@ -146,9 +143,6 @@ export const removeTokens = () => {
   document.cookie = `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
   document.cookie = `refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
   document.cookie = `device_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
-  // Clear client-side duplicate cookies if present
-  document.cookie = `access_token_client=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
-  document.cookie = `refresh_token_client=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
 };
 
 // Get auth headers for API requests
@@ -246,10 +240,9 @@ export const fetchWithAuth = async (
       // Return a cloned response so multiple consumers can read the body
       return existing.then((res) => res.clone());
     }
-    const promise = doFetchWithAuth(url, options, retryCount)
-      .finally(() => {
-        inflightRequests.delete(key);
-      });
+    const promise = doFetchWithAuth(url, options, retryCount).finally(() => {
+      inflightRequests.delete(key);
+    });
     inflightRequests.set(key, promise);
     const res = await promise;
     return res.clone();

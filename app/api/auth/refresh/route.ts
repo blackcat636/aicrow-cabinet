@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getTokens, removeTokens } from '@/lib/auth';
 
 import { API_CONFIG } from '@/config/api';
+import { decodeToken } from '@/lib/auth-utils';
 
 export const runtime = 'edge';
 
@@ -35,35 +36,23 @@ export async function POST(request: NextRequest) {
         { status: 200 }
       );
 
+      const nowSec = Math.floor(Date.now() / 1000);
+      const accessExp = decodeToken(data.data.accessToken)?.exp;
+      const refreshExp = decodeToken(data.data.refreshToken)?.exp;
+      const accessMaxAge = accessExp ? Math.max(0, accessExp - nowSec) : 60 * 60;
+      const refreshMaxAge = refreshExp ? Math.max(0, refreshExp - nowSec) : 365 * 24 * 60 * 60;
+
       // Set cookies
       nextResponse.cookies.set('access_token', data.data.accessToken, {
         path: '/',
-        maxAge: 60 * 60, // 1 hour
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        httpOnly: true
-      });
-
-      // Duplicate non-HttpOnly cookie for client-side usage (short-lived)
-      nextResponse.cookies.set('access_token_client', data.data.accessToken, {
-        path: '/',
-        maxAge: 15 * 60, // 15 minutes
+        maxAge: accessMaxAge,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
 
       nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
         path: '/',
-        maxAge: 365 * 24 * 60 * 60,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        httpOnly: true
-      });
-
-      // Duplicate non-HttpOnly cookie for client-side usage
-      nextResponse.cookies.set('refresh_token_client', data.data.refreshToken, {
-        path: '/',
-        maxAge: 365 * 24 * 60 * 60,
+        maxAge: refreshMaxAge,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });

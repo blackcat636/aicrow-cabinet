@@ -240,11 +240,17 @@ export const workflowApi = {
         try {
           const errorData = await response.json();
           // Handle validation errors (400 status with errors array)
-          if (response.status === 400 && errorData.data && errorData.data.errors && Array.isArray(errorData.data.errors)) {
+          if (
+            response.status === 400 &&
+            errorData.data &&
+            errorData.data.errors &&
+            Array.isArray(errorData.data.errors)
+          ) {
             // Return errors in a format that can be parsed by the caller
             errorMessage = JSON.stringify({ errors: errorData.data.errors });
           } else {
-            errorMessage = errorData.message || errorData.data?.message || errorMessage;
+            errorMessage =
+              errorData.message || errorData.data?.message || errorMessage;
           }
         } catch (parseError) {
           // If we can't parse the error response, use the status text
@@ -314,7 +320,9 @@ export const workflowApi = {
     }
   },
 
-  getWorkflowRequirements: async (workflowId: number): Promise<WorkflowRequirements> => {
+  getWorkflowRequirements: async (
+    workflowId: number
+  ): Promise<WorkflowRequirements> => {
     try {
       const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/workflows/${workflowId}/requirements`),

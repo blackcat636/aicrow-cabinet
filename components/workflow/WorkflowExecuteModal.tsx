@@ -12,7 +12,7 @@ interface WorkflowExecuteModalProps {
   isOpen: boolean;
   onClose: () => void;
   onExecute: (payload?: Record<string, any>) => Promise<void>;
-  workflowId: number;
+  workflowId: number; 
   workflowName?: string;
 }
 
