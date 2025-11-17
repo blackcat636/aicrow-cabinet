@@ -132,13 +132,6 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
     }
   };
 
-  // Debug: Log component mount
-  useEffect(() => {
-    console.log('📦 TransactionHistory: Component mounted', { 
-      balancesCount: balances.length 
-    });
-  }, []);
-
   useEffect(() => {
     if (balances.length > 0 && !selectedCurrencyId) {
       setSelectedCurrencyId(balances[0].currency.id);
@@ -149,16 +142,9 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
     try {
       setIsLoading(true);
       setError(null);
-      
-      console.log('🔄 TransactionHistory: Fetching transactions');
 
       // API uses token-based authentication to determine user
       const response = await balanceApi.getTransactions();
-      
-      console.log('✅ TransactionHistory: Response received', { 
-        status: response.status, 
-        transactionsCount: response.data?.transactions?.length || 0 
-      });
 
       if (response.status === 200 && response.data) {
         // Extract transactions and pagination from the new response structure
@@ -190,19 +176,12 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
   }, [selectedCurrencyId]);
 
   useEffect(() => {
-    console.log('🔍 TransactionHistory useEffect triggered', { 
-      authLoading,
-      selectedCurrencyId 
-    });
-    
     // Wait for auth to finish loading before making request
     if (authLoading) {
-      console.log('⏳ TransactionHistory: Waiting for auth to load...');
       return;
     }
     
     // API uses token-based authentication to determine user
-    console.log('✅ TransactionHistory: Fetching transactions');
     fetchTransactions();
   }, [fetchTransactions, authLoading]);
   

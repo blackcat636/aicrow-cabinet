@@ -85,7 +85,42 @@ export interface CreateScheduleRequest {
 }
 
 export interface ExecuteWorkflowRequest {
-  inputData: string;
+  inputData?: string;
+  payload?: Record<string, any>;
+  prompt?: string;
+}
+
+export interface EnumOption {
+  label: string;
+  value: string | number;
+}
+
+export interface UserField {
+  key: string;
+  label: string;
+  type: 'string' | 'number' | 'boolean' | 'email' | 'url' | 'array' | 'object' | 'enum';
+  required?: boolean;
+  description?: string;
+  placeholder?: string;
+  defaultValue?: any;
+  itemType?: 'string' | 'number' | 'boolean' | 'email' | 'url';
+  minItems?: number;
+  maxItems?: number;
+  default?: any;
+  enum?: any[];
+  options?: EnumOption[];
+  fields?: UserField[]; // For object type - nested fields
+}
+
+export interface WorkflowRequirements {
+  workflowId?: number;
+  workflowName?: string;
+  userFields?: UserField[];
+  fields?: UserField[]; // Alternative field name from API
+  schema?: any;
+  existingValues?: Record<string, any>;
+  sampleTemplate?: string;
+  version?: number;
 }
 
 export interface ExecutionsResponse {

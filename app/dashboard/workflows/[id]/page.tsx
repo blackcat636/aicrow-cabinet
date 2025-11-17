@@ -22,6 +22,7 @@ import { Search, Calendar, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { WorkflowForm } from '@/components/workflow/WorkflowForm';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { WorkflowExecuteModal } from '@/components/workflow/WorkflowExecuteModal';
 
 export const runtime = 'edge';
 
@@ -247,6 +248,7 @@ export default function WorkflowDetailPage() {
   const [executing, setExecuting] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showExecuteModal, setShowExecuteModal] = useState(false);
   const [toggling, setToggling] = useState(false);
   
   // Filters for executions
@@ -376,28 +378,56 @@ export default function WorkflowDetailPage() {
     }
   };
 
-  const handleExecute = async () => {
+  const handleExecute = () => {
+    if (!workflow) return;
+    
+    if (!workflow.isActive) {
+      toast.error('Cannot execute inactive workflow. Please activate the workflow first.');
+      return;
+    }
+
+    setShowExecuteModal(true);
+  };
+
+  const handleExecuteWithPayload = async (payload?: Record<string, any>) => {
     if (!workflow) return;
     
     try {
       setExecuting(true);
       
-      if (!workflow.isActive) {
-        toast.error('Cannot execute inactive workflow. Please activate the workflow first.');
-        return;
-      }
-
-      const inputData = workflow.inputDataTemplate || '{"message": "Hello", "timestamp": "' + new Date().toISOString() + '"}';
+      // Build request data
+      const requestData: any = {};
       
-      await workflowApi.executeWorkflowManually(workflow.id, {
-        inputData: inputData
-      });
+      if (payload && Object.keys(payload).length > 0) {
+        requestData.payload = payload;
+      } else {
+        // If no payload, use inputDataTemplate as fallback
+        const inputData = workflow.inputDataTemplate || '{"message": "Hello", "timestamp": "' + new Date().toISOString() + '"}';
+        requestData.inputData = inputData;
+      }
+      
+      await workflowApi.executeWorkflowManually(workflow.id, requestData);
       
       toast.success('Workflow executed successfully!');
       // Reload executions to show the new one
       await loadExecutions();
     } catch (error: any) {
       console.error('Error executing workflow:', error);
+      
+      // Handle validation errors from backend
+      if (error.message && typeof error.message === 'string' && error.message.includes('errors')) {
+        try {
+          const errorData = JSON.parse(error.message);
+          if (errorData.errors && Array.isArray(errorData.errors)) {
+            errorData.errors.forEach((err: string) => {
+              toast.error(err);
+            });
+            return;
+          }
+        } catch {
+          // If parsing fails, continue with normal error handling
+        }
+      }
       
       if (error.message && error.message.includes('Workflow is not active')) {
         toast.error('Cannot execute inactive workflow. Please activate the workflow first.');
@@ -408,6 +438,7 @@ export default function WorkflowDetailPage() {
       } else {
         toast.error(error.message || 'Failed to execute workflow');
       }
+      throw error; // Re-throw to let modal handle it
     } finally {
       setExecuting(false);
     }
@@ -1208,6 +1239,17 @@ export default function WorkflowDetailPage() {
         cancelText="Cancel"
         type="danger"
       />
+
+      {/* Execute Workflow Modal */}
+      {workflow && (
+        <WorkflowExecuteModal
+          isOpen={showExecuteModal}
+          onClose={() => setShowExecuteModal(false)}
+          onExecute={handleExecuteWithPayload}
+          workflowId={workflow.workflowId}
+          workflowName={workflow.name || workflow.workflow.name}
+        />
+      )}
     </AppLayout>
   );
 }

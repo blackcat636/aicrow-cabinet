@@ -1,4 +1,8 @@
-import { BalanceResponse, TransactionResponse, Transaction } from '@/types/balance';
+import {
+  BalanceResponse,
+  TransactionResponse,
+  Transaction
+} from '@/types/balance';
 import { API_CONFIG } from '@/config/api';
 import { fetchWithAuth } from '@/lib/auth';
 
@@ -9,14 +13,13 @@ export const balanceApi = {
   getBalance: async (): Promise<BalanceResponse> => {
     try {
       const url = `${API_BASE_URL}/balance`;
-      
+
       const response = await fetchWithAuth(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         }
       });
-
 
       if (!response.ok) {
         let errorMessage = 'Failed to get balance';
@@ -66,18 +69,13 @@ export const balanceApi = {
     try {
       // API uses token-based authentication to determine user
       const url = `${API_BASE_URL}/balance/transactions`;
-      
-      console.log('🌐 balanceApi.getTransactions: Making request to:', url);
-      
+
       const response = await fetchWithAuth(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json'
         }
       });
-      
-      console.log('🌐 balanceApi.getTransactions: Response status:', response.status);
-
 
       if (!response.ok) {
         let errorMessage = 'Failed to get transactions';
@@ -85,10 +83,8 @@ export const balanceApi = {
         // Handle specific status codes
         if (response.status === 401) {
           errorMessage = 'Unauthorized access';
-          
         } else if (response.status === 403) {
           errorMessage = 'Access forbidden';
-          
         } else if (response.status === 404) {
           // 404 might mean no transactions exist, which is valid
           // Try to get response body to see if there's more info
@@ -102,15 +98,18 @@ export const balanceApi = {
               responseBody = text;
             }
           } catch (e) {}
-          
-          
+
           // If response body has a message, use it
-          if (responseBody && typeof responseBody === 'object' && responseBody.message) {
+          if (
+            responseBody &&
+            typeof responseBody === 'object' &&
+            responseBody.message
+          ) {
             errorMessage = responseBody.message;
           } else {
             errorMessage = 'No transactions found for this currency';
           }
-          
+
           // For 404, we should return empty array instead of throwing error
           // But we need to throw to maintain error flow, component will handle it
         } else {
@@ -130,7 +129,8 @@ export const balanceApi = {
               }
             } catch (textError) {
               // Fallback to status text
-              errorMessage = response.statusText || 'Failed to get transactions';
+              errorMessage =
+                response.statusText || 'Failed to get transactions';
             }
           }
         }
@@ -142,7 +142,7 @@ export const balanceApi = {
       }
 
       const data = (await response.json()) as TransactionResponse;
-      
+
       // Validate response structure
       if (data.status === 200 && data.data) {
         // Ensure transactions array exists
@@ -159,7 +159,7 @@ export const balanceApi = {
           };
         }
       }
-      
+
       return data;
     } catch (error) {
       throw error;

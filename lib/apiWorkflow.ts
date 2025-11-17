@@ -6,7 +6,8 @@ import {
   ExecutionsResponse,
   AttachWorkflowRequest,
   CreateScheduleRequest,
-  ExecuteWorkflowRequest
+  ExecuteWorkflowRequest,
+  WorkflowRequirements
 } from '@/types/workflow';
 import { buildApiUrl, API_CONFIG } from '@/config/api';
 import { fetchWithAuth } from './auth';
@@ -238,7 +239,13 @@ export const workflowApi = {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
           const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          // Handle validation errors (400 status with errors array)
+          if (response.status === 400 && errorData.data && errorData.data.errors && Array.isArray(errorData.data.errors)) {
+            // Return errors in a format that can be parsed by the caller
+            errorMessage = JSON.stringify({ errors: errorData.data.errors });
+          } else {
+            errorMessage = errorData.message || errorData.data?.message || errorMessage;
+          }
         } catch (parseError) {
           // If we can't parse the error response, use the status text
           errorMessage = response.statusText || errorMessage;
@@ -302,6 +309,33 @@ export const workflowApi = {
 
       const result = await response.json();
       return result.execution || result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getWorkflowRequirements: async (workflowId: number): Promise<WorkflowRequirements> => {
+    try {
+      const response = await fetchWithAuth(
+        buildApiUrl(`/automations/user/workflows/${workflowId}/requirements`),
+        {
+          method: 'GET'
+        }
+      );
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      return result.data || result;
     } catch (error) {
       throw error;
     }

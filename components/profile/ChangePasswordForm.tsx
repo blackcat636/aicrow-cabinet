@@ -76,10 +76,6 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
     // CRITICAL: Check if request is already in progress globally (across all component instances)
     // This prevents duplicate requests even when React StrictMode causes double mounting
     if (windowStore?.__changePasswordRequestInProgress || windowStore?.__changePasswordAbortController) {
-      console.log('⚠️ [ChangePassword] Request already in progress globally - duplicate prevented', {
-        hasGlobalController: !!windowStore?.__changePasswordAbortController,
-        globalRequestInProgress: windowStore?.__changePasswordRequestInProgress
-      });
       // Update local refs to match global state
       lastIsOpenRef.current = true;
       formOpenTimestampRef.current = windowStore?.__changePasswordOpenTimestamp;
@@ -90,7 +86,6 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
     const globalTimestamp = windowStore?.__changePasswordOpenTimestamp;
     if (globalTimestamp && globalTimestamp === formOpenTimestampRef.current) {
       // Same opening - already handled
-      console.log('⚠️ [ChangePassword] Same form opening - duplicate prevented');
       return;
     }
     
@@ -118,7 +113,6 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
     
     // Trigger the request
     const mountId = mountIdRef.current;
-    console.log('🟢 [ChangePassword] Triggering request from effect', { mountId });
     
     // Set up request
     errorToastShownRef.current = false;
@@ -134,8 +128,6 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
     
     const currentToastId = toastIdRef.current;
     const currentRequestId = requestId;
-    
-    console.log('✅ [ChangePassword] Starting fetch request', { requestId, email: user.email });
     
     // Use the global abort controller if available, otherwise use local
     const controllerToUse = typeof window !== 'undefined' && (window as any).__changePasswordAbortController
