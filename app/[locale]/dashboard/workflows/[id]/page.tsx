@@ -397,11 +397,11 @@ export default function WorkflowDetailPage() {
 
   const handleExecute = () => {
     if (!workflow) return;
-    
-    if (!workflow.isActive) {
-      toast.error(t('executeErrorInactive'));
-      return;
-    }
+      
+      if (!workflow.isActive) {
+        toast.error(t('executeErrorInactive'));
+        return;
+      }
 
     // Open modal instead of executing directly
     setShowExecuteModal(true);
@@ -420,7 +420,7 @@ export default function WorkflowDetailPage() {
         requestData.payload = payload;
       } else {
         // If no payload, use inputDataTemplate as fallback
-        const inputData = workflow.inputDataTemplate || '{"message": "Hello", "timestamp": "' + new Date().toISOString() + '"}';
+      const inputData = workflow.inputDataTemplate || '{"message": "Hello", "timestamp": "' + new Date().toISOString() + '"}';
         requestData.inputData = inputData;
       }
       

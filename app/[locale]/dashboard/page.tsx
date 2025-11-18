@@ -115,7 +115,7 @@ export default function DashboardPage() {
         const workflows = await workflowApi.getMyWorkflows();
         const workflow = workflows.find(w => w.id === executeUserWorkflowId);
         if (workflow) {
-          const inputData = workflow.inputDataTemplate || '{"message": "Hello", "timestamp": "' + new Date().toISOString() + '"}';
+      const inputData = workflow.inputDataTemplate || '{"message": "Hello", "timestamp": "' + new Date().toISOString() + '"}';
           requestData.inputData = inputData;
         }
       }
