@@ -16,6 +16,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 const getInitials = (firstName: string, lastName: string, username: string) => {
   if (firstName && lastName) {

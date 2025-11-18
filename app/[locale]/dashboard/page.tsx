@@ -13,6 +13,7 @@ import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default function DashboardPage() {
   const { user, isAuthenticated, isLoading } = useAuth();

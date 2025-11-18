@@ -6,6 +6,7 @@ import { BalanceList } from '@/components/balance/BalanceList';
 import { AppLayout } from '@/components/AppLayout';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default function BalancePage() {
   const { user, isAuthenticated, isLoading } = useAuth();

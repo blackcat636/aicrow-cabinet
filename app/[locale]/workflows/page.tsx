@@ -15,6 +15,7 @@ import { PlusIcon, CheckIcon } from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default function WorkflowsPage() {
   const { user, isAuthenticated, isLoading } = useAuth();

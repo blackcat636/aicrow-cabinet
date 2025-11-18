@@ -12,6 +12,7 @@ import { FileTextIcon, DashBoardIcon, ClockIcon } from '@/components/icons';
 import { toast } from 'sonner';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default function Home() {
   const router = useRouter();

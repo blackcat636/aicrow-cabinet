@@ -5,6 +5,7 @@ import { useRouter } from '@/i18n/routing';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default function SignupPage() {
   const router = useRouter();

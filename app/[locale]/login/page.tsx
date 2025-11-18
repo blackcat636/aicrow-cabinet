@@ -5,6 +5,7 @@ import { useRouter } from '@/i18n/routing';
 import { LoginForm } from '@/components/auth/LoginForm';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default function LoginPage() {
   const router = useRouter();

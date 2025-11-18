@@ -11,6 +11,7 @@ import { AppLayout } from '@/components/AppLayout';
 import { useTranslations } from 'next-intl';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 const TelegramIntegrationPage: React.FC = () => {
   const { user } = useAuth();

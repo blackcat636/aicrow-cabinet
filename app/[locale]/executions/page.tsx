@@ -6,6 +6,7 @@ import { ExecutionHistory } from '@/components/workflow/ExecutionHistory';
 import { AppLayout } from '@/components/AppLayout';
 
 export const dynamic = 'force-dynamic';
+export const runtime = 'edge';
 
 export default function ExecutionsPage() {
   const { user, isAuthenticated, isLoading } = useAuth();
