@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useId } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -30,7 +30,8 @@ const getInitials = (firstName: string, lastName: string, username: string) => {
 
 export default function ProfilePage() {
   const t = useTranslations('profile');
-  const dateOfBirthId = useId();
+  // Use profile ID + timestamp for unique ID to avoid duplicates in React Strict Mode
+  const [dateOfBirthId, setDateOfBirthId] = useState<string>('');
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -76,6 +77,9 @@ export default function ProfilePage() {
       setLoading(true);
       const data = await userApi.getProfile();
       setProfile(data);
+      
+      // Generate unique ID for dateOfBirth field using profile ID and timestamp
+      setDateOfBirthId(`dateOfBirth-${data.id || 'profile'}-${Date.now()}`);
       
       // Set form data - handle empty strings and null values
       // Convert date from YYYY-MM-DD to MM/DD/YYYY for display
@@ -397,7 +401,7 @@ export default function ProfilePage() {
                   }
                 }}
                 placeholder="MM/DD/YYYY"
-                id={dateOfBirthId}
+                id={dateOfBirthId || `dateOfBirth-${Date.now()}`}
                 className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
                   errors.dateOfBirth ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
                 }`}

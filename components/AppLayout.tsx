@@ -418,11 +418,15 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 />
 
                 {/* Integrations Dropdown Menu */}
-                <div className={`absolute left-0 top-full mt-2 w-48 bg-[#141519] border border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden transition-all duration-500 ease-out ${
-                  isIntegrationsDropdownOpen 
-                    ? 'opacity-100 translate-y-0 pointer-events-auto scale-100' 
-                    : 'opacity-0 -translate-y-4 pointer-events-none scale-95'
-                }`}>
+                <div 
+                  className={`absolute left-0 top-full mt-2 w-48 bg-[#141519] border border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden transition-all duration-500 ease-out ${
+                    isIntegrationsDropdownOpen 
+                      ? 'opacity-100 translate-y-0 pointer-events-auto scale-100' 
+                      : 'opacity-0 -translate-y-4 pointer-events-none scale-95'
+                  }`}
+                  aria-hidden={!isIntegrationsDropdownOpen}
+                  {...(!isIntegrationsDropdownOpen && { tabIndex: -1, 'aria-disabled': true })}
+                >
                   <I18nLink
                     href="/integrations/telegram"
                     onClick={closeIntegrationsDropdown}
@@ -431,6 +435,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         ? 'bg-purple-600 text-white'
                         : 'text-gray-300 hover:bg-gray-700 hover:text-white'
                     }`}
+                    tabIndex={isIntegrationsDropdownOpen ? 0 : -1}
                   >
                     <div className="p-1 bg-blue-600 rounded">
                       <TelegramIcon className="w-4 h-4 text-white" />
@@ -493,6 +498,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 className={`absolute right-0 mt-2 w-44 bg-[#141519] border border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden transition-all duration-200 ease-out ${isUserMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}
                 role='menu'
                 aria-hidden={!isUserMenuOpen}
+                {...(!isUserMenuOpen && { tabIndex: -1, 'aria-disabled': true })}
               >
                 <I18nLink
                   href='/profile'

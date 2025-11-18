@@ -346,10 +346,35 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
   };
 
   // Get translated transaction description
-  const getTranslatedDescription = (description: string): string => {
-    const translated = t(`transactionDescriptions.${description}` as any);
-    return translated && translated !== `transactionDescriptions.${description}` ? translated : description;
-  };
+  const getTranslatedDescription = useCallback((description: string): string => {
+    if (!description) return description;
+    
+    // Normalize description for key matching (trim and handle special characters)
+    const normalizedDescription = description.trim();
+    if (!normalizedDescription) return description;
+    
+    try {
+      const translationKey = `transactionDescriptions.${normalizedDescription}` as any;
+      const translated = t(translationKey);
+      
+      // getMessageFallback should return the original description if translation not found
+      // Check if we got a translation (not the key itself or error message)
+      if (translated && 
+          translated !== translationKey && 
+          !translated.startsWith('balance.transactionDescriptions.') &&
+          !translated.includes('MISSING_MESSAGE') &&
+          translated !== normalizedDescription) {
+        return translated;
+      }
+      
+      // If translation not found, getMessageFallback returns the description itself
+      // So we can just return the original description
+      return description;
+    } catch (error) {
+      // If error occurs, return original description
+      return description;
+    }
+  }, [t]);
 
   // Get transaction icon
   const getTransactionIcon = (type: string) => {
