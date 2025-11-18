@@ -47,14 +47,16 @@ export function LanguageSwitcherCompact() {
     
     // Set cookie for next-intl to detect the new locale
     // next-intl uses these cookie names
-    document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
-    document.cookie = `locale=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
-    document.cookie = `next-intl-locale=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
+    const cookieOptions = `path=/; max-age=31536000; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
+    document.cookie = `NEXT_LOCALE=${newLocale}; ${cookieOptions}`;
+    document.cookie = `locale=${newLocale}; ${cookieOptions}`;
+    document.cookie = `next-intl-locale=${newLocale}; ${cookieOptions}`;
     
     // Use startTransition for smooth transition without blocking UI
     startTransition(() => {
-      // Update the URL with the new locale using replace for smoother navigation
-      router.replace(pathname, { locale: newLocale as any });
+      // Update the URL with the new locale using push to ensure proper navigation
+      // pathname from usePathname() already has locale prefix removed, so we need to add it
+      router.push(pathname, { locale: newLocale as any });
     });
   };
 
