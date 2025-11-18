@@ -61,19 +61,6 @@ function createLocalizedUrl(
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
-  // Log incoming request
-  console.log('[Middleware] Incoming request:', {
-    pathname,
-    method: request.method,
-    url: request.url,
-    cookies: {
-      NEXT_LOCALE: request.cookies.get('NEXT_LOCALE')?.value,
-      locale: request.cookies.get('locale')?.value,
-      'next-intl-locale': request.cookies.get('next-intl-locale')?.value
-    },
-    acceptLanguage: request.headers.get('Accept-Language')
-  });
 
   // Allow access to API routes and static files
   if (
@@ -258,20 +245,6 @@ export async function middleware(request: NextRequest) {
         ? localeCookie
         : routing.defaultLocale;
 
-    // Log locale detection
-    console.log('[Middleware] Locale detection:', {
-      pathname,
-      localeFromPath: getLocaleFromPathname(pathname),
-      cookies: {
-        NEXT_LOCALE: request.cookies.get('NEXT_LOCALE')?.value,
-        locale: request.cookies.get('locale')?.value,
-        'next-intl-locale': request.cookies.get('next-intl-locale')?.value
-      },
-      localeCookie,
-      preferredLocale,
-      acceptLanguage: request.headers.get('Accept-Language')
-    });
-
     // Override Accept-Language header to prevent next-intl from auto-detecting locale
     const modifiedHeaders = new Headers(request.headers);
     modifiedHeaders.set('Accept-Language', preferredLocale);
@@ -286,31 +259,14 @@ export async function middleware(request: NextRequest) {
     // Use modified request for intl middleware
     intlResponse = intlMiddleware(modifiedRequest);
 
-    // Log intl middleware response
-    if (intlResponse) {
-      console.log('[Middleware] Intl middleware response:', {
-        status: intlResponse.status,
-        statusText: intlResponse.statusText,
-        redirectUrl: intlResponse.headers.get('Location'),
-        headers: Object.fromEntries(intlResponse.headers.entries())
-      });
-    }
-
     // If intl middleware returns a redirect, return it
     if (intlResponse && intlResponse.status === 307) {
-      console.log('[Middleware] Returning redirect from intl middleware');
       return intlResponse;
     }
 
     // Get the current locale (after intl processing)
     currentLocale = getLocaleFromPathname(pathname) || preferredLocale;
     normalizedPathname = normalizePathname(pathname);
-    
-    console.log('[Middleware] Final locale decision:', {
-      currentLocale,
-      normalizedPathname,
-      pathnameFromUrl: pathname
-    });
   }
 
   // Check if the current path is a protected route

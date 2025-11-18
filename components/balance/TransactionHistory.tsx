@@ -353,25 +353,27 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
     const normalizedDescription = description.trim();
     if (!normalizedDescription) return description;
     
+    // onError and getMessageFallback in NextIntlClientProvider will handle missing translations
+    // getMessageFallback returns empty string for missing transactionDescriptions keys
     try {
       const translationKey = `transactionDescriptions.${normalizedDescription}` as any;
+      // t() will use getMessageFallback which returns empty string if translation not found
       const translated = t(translationKey);
       
-      // getMessageFallback should return the original description if translation not found
-      // Check if we got a translation (not the key itself or error message)
+      // If we got a valid translation (not empty, not the key path, not error message)
       if (translated && 
+          typeof translated === 'string' &&
+          translated !== '' &&
           translated !== translationKey && 
           !translated.startsWith('balance.transactionDescriptions.') &&
-          !translated.includes('MISSING_MESSAGE') &&
-          translated !== normalizedDescription) {
+          !translated.includes('MISSING_MESSAGE')) {
         return translated;
       }
       
-      // If translation not found, getMessageFallback returns the description itself
-      // So we can just return the original description
+      // If translation not found (empty string from getMessageFallback), return original description
       return description;
     } catch (error) {
-      // If error occurs, return original description
+      // If error occurs (shouldn't happen with onError handler), return original description
       return description;
     }
   }, [t]);

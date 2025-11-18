@@ -46,15 +46,6 @@ export function LanguageSwitcher() {
     // Close dropdown first
     setIsOpen(false);
     
-    // Log current state
-    console.log('[LanguageSwitcher] Changing language:', {
-      currentLocale: locale,
-      newLocale,
-      currentPathname: pathname,
-      currentUrl: window.location.href,
-      cookiesBefore: document.cookie
-    });
-    
     // Set cookie for next-intl to detect the new locale
     // next-intl uses these cookie names
     const cookieOptions = `path=/; max-age=31536000; SameSite=Lax${process.env.NODE_ENV === 'production' ? '; Secure' : ''}`;
@@ -62,36 +53,11 @@ export function LanguageSwitcher() {
     document.cookie = `locale=${newLocale}; ${cookieOptions}`;
     document.cookie = `next-intl-locale=${newLocale}; ${cookieOptions}`;
     
-    // Log after setting cookies
-    console.log('[LanguageSwitcher] Cookies set:', {
-      cookiesAfter: document.cookie,
-      expectedCookies: {
-        NEXT_LOCALE: newLocale,
-        locale: newLocale,
-        'next-intl-locale': newLocale
-      }
-    });
-    
     // Use startTransition for smooth transition without blocking UI
     startTransition(() => {
-      console.log('[LanguageSwitcher] Navigating to:', {
-        pathname,
-        newLocale,
-        fullPath: `/${newLocale}${pathname === '/' ? '' : pathname}`
-      });
-      
       // Update the URL with the new locale using push to ensure proper navigation
       // pathname from usePathname() already has locale prefix removed, so we need to add it
       router.push(pathname, { locale: newLocale as any });
-      
-      // Log after navigation
-      setTimeout(() => {
-        console.log('[LanguageSwitcher] After navigation:', {
-          currentUrl: window.location.href,
-          cookiesAfter: document.cookie,
-          pathnameAfter: window.location.pathname
-        });
-      }, 100);
     });
   };
 

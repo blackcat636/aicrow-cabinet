@@ -52,28 +52,9 @@ const TopNavItem: React.FC<{
   const labelRef = useRef<HTMLSpanElement>(null);
   
   const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    // Log navigation
-    console.log('[TopNavItem] Navigation clicked:', {
-      href,
-      currentLocale: locale,
-      currentUrl: window.location.href,
-      currentPathname: window.location.pathname,
-      cookies: document.cookie,
-      expectedUrl: `/${locale}${href}`
-    });
-    
     if (onClick) {
       onClick();
     }
-    
-    // Log after navigation
-    setTimeout(() => {
-      console.log('[TopNavItem] After navigation:', {
-        newUrl: window.location.href,
-        newPathname: window.location.pathname,
-        cookies: document.cookie
-      });
-    }, 100);
   };
 
   // Mouse tracking for interactive gradient on label text

@@ -15,21 +15,25 @@ export default getRequestConfig(async ({ requestLocale }) => {
     messages: (await import(`../messages/${locale}.json`)).default,
     // Suppress missing translation errors for dynamic keys (like transaction descriptions from API)
     onError(error) {
-      // Only suppress errors for transactionDescriptions keys
-      if (error && error.message && error.message.includes('transactionDescriptions.')) {
+      // Suppress errors for transactionDescriptions keys and MISSING_MESSAGE errors
+      if (error && error.message && (
+        error.message.includes('transactionDescriptions.') ||
+        error.message.includes('MISSING_MESSAGE')
+      )) {
         // Silently ignore - these are dynamic descriptions from API
-        return;
+        return undefined;
       }
-      // Log other translation errors in development only
-      if (process.env.NODE_ENV === 'development' && error) {
-        console.error('[next-intl] Translation error:', error.message);
-      }
+      // Return undefined to suppress the error
+      return undefined;
     },
     // Return fallback value if translation is missing
     getMessageFallback({ namespace, key, error }) {
-      // For transactionDescriptions, return the description itself (without namespace prefix)
+      // For transactionDescriptions, return empty string to indicate missing translation
+      // The component will handle this and return the original description
       if (namespace === 'balance' && key && typeof key === 'string' && key.startsWith('transactionDescriptions.')) {
-        return key.replace('transactionDescriptions.', '');
+        // Return empty string to indicate missing translation
+        // The component's getTranslatedDescription will return the original description
+        return '';
       }
       // For other missing keys, return the key path
       const path = [namespace, key].filter((part) => part != null).join('.');
