@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { LoginForm } from '@/components/auth/LoginForm';
+
+export const dynamic = 'force-dynamic';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,3 +30,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

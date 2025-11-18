@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, ArrowUpCircle, ArrowDownCircle, Loader2, Search, Calendar, X } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface TransactionHistoryProps {
   balances: BalanceData[];
@@ -14,6 +15,7 @@ interface TransactionHistoryProps {
 
 export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances }) => {
   const { isLoading: authLoading } = useAuth();
+  const t = useTranslations('balance');
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -168,12 +170,12 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
         setTransactions([]);
         setError(null);
       } else {
-        setError(err.message || 'Failed to load transactions');
+        setError(err.message || t('failedToLoadTransactions'));
       }
     } finally {
       setIsLoading(false);
     }
-  }, [selectedCurrencyId]);
+  }, [selectedCurrencyId, t]);
 
   useEffect(() => {
     // Wait for auth to finish loading before making request
@@ -190,6 +192,13 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
     const numAmount = parseFloat(amount);
     const precision = parseFloat(currency.precision);
     return numAmount.toFixed(precision);
+  };
+
+  // Format balance (divide by 100 to convert from stored format, e.g., 70100 -> 701.00)
+  const formatBalance = (amount: string, currency: Transaction['currency']) => {
+    const numAmount = parseFloat(amount);
+    const convertedAmount = numAmount / 100;
+    return convertedAmount.toFixed(2);
   };
 
   // Filter transactions by selected currency, date range, and amount
@@ -303,7 +312,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
         <div className="p-6">
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 text-purple-500 animate-spin mr-3" />
-            <p className="text-gray-300">Loading transaction history...</p>
+            <p className="text-gray-300">{t('loadingTransactionHistory')}</p>
           </div>
         </div>
       </div>
@@ -316,7 +325,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
         <div className="p-6">
           <div className="flex flex-col items-center justify-center py-12">
             <AlertCircle className="w-12 h-12 text-red-500 mb-4" />
-            <h3 className="text-lg font-semibold mb-2 text-white">Loading Error</h3>
+            <h3 className="text-lg font-semibold mb-2 text-white">{t('loadingError')}</h3>
             <p className="text-gray-400 text-center mb-4">{error}</p>
           </div>
         </div>
@@ -353,12 +362,12 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
       <CardHeader className="pb-4 relative z-10">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-2xl font-bold text-white">Transaction History</CardTitle>
-            <p className="text-gray-400 mt-1">View all your balance transactions</p>
+            <CardTitle className="text-2xl font-bold text-white">{t('transactionHistory')}</CardTitle>
+            <p className="text-gray-400 mt-1">{t('viewAllTransactions')}</p>
           </div>
           {balances.length > 1 && (
             <div className="flex items-center gap-2">
-              <label className="text-sm text-gray-400">Currency:</label>
+              <label className="text-sm text-gray-400">{t('currency')}:</label>
               <select
                 value={selectedCurrencyId || ''}
                 onChange={(e) => setSelectedCurrencyId(Number(e.target.value))}
@@ -383,7 +392,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by amount..."
+              placeholder={t('searchByAmount')}
               value={amountSearch}
               onChange={(e) => setAmountSearch(e.target.value)}
               className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500"
@@ -435,7 +444,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                   }
                 }}
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-400 transition-colors z-20 cursor-pointer"
-                title="Open calendar"
+                title={t('openCalendar')}
               >
                 <Calendar className="w-4 h-4" />
               </button>
@@ -506,7 +515,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                   }
                 }}
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-400 transition-colors z-20 cursor-pointer"
-                title="Open calendar"
+                title={t('openCalendar')}
               >
                 <Calendar className="w-4 h-4" />
               </button>
@@ -557,7 +566,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
               className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
             >
               <X className="w-4 h-4" />
-              Clear
+              {t('clear')}
             </button>
           )}
         </div>
@@ -569,17 +578,17 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
             <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
               <AlertCircle className="w-8 h-8 text-white" />
             </div>
-            <h3 className="text-lg font-medium text-white mb-2">No currency selected</h3>
-            <p className="text-gray-300">Please select a currency to view transactions</p>
+            <h3 className="text-lg font-medium text-white mb-2">{t('noCurrencySelected')}</h3>
+            <p className="text-gray-300">{t('selectCurrencyToView')}</p>
           </div>
         ) : sortedTransactions.length === 0 ? (
           <div className="text-center py-12">
             <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
               <AlertCircle className="w-8 h-8 text-white" />
             </div>
-            <h3 className="text-lg font-medium text-white mb-2">No transactions found</h3>
+            <h3 className="text-lg font-medium text-white mb-2">{t('noTransactionsFound')}</h3>
             <p className="text-gray-300">
-              You don't have any transactions for {selectedCurrency?.currency.name || 'this currency'} yet
+              {t('noTransactionsForCurrency', { currency: selectedCurrency?.currency.name || t('thisCurrency') })}
             </p>
           </div>
         ) : (
@@ -622,7 +631,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
 
                       {transaction.reference_id && (
                         <p className="text-xs text-gray-400 mb-2">
-                          Reference: <span className="font-mono">{transaction.reference_id}</span>
+                          {t('reference')}: <span className="font-mono">{transaction.reference_id}</span>
                         </p>
                       )}
 
@@ -630,7 +639,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                         <span>{formatDate(transaction.created_at)}</span>
                         {transaction.currency && (
                           <span className="flex items-center gap-1">
-                            Currency: {transaction.currency.code}
+                            {t('currency')}: {transaction.currency.code}
                           </span>
                         )}
                       </div>
@@ -660,13 +669,13 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                     <div className="text-xs text-gray-400 space-y-1">
                       {transaction.fee_amount && (
                         <div className="text-orange-400">
-                          Fee: {formatAmount(transaction.fee_amount, transaction.currency)}
+                          {t('fee')}: {formatAmount(transaction.fee_amount, transaction.currency)}
                         </div>
                       )}
                       {transaction.balance_before && transaction.balance_after && (
                         <div className="mt-2 pt-2 border-t border-gray-700/50">
                           <div className="text-gray-500">
-                            Balance: {formatAmount(transaction.balance_before, transaction.currency)} → {formatAmount(transaction.balance_after, transaction.currency)}
+                            {t('balance')}: {formatBalance(transaction.balance_before, transaction.currency)} → {formatBalance(transaction.balance_after, transaction.currency)}
                           </div>
                         </div>
                       )}
@@ -683,17 +692,17 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
               <div className="mt-6 pt-4 border-t border-gray-700/50 text-center text-sm text-gray-400">
                 {dateFrom || dateTo || amountSearch ? (
                   <div>
-                    Showing {sortedTransactions.length} of {transactions.length} transactions
+                    {t('showingTransactions', { count: sortedTransactions.length, total: transactions.length })}
                     {(dateFrom || dateTo || amountSearch) && (
-                      <span className="ml-2 text-purple-400">(filtered)</span>
+                      <span className="ml-2 text-purple-400">({t('filtered')})</span>
                     )}
                   </div>
                 ) : (
                   pagination && pagination.total > 0 && (
                     <div>
-                      Showing {sortedTransactions.length} of {pagination.total} transactions
+                      {t('showingTransactions', { count: sortedTransactions.length, total: pagination.total })}
                       {pagination.pages > 1 && (
-                        <span className="ml-2">(Page {pagination.page} of {pagination.pages})</span>
+                        <span className="ml-2">({t('page')} {pagination.page} {t('of')} {pagination.pages})</span>
                       )}
                     </div>
                   )

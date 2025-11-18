@@ -7,6 +7,7 @@ import { VerifyEmailForm } from "./VerifyEmailForm";
 import { useAuth } from "@/contexts/AuthContext";
 import { RegisterRequest } from "@/types/auth";
 import { XIcon, EyeIcon, EyeOffIcon } from "@/components/icons";
+import { useTranslations } from 'next-intl';
 
 interface RegisterFormProps {
   variant?: "modal" | "embedded";
@@ -25,6 +26,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
   onRegistrationSuccess,
   className,
 }) => {
+  const t = useTranslations('auth');
   const { register, isLoading, error, clearError } = useAuth();
   const [formData, setFormData] = useState<RegisterRequest>({
     email: "",
@@ -62,21 +64,21 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
+      newErrors.email = t('emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = "Invalid email format";
+      newErrors.email = t('invalidEmailFormat');
     }
 
     if (!formData.password) {
-      newErrors.password = "Password is required";
+      newErrors.password = t('passwordRequired');
     } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters long";
+      newErrors.password = t('passwordLength');
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
+      newErrors.confirmPassword = t('confirmPasswordRequired');
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
+      newErrors.confirmPassword = t('passwordsDoNotMatch');
     }
 
     setErrors(newErrors);
@@ -174,8 +176,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
             {/* Header */}
             {isModal && (
               <div className="p-6 border-b border-white/10">
-                <h2 className="text-2xl font-bold text-white">Ai Pills User Account</h2>
-                <p className="text-sm text-gray-300 mt-1">Welcome to Workflow Management System</p>
+                <h2 className="text-2xl font-bold text-white">{t('accountTitle')}</h2>
+                <p className="text-sm text-gray-300 mt-1">{t('welcomeMessage')}</p>
               </div>
             )}
 
@@ -188,9 +190,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 </div>
                 <div className="flex justify-between mt-2">
                   <span className="text-xs text-purple-400">
-                    Create Account
+                    {t('createAccountStep')}
                   </span>
-                  <span className="text-xs text-gray-500">Verify Email</span>
+                  <span className="text-xs text-gray-500">{t('verifyEmailStep')}</span>
                 </div>
               </div>
             )}
@@ -213,14 +215,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   className="block text-sm font-medium text-gray-300 mb-2"
                   htmlFor="register-email"
                 >
-                  Email Address *
+                  {t('emailAddress')} *
                 </label>
                 <input
                   className={`w-full p-3 bg-white/10 text-white placeholder-gray-300 border ${isModal ? "rounded-lg" : "rounded-full"} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                     errors.email ? "border-red-500" : "border-white/30"
                   }`}
                   id="register-email"
-                  placeholder="Enter your email"
+                  placeholder={t('enterYourEmail')}
                   type="email"
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
@@ -236,7 +238,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   className="block text-sm font-medium text-gray-300 mb-2"
                   htmlFor="register-password"
                 >
-                  Password *
+                  {t('password')} *
                 </label>
                 <div className="relative">
                   <input
@@ -244,7 +246,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                       errors.password ? "border-red-500" : "border-white/30"
                     }`}
                     id="register-password"
-                    placeholder="Create a password"
+                    placeholder={t('createAPassword')}
                     type={showPassword ? "text" : "password"}
                     value={formData.password}
                     onChange={(e) =>
@@ -267,7 +269,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   <p className="mt-1 text-sm text-red-400">{errors.password}</p>
                 )}
                 <p className="mt-1 text-xs text-gray-400">
-                  Password must be at least 8 characters long
+                  {t('passwordLength')}
                 </p>
               </div>
 
@@ -277,7 +279,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   className="block text-sm font-medium text-gray-300 mb-2"
                   htmlFor="register-confirm-password"
                 >
-                  Confirm Password *
+                  {t('confirmPassword')} *
                 </label>
                 <div className="relative">
                   <input
@@ -287,7 +289,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                         : "border-white/30"
                     }`}
                     id="register-confirm-password"
-                    placeholder="Confirm your password"
+                    placeholder={t('confirmYourPassword')}
                     type={showConfirmPassword ? "text" : "password"}
                     value={formData.confirmPassword}
                     onChange={(e) =>
@@ -323,10 +325,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   {isLoading ? (
                     <div className="flex items-center justify-center gap-2">
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                      Creating Account...
+                      {t('creatingAccount')}
                     </div>
                   ) : (
-                    "Create Account"
+                    t('createAccount')
                   )}
                 </button>
               </div>
@@ -340,7 +342,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 }
               >
                 <p className="text-sm text-gray-300">
-                  Already have an account?{" "}
+                  {t('alreadyHaveAccount')}{" "}
                   <button
                     className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
                     type="button"
@@ -349,7 +351,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                       onSwitchToLogin();
                     }}
                   >
-                    Sign in
+                    {t('signIn')}
                   </button>
                 </p>
               </div>

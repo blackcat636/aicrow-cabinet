@@ -7,6 +7,7 @@ import { WorkflowCard } from './WorkflowCard';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PlusIcon } from '@/components/icons';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslations } from 'next-intl';
 
 interface WorkflowListProps {
   onAddWorkflow: () => void;
@@ -28,6 +29,8 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
   executingWorkflowId
 }) => {
   const { isAuthenticated } = useAuth();
+  const t = useTranslations('dashboard');
+  const tWorkflow = useTranslations('workflow');
   const [workflows, setWorkflows] = useState<UserWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -132,8 +135,8 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
   }, []);
 
   const deleteMessage = useMemo(() => 
-    `Are you sure you want to delete the workflow "${deleteDialog.workflowName}"? This action cannot be undone.`,
-    [deleteDialog.workflowName]
+    tWorkflow('deleteConfirmMessage', { name: deleteDialog.workflowName }),
+    [deleteDialog.workflowName, tWorkflow]
   );
 
   // Skeleton loader component - reserves space to prevent layout shift
@@ -205,19 +208,19 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
               <div className="text-2xl font-bold text-white">
                 {stats.total}
               </div>
-              <div className="text-sm text-gray-300">Total Workflows</div>
+              <div className="text-sm text-gray-300">{t('totalWorkflows')}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {stats.active}
               </div>
-              <div className="text-sm text-gray-300">Active</div>
+              <div className="text-sm text-gray-300">{t('active')}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
                 {stats.inactive}
               </div>
-              <div className="text-sm text-gray-300">Inactive</div>
+              <div className="text-sm text-gray-300">{t('inactive')}</div>
             </div>
           </div>
         </div>
@@ -229,8 +232,8 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
           {/* Header - fixed height to prevent layout shift */}
           <div className="flex items-center justify-between p-6 min-h-[100px]">
             <div className="ml-6">
-              <h2 className="text-2xl font-bold text-white">My Workflows</h2>
-              <p className="text-gray-300 mt-1">Create, manage and run your workflows</p>
+              <h2 className="text-2xl font-bold text-white">{t('myWorkflows')}</h2>
+              <p className="text-gray-300 mt-1">{t('createManageRun')}</p>
             </div>
             {/* No header button when empty */}
             <div className="mr-6" />
@@ -256,8 +259,8 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
           {/* Header - fixed height to prevent layout shift */}
           <div className="flex items-center justify-between p-6 min-h-[100px]">
             <div className="ml-6">
-              <h2 className="text-2xl font-bold text-white">My Workflows</h2>
-              <p className="text-gray-300 mt-1">Create, manage and run your workflows</p>
+              <h2 className="text-2xl font-bold text-white">{t('myWorkflows')}</h2>
+              <p className="text-gray-300 mt-1">{t('createManageRun')}</p>
             </div>
             <div className="flex items-center gap-3 mr-6">
               <button
@@ -265,7 +268,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
                 className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/25"
               >
                 <PlusIcon className="w-4 h-4" />
-                Add Workflow
+{t('addWorkflow')}
               </button>
             </div>
           </div>
@@ -294,7 +297,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
         isOpen={deleteDialog.isOpen}
         onClose={handleCloseDeleteDialog}
         onConfirm={confirmDelete}
-        title="Delete Workflow"
+          title={tWorkflow('deleteConfirm')}
         message={deleteMessage}
         confirmText="Delete"
         cancelText="Cancel"

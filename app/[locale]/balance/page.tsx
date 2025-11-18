@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BalanceList } from '@/components/balance/BalanceList';
 import { AppLayout } from '@/components/AppLayout';
 
+export const dynamic = 'force-dynamic';
+
 export default function BalancePage() {
   const { user, isAuthenticated, isLoading } = useAuth();
 

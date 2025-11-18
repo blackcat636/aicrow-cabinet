@@ -1,7 +1,6 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback, useRef } from 'react';
-import { usePathname } from 'next/navigation';
 import { User, LoginRequest, RegisterRequest } from '@/types/auth';
 import { removeTokens, getAccessToken, getRefreshToken } from '@/lib/auth';
 import { authApi } from '@/lib/apiAuth';
@@ -37,8 +36,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const pathname = usePathname();
+  const [pathname, setPathname] = useState<string>('/');
   const isLoggingOutRef = useRef(false);
+
+  // Get pathname from window.location (client-side only) to avoid static export issues
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const updatePathname = () => {
+      const currentPath = window.location.pathname;
+      // Remove locale prefix if present (uk, en, fr)
+      const normalizedPath = currentPath.replace(/^\/(uk|en|fr)(\/|$)/, '/') || '/';
+      setPathname(normalizedPath);
+    };
+    
+    updatePathname();
+    window.addEventListener('popstate', updatePathname);
+    const interval = setInterval(updatePathname, 100);
+    
+    return () => {
+      window.removeEventListener('popstate', updatePathname);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Initialize authentication on mount via server API and HttpOnly cookies
   useEffect(() => {

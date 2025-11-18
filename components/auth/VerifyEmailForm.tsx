@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { XIcon } from '@/components/icons';
 import { toast } from 'sonner';
+import { useTranslations } from 'next-intl';
 
 interface VerifyEmailFormProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
   onVerified,
   showInitialToast = true
 }) => {
+  const t = useTranslations('auth');
   const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,7 +34,7 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
     e.preventDefault();
 
     if (!code.trim()) {
-      setErrors({ code: 'Verification code is required' });
+      setErrors({ code: t('verificationCodeRequired') });
       return;
     }
 
@@ -51,25 +53,25 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Verification failed');
+        setError(data.error || t('verificationFailed'));
         return;
       }
 
       // Update auth context with user data
       if (data.user && data.accessToken) {
         // Show success toast
-        toast.success('Email verified successfully!', {
-          description: 'You are now signed in',
+        toast.success(t('emailVerifiedSuccess'), {
+          description: t('youAreSignedIn'),
           duration: 5000,
         });
         
         // Close this form and let the parent handle the success
         onVerified();
       } else {
-        setError('Verification successful but could not log in');
+        setError(t('verificationSuccessfulButLoginFailed'));
       }
     } catch (err: any) {
-      setError(err.message || 'Verification failed');
+      setError(err.message || t('verificationFailed'));
     } finally {
       setIsLoading(false);
     }
@@ -87,8 +89,8 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
   useEffect(() => {
     if (isOpen && showInitialToast && !toastShownRef.current) {
       // Show success toast when form opens
-      toast.success('Verification code has been sent to your email', {
-        description: `Please check ${email} for the verification code`,
+      toast.success(t('verificationCodeSent'), {
+        description: t('checkEmail', { email }),
         duration: 5000,
       });
       toastShownRef.current = true;
@@ -117,13 +119,13 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.error || 'Failed to resend verification code');
+        setError(data.error || t('resendCodeError'));
       } else {
-        setSuccessMessage('Verification code has been resent to your email');
+        setSuccessMessage(t('resendCodeSuccess'));
         setResendTimer(60); // Set 60 second cooldown
       }
     } catch (err: any) {
-      setError(err.message || 'Failed to resend verification code');
+      setError(err.message || t('resendCodeError'));
     } finally {
       setIsResending(false);
     }
@@ -147,7 +149,7 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
       <div className="bg-gray-900 rounded-lg max-w-md w-full border border-gray-700">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-white">Verify Email</h2>
+          <h2 className="text-xl font-semibold text-white">{t('verifyEmail')}</h2>
           <button
             onClick={handleClose}
             className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-red-900/20"
@@ -163,8 +165,8 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
             <div className="flex-1 h-1 rounded bg-purple-600"></div>
           </div>
           <div className="flex justify-between mt-2">
-            <span className="text-xs text-gray-500">Create Account</span>
-            <span className="text-xs text-purple-400">Verify Email</span>
+            <span className="text-xs text-gray-500">{t('createAccountStep')}</span>
+            <span className="text-xs text-purple-400">{t('verifyEmailStep')}</span>
           </div>
         </div>
 
@@ -173,11 +175,11 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
           {/* Info Message */}
           <div className="p-4 bg-blue-900/20 border border-blue-600 rounded-lg">
             <p className="text-sm text-blue-400 mb-2">
-              We've sent a verification code to:
+              {t('codeSentTo')}
             </p>
             <p className="text-sm font-semibold text-blue-300">{email}</p>
             <p className="text-xs text-gray-400 mt-2">
-              Please check your email and enter the verification code below.
+              {t('checkEmailAndEnterCode')}
             </p>
           </div>
 
@@ -199,7 +201,7 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Verification Code *
+                {t('verificationCode')} *
               </label>
               <input
                 type="text"
@@ -210,7 +212,7 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
                     setErrors(prev => ({ ...prev, code: '' }));
                   }
                 }}
-                placeholder="Enter verification code"
+                placeholder={t('enterVerificationCode')}
                 className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                   errors.code ? 'border-red-500' : 'border-gray-600'
                 }`}
@@ -231,10 +233,10 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Verifying...
+                    {t('verifying')}
                   </div>
                 ) : (
-                  'Verify Email'
+                  t('verifyEmail')
                 )}
               </button>
             </div>
@@ -248,11 +250,11 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
                 className="text-sm text-purple-400 hover:text-purple-300 font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isResending ? (
-                  'Sending...'
+                  t('sending')
                 ) : resendTimer > 0 ? (
-                  `Resend code in ${resendTimer}s`
+                  t('resendCodeIn', { seconds: resendTimer })
                 ) : (
-                  'Resend verification code'
+                  t('resendVerificationCode')
                 )}
               </button>
               <div>
@@ -261,7 +263,7 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
                   onClick={handleClose}
                   className="text-sm text-gray-400 hover:text-purple-400 font-medium transition-colors"
                 >
-                  Close
+                  {t('close')}
                 </button>
               </div>
             </div>

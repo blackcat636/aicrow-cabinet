@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
+import { useLocale } from 'next-intl';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
@@ -10,8 +11,11 @@ import { AppLayout } from '@/components/AppLayout';
 import { FileTextIcon, DashBoardIcon, ClockIcon } from '@/components/icons';
 import { toast } from 'sonner';
 
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   const router = useRouter();
+  const locale = useLocale();
   const { user, isAuthenticated, isLoading } = useAuth();
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
@@ -22,9 +26,9 @@ export default function Home() {
   // Redirect authenticated users to dashboard page
   useEffect(() => {
     if (isAuthenticated && !showLoginForm && !showRegisterForm && !showVerifyForm) {
-      router.replace('/dashboard');
+      router.replace('/dashboard', { locale: locale as any });
     }
-  }, [isAuthenticated, router, showLoginForm, showRegisterForm, showVerifyForm]);
+  }, [isAuthenticated, router, showLoginForm, showRegisterForm, showVerifyForm, locale]);
 
   // Show loading state
   if (isLoading) {
@@ -99,7 +103,7 @@ export default function Home() {
           onVerified={() => {
             setShowVerifyForm(false);
             setVerificationEmail('');
-            router.push('/dashboard');
+            router.push('/dashboard', { locale: locale as any });
           }}
         />
       </div>
@@ -111,3 +115,4 @@ export default function Home() {
   // But keeping it for TypeScript
   return null;
 }
+

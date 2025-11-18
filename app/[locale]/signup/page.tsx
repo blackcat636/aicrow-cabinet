@@ -1,8 +1,10 @@
 'use client';
 
 import React from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 import { RegisterForm } from '@/components/auth/RegisterForm';
+
+export const dynamic = 'force-dynamic';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -28,3 +30,4 @@ export default function SignupPage() {
     </div>
   );
 }
+

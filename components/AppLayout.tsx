@@ -3,9 +3,11 @@
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslations } from 'next-intl';
+import { Link as I18nLink } from '@/i18n/routing';
+import aiPillsLogo from '@/public/brand/aiPillsLogo.png';
 import {
   LogOutIcon,
   MenuIcon,
@@ -76,7 +78,7 @@ const TopNavItem: React.FC<{
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`relative flex items-center ${icon ? 'gap-2' : 'gap-0'} px-4 py-2 rounded-lg transition-all duration-300 overflow-hidden ${
+      className={`relative flex items-center justify-center ${icon ? 'gap-2' : 'gap-0'} px-4 py-2 rounded-lg transition-all duration-300 overflow-hidden ${
         isActive
           ? 'shadow-lg shadow-purple-500/30'
           : 'text-gray-300 hover:bg-white/10 hover:text-white'
@@ -87,7 +89,7 @@ const TopNavItem: React.FC<{
           {icon}
         </span>
       )}
-      <span className="relative z-10 hidden lg:inline-block">
+      <span className="relative z-10 hidden lg:inline-block text-center">
         {/* Base text - always visible */}
         <span 
           ref={labelRef}
@@ -130,7 +132,8 @@ const IntegrationsNavButton: React.FC<{
   isActive: boolean;
   isOpen: boolean;
   onToggle: () => void;
-}> = React.memo(({ isActive, isOpen, onToggle }) => {
+  label: string;
+}> = React.memo(({ isActive, isOpen, onToggle, label }) => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const labelRef = useRef<HTMLSpanElement>(null);
@@ -162,7 +165,7 @@ const IntegrationsNavButton: React.FC<{
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className={`relative flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 overflow-hidden ${
+      className={`relative flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 overflow-hidden ${
         isActive
           ? 'shadow-lg shadow-purple-500/30'
           : 'text-gray-300 hover:bg-white/10 hover:text-white'
@@ -171,7 +174,7 @@ const IntegrationsNavButton: React.FC<{
       aria-expanded={isOpen}
     >
       {/* Icon removed for cleaner text-only nav */}
-      <span className="relative z-10 hidden lg:inline-block">
+      <span className="relative z-10 hidden lg:inline-block text-center">
         {/* Base text - always visible */}
         <span 
           className={`transition-all duration-300 ${
@@ -180,7 +183,7 @@ const IntegrationsNavButton: React.FC<{
               : 'font-medium text-gray-300'
           }`}
         >
-          Integrations
+          {label}
         </span>
         
         {/* Gradient overlay that follows mouse - only visible on hover */}
@@ -195,7 +198,7 @@ const IntegrationsNavButton: React.FC<{
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Integrations
+            {label}
           </span>
         )}
       </span>
@@ -232,13 +235,48 @@ TelegramIcon.displayName = 'TelegramIcon';
 
 export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout } = useAuth();
-  const pathname = usePathname();
-  const router = useRouter();
+  const t = useTranslations('nav');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isIntegrationsDropdownOpen, setIsIntegrationsDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const integrationsDropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  
+  // Ensure pathname is only used on client side
+  // usePathname from next-intl may fail during static export, so we use window.location
+  const [pathname, setPathname] = useState<string>('/');
+  
+  // Get pathname from window.location (client-side only)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    
+    const updatePathname = () => {
+      const currentPath = window.location.pathname;
+      // Remove locale prefix if present (uk, en, fr)
+      const normalizedPath = currentPath.replace(/^\/(uk|en|fr)(\/|$)/, '/') || '/';
+      setPathname(normalizedPath);
+    };
+    
+    // Initial update
+    updatePathname();
+    
+    // Listen to route changes via Next.js router events
+    const handleRouteChange = () => {
+      // Small delay to ensure window.location is updated
+      setTimeout(updatePathname, 0);
+    };
+    
+    // Listen to browser navigation
+    window.addEventListener('popstate', updatePathname);
+    
+    // Also update when router changes (via custom event or polling)
+    const interval = setInterval(updatePathname, 100);
+    
+    return () => {
+      window.removeEventListener('popstate', updatePathname);
+      clearInterval(interval);
+    };
+  }, []);
 
   // Memoize active states to prevent unnecessary recalculations
   const activeStates = useMemo(() => ({
@@ -326,21 +364,21 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
       <nav className='w-full px-4 lg:px-8 py-4 bg-[#141519] shadow-2xl shadow-purple-500/10 relative overflow-visible z-50'>
         <div className='flex items-center justify-between relative'>
           {/* Logo */}
-          <Link href='/' className='hover:opacity-90 flex-shrink-0'>
-            <Image src="/brand/aiPillsLogo.png" alt="AiPills logo" width={40} height={70} priority />
-          </Link>
+          <I18nLink href='/' className='hover:opacity-90 flex-shrink-0'>
+            <Image src={aiPillsLogo} alt="AiPills logo" className="h-auto w-10" priority />
+          </I18nLink>
           
           {/* Navigation Items - Centered (desktop only) */}
           <div className='absolute left-1/2 transform -translate-x-1/2 overflow-visible hidden md:block'>
             <div className='relative flex items-center gap-2 lg:gap-4 overflow-visible'>
               <TopNavItem
                 href="/dashboard"
-                label="Dashboard"
+                label={t('dashboard')}
                 isActive={activeStates.dashboard}
               />
               <TopNavItem
                 href="/workflows"
-                label="Workflows"
+                label={t('workflows')}
                 isActive={activeStates.workflows}
               />
 
@@ -350,6 +388,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                   isActive={activeStates.integrations}
                   isOpen={isIntegrationsDropdownOpen}
                   onToggle={toggleIntegrationsDropdown}
+                  label={t('integrations')}
                 />
 
                 {/* Integrations Dropdown Menu */}
@@ -377,12 +416,12 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
 
               <TopNavItem
                 href="/executions"
-                label="Executions"
+                label={t('executions')}
                 isActive={activeStates.executions}
               />
               <TopNavItem
                 href="/balance"
-                label="Balance"
+                label={t('balance')}
                 isActive={activeStates.balance}
               />
             </div>
@@ -429,19 +468,19 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 role='menu'
                 aria-hidden={!isUserMenuOpen}
               >
-                <Link
+                <I18nLink
                   href='/profile'
                   className='block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white'
                   onClick={() => setIsUserMenuOpen(false)}
                 >
-                  Profile
-                </Link>
+                  {t('profile')}
+                </I18nLink>
                 <div className='my-1 h-px bg-white/10' role='separator' />
                 <button
                   onClick={() => { setIsUserMenuOpen(false); handleLogout(); }}
                   className='w-full text-left px-4 py-2 text-sm text-red-500 hover:text-red-400'
                 >
-                  Log out
+                  {t('logout')}
                 </button>
               </div>
             </div>
@@ -482,44 +521,44 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                     </button>
                   </div>
                   <nav className='h-full w-full flex flex-col items-center justify-center gap-6 px-6'>
-                    <Link href='/dashboard' onClick={() => setIsMobileMenuOpen(false)}>
+                    <I18nLink href='/dashboard' onClick={() => setIsMobileMenuOpen(false)}>
                       <span className={`text-2xl md:text-3xl transition-all ${
                         activeStates.dashboard
                           ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
                           : 'font-medium text-gray-300 hover:text-white'
                       }`}>
-                        Dashboard
+                        {t('dashboard')}
                       </span>
-                    </Link>
-                    <Link href='/workflows' onClick={() => setIsMobileMenuOpen(false)}>
+                    </I18nLink>
+                    <I18nLink href='/workflows' onClick={() => setIsMobileMenuOpen(false)}>
                       <span className={`text-2xl md:text-3xl transition-all ${
                         activeStates.workflows
                           ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
                           : 'font-medium text-gray-300 hover:text-white'
                       }`}>
-                        Workflows
+                        {t('workflows')}
                       </span>
-                    </Link>
-                    <Link href='/executions' onClick={() => setIsMobileMenuOpen(false)}>
+                    </I18nLink>
+                    <I18nLink href='/executions' onClick={() => setIsMobileMenuOpen(false)}>
                       <span className={`text-2xl md:text-3xl transition-all ${
                         activeStates.executions
                           ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
                           : 'font-medium text-gray-300 hover:text-white'
                       }`}>
-                        Executions
+                        {t('executions')}
                       </span>
-                    </Link>
-                    <Link href='/balance' onClick={() => setIsMobileMenuOpen(false)}>
+                    </I18nLink>
+                    <I18nLink href='/balance' onClick={() => setIsMobileMenuOpen(false)}>
                       <span className={`text-2xl md:text-3xl transition-all ${
                         activeStates.balance
                           ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
                           : 'font-medium text-gray-300 hover:text-white'
                       }`}>
-                        Balance
+                        {t('balance')}
                       </span>
-                    </Link>
+                    </I18nLink>
                     <div className='flex flex-col items-center gap-2 mt-2'>
-                      <span className='text-sm uppercase tracking-wider text-gray-400'>Integrations</span>
+                      <span className='text-sm uppercase tracking-wider text-gray-400'>{t('integrations')}</span>
                       <Link
                         href='/integrations/telegram'
                         onClick={() => setIsMobileMenuOpen(false)}

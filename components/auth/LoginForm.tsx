@@ -6,6 +6,7 @@ import { LoginRequest } from '@/types/auth';
 import { getDeviceId } from '@/lib/auth';
 import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
 import { ResetPasswordForm } from './ResetPasswordForm';
+import { useTranslations } from 'next-intl';
 
 interface LoginFormProps {
   // When variant is 'modal', uses isOpen/onClose overlay; when 'embedded', always renders inline
@@ -23,6 +24,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onSwitchToRegister,
   className
 }) => {
+  const t = useTranslations('auth');
   const { login, isLoading, error, clearError } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -36,13 +38,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
+      newErrors.email = t('emailRequired');
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'Invalid email format';
+      newErrors.email = t('invalidEmailFormat');
     }
 
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = t('passwordRequired');
     }
 
     setErrors(newErrors);
@@ -83,8 +85,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         {/* Header */}
         {isModal && (
           <div className="p-6 border-b border-white/10">
-            <h2 className="text-2xl font-bold text-white">Ai Pills User Account</h2>
-            <p className="text-sm text-gray-300 mt-1">Welcome to Workflow Management System</p>
+            <h2 className="text-2xl font-bold text-white">{t('accountTitle')}</h2>
+            <p className="text-sm text-gray-300 mt-1">{t('welcomeMessage')}</p>
           </div>
         )}
 
@@ -100,13 +102,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Email Address *
+              {t('emailAddress')} *
             </label>
             <input
               type="email"
               value={formData.email}
               onChange={(e) => handleInputChange('email', e.target.value)}
-              placeholder="Enter your email"
+              placeholder={t('enterYourEmail')}
               className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border ${isModal ? 'rounded-full' : 'rounded-lg'} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                 errors.email ? 'border-red-500' : 'border-white/30'
               }`}
@@ -119,14 +121,14 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Password *
+              {t('password')} *
             </label>
             <div className="relative">
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={(e) => handleInputChange('password', e.target.value)}
-                placeholder="Enter your password"
+                placeholder={t('enterYourPassword')}
                 className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border ${isModal ? 'rounded-full' : 'rounded-lg'} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                   errors.password ? 'border-red-500' : 'border-white/30'
                 }`}
@@ -158,10 +160,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               {isLoading ? (
                 <div className="flex items-center justify-center gap-2">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Signing In...
+                  {t('signingIn')}
                 </div>
               ) : (
-                'Sign In'
+                t('signIn')
               )}
             </button>
           </div>
@@ -174,7 +176,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                 onClick={() => setShowResetPassword(true)}
                 className="text-sm text-gray-400 hover:text-purple-400 font-medium transition-colors"
               >
-                Forgot password?
+                {t('forgotPassword')}
               </button>
               {!isModal && (
                 <button
@@ -182,7 +184,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   onClick={onSwitchToRegister}
                   className="text-sm text-gray-400 hover:text-purple-400 font-medium transition-colors"
                 >
-                  Create account
+                  {t('createAccount')}
                 </button>
               )}
             </div>
@@ -192,13 +194,13 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {isModal && (
             <div className="text-center pt-4 border-t border-gray-700">
               <p className="text-sm text-gray-300">
-                Don't have an account?{' '}
+                {t('dontHaveAccount')}{' '}
                 <button
                   type="button"
                   onClick={onSwitchToRegister}
                   className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
                 >
-                  Sign up
+                  {t('signUp')}
                 </button>
               </p>
             </div>

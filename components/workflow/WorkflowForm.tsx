@@ -8,6 +8,7 @@ import { telegramApi } from '@/lib/apiTelegram';
 import { TelegramStatusResponse } from '@/types/telegram';
 import { XIcon, CheckIcon } from '@/components/icons';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useTranslations } from 'next-intl';
 
 interface WorkflowFormProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
   editingWorkflow,
   preselectedWorkflow
 }) => {
+  const t = useTranslations('workflowForm');
   const [availableWorkflows, setAvailableWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -130,18 +132,18 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!formData.workflowId) {
-      newErrors.workflowId = 'Please select a workflow';
+      newErrors.workflowId = t('selectWorkflowRequired');
     }
 
     // Credential validation removed - using default values
 
     // Validate length limits
     if (formData.name && formData.name.length > 100) {
-      newErrors.name = 'Name must not exceed 100 characters';
+      newErrors.name = t('nameMaxLength');
     }
 
     if (formData.description && formData.description.length > 500) {
-      newErrors.description = 'Description must not exceed 500 characters';
+      newErrors.description = t('descriptionMaxLength');
     }
 
     setErrors(newErrors);
@@ -230,7 +232,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-900/10 to-transparent">
             <h2 className="text-2xl font-bold text-white bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent">
-              {editingWorkflow ? 'Edit Workflow' : 'Attach New Workflow'}
+              {editingWorkflow ? t('editWorkflow') : t('attachNewWorkflow')}
             </h2>
             <button
               onClick={onClose}
@@ -246,13 +248,13 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
           {/* Workflow Selection */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Select Workflow *
+              {t('selectWorkflow')} *
             </label>
             {preselectedWorkflow || isWorkflowSelected ? (
               <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)]">
                 <div className="p-3 rounded-lg bg-[#141519] border border-purple-500/20 text-white flex items-center justify-between">
                   <span className="text-left truncate w-full font-medium" title={selectedWorkflow?.name || editingWorkflow?.workflow?.name}>
-                    {selectedWorkflow?.name || editingWorkflow?.workflow?.name || 'Loading...'}
+                    {selectedWorkflow?.name || editingWorkflow?.workflow?.name || t('loading')}
                   </span>
                   <svg className="w-4 h-4 flex-shrink-0 ml-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -263,7 +265,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
               <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700/50 text-center">
                 <div className="flex items-center justify-center gap-3">
                   <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-purple-500"></div>
-                  <span className="text-gray-300">Loading workflows...</span>
+                  <span className="text-gray-300">{t('loadingWorkflows')}</span>
                 </div>
               </div>
             ) : (
@@ -276,7 +278,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
                   }`}
                 >
                   <span className="text-left truncate w-full" title={selectedWorkflow ? selectedWorkflow.name : undefined}>
-                    {selectedWorkflow ? selectedWorkflow.name : 'Choose a workflow...'}
+                    {selectedWorkflow ? selectedWorkflow.name : t('chooseWorkflow')}
                   </span>
                   <svg className="w-4 h-4 flex-shrink-0 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -298,7 +300,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
                         }}
                         className="w-full px-4 py-3 text-left hover:bg-purple-900/20 transition-colors border-b border-gray-700/50"
                       >
-                        <span className="text-gray-300 font-medium">Choose a workflow...</span>
+                        <span className="text-gray-300 font-medium">{t('chooseWorkflow')}</span>
                       </button>
                       {availableWorkflows.map((workflow) => (
                         <button
@@ -333,13 +335,13 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
             <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)]">
               <div className="p-4 rounded-lg bg-[#141519] border border-purple-500/20">
                 <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-gray-300">Price:</span>
+                  <span className="text-sm font-medium text-gray-300">{t('price')}:</span>
                 {selectedWorkflow.priceUsd ? (
                   <div className="px-4 py-1.5 bg-green-900/30 border border-green-500/50 rounded-lg text-green-300 text-sm font-semibold shadow-lg shadow-green-500/20">
                     {parseFloat(selectedWorkflow.priceUsd).toFixed(2)}
                   </div>
                 ) : (
-                  <div className="text-gray-400 text-sm">No price</div>
+                  <div className="text-gray-400 text-sm">{t('noPrice')}</div>
                 )}
                 </div>
               </div>
@@ -349,13 +351,13 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
           {/* Custom Workflow Name */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Custom Workflow Name
+              {t('customWorkflowName')}
             </label>
             <input
               type="text"
               value={formData.name || ''}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Enter a custom name for this workflow (optional)"
+              placeholder={t('customWorkflowNamePlaceholder')}
               maxLength={100}
               className={`w-full p-3.5 border rounded-lg bg-gray-800/50 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all ${
                 errors.name ? 'border-red-500' : 'border-gray-600 hover:border-gray-500'
@@ -363,7 +365,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
             />
             <div className="flex items-center justify-between mt-1">
               <p className={`text-xs ${errors.name ? 'text-red-400' : 'text-gray-400'}`}>
-                {errors.name || 'Leave empty to use the default workflow name'}
+                {errors.name || t('customWorkflowNameHint')}
               </p>
               <p className="text-xs text-gray-500">
                 {(formData.name || '').length}/100
@@ -374,12 +376,12 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
           {/* Custom Workflow Description */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Custom Workflow Description
+              {t('customWorkflowDescription')}
             </label>
             <textarea
               value={formData.description || ''}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Enter a custom description for this workflow (optional)"
+              placeholder={t('customWorkflowDescriptionPlaceholder')}
               rows={3}
               maxLength={500}
               className={`w-full p-3.5 border rounded-lg bg-gray-800/50 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all resize-none ${
@@ -388,7 +390,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
             />
             <div className="flex items-center justify-between mt-1">
               <p className={`text-xs ${errors.description ? 'text-red-400' : 'text-gray-400'}`}>
-                {errors.description || 'Leave empty to use the default workflow description'}
+                {errors.description || t('customWorkflowDescriptionHint')}
               </p>
               <p className="text-xs text-gray-500">
                 {(formData.description || '').length}/500
@@ -400,12 +402,12 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
           {/* Input Data Template */}
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Input Data Template
+              {t('inputDataTemplate')}
             </label>
             <textarea
               value={formData.inputDataTemplate || ''}
               onChange={(e) => setFormData({ ...formData, inputDataTemplate: e.target.value })}
-              placeholder='Enter you prompt'
+              placeholder={t('inputDataTemplatePlaceholder')}
               rows={4}
               className={`w-full p-3.5 border rounded-lg bg-gray-800/50 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 font-mono text-sm transition-all resize-none ${
                 errors.inputDataTemplate ? 'border-red-500' : 'border-gray-600 hover:border-gray-500'
@@ -423,7 +425,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
               onClick={onClose}
               className="px-6 py-2.5 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-800/50 hover:border-gray-500 transition-all font-medium"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               type="submit"
@@ -433,12 +435,12 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
               {submitting ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  {editingWorkflow ? 'Updating...' : 'Attaching...'}
+                  {editingWorkflow ? t('updating') : t('attaching')}
                 </>
               ) : (
                 <>
                   <CheckIcon className="w-4 h-4" />
-                  {editingWorkflow ? 'Update Workflow' : 'Attach Workflow'}
+                  {editingWorkflow ? t('updateWorkflow') : t('attachWorkflow')}
                 </>
               )}
             </button>
@@ -455,10 +457,10 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
         setConfirmOpen(false);
         onClose();
       }}
-      title="Discard changes?"
-      message="Are you sure you want to cancel and discard the changes?"
-      confirmText="Discard"
-      cancelText="Keep editing"
+      title={t('discardChanges')}
+      message={t('discardChangesMessage')}
+      confirmText={t('discard')}
+      cancelText={t('keepEditing')}
       type="warning"
     />
     </>,

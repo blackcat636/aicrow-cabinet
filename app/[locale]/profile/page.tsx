@@ -10,8 +10,12 @@ import { toast } from 'sonner';
 import { ChangeEmailForm } from '@/components/profile/ChangeEmailForm';
 import { ChangePasswordForm } from '@/components/profile/ChangePasswordForm';
 import { AvatarManager } from '@/components/profile/AvatarManager';
+import { LanguageSwitcher } from '@/components/profile/LanguageSwitcher';
 import { getAvatarUrl } from '@/lib/avatars';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useTranslations } from 'next-intl';
+
+export const dynamic = 'force-dynamic';
 
 const getInitials = (firstName: string, lastName: string, username: string) => {
   if (firstName && lastName) {
@@ -24,6 +28,7 @@ const getInitials = (firstName: string, lastName: string, username: string) => {
 };
 
 export default function ProfilePage() {
+  const t = useTranslations('profile');
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -91,7 +96,7 @@ export default function ProfilePage() {
       
       setFormData(newFormData);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to load profile');
+      toast.error(error.message || t('loadError'));
     } finally {
       setLoading(false);
     }
@@ -101,13 +106,13 @@ export default function ProfilePage() {
     const newErrors: Record<string, string> = {};
 
     if (formData.phone && !/^\+?[1-9]\d{1,14}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = 'Invalid phone number format';
+      newErrors.phone = t('invalidPhone');
     }
 
     if (formData.dateOfBirth) {
       const date = new Date(formData.dateOfBirth);
       if (isNaN(date.getTime())) {
-        newErrors.dateOfBirth = 'Invalid date format';
+        newErrors.dateOfBirth = t('invalidDate');
       }
     }
 
@@ -144,9 +149,9 @@ export default function ProfilePage() {
 
       const updatedProfile = await userApi.updateProfile(updateData);
       setProfile(updatedProfile);
-      toast.success('Profile updated successfully');
+      toast.success(t('updateSuccess'));
     } catch (error: any) {
-      toast.error(error.message || 'Failed to update profile');
+      toast.error(error.message || t('updateError'));
     } finally {
       setSubmitting(false);
     }
@@ -191,7 +196,7 @@ export default function ProfilePage() {
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-300">Loading profile...</p>
+            <p className="text-gray-300">{t('loading')}</p>
           </div>
         </div>
       </AppLayout>
@@ -203,12 +208,12 @@ export default function ProfilePage() {
       <AppLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="bg-gray-900 rounded-xl max-w-md w-full border border-gray-700 shadow-2xl p-6">
-            <p className="text-gray-300 text-center">Failed to load profile</p>
+            <p className="text-gray-300 text-center">{t('loadError')}</p>
             <Button
               onClick={() => loadProfile()}
               className="mt-4 w-full bg-purple-600 hover:bg-purple-700"
             >
-              Retry
+              {t('retry')}
             </Button>
           </div>
         </div>
@@ -222,9 +227,9 @@ export default function ProfilePage() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent">
-            User Profile
+            {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">Manage your account settings and preferences</p>
+          <p className="text-gray-400 mt-2">{t('description')}</p>
         </div>
 
         {/* Content */}
@@ -252,14 +257,14 @@ export default function ProfilePage() {
             <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-semibold text-gray-200">
-                  Email
+                  {t('email')}
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowChangeEmailForm(true)}
                   className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-all hover:underline"
                 >
-                  Change Email
+                  {t('changeEmail')}
                 </button>
               </div>
               <input
@@ -271,7 +276,7 @@ export default function ProfilePage() {
               {profile.isEmailVerified && (
                 <div className="mt-2 flex items-center gap-2">
                   <span className="text-green-400 text-sm">✓</span>
-                  <p className="text-xs text-green-400 font-medium">Email verified</p>
+                  <p className="text-xs text-green-400 font-medium">{t('emailVerified')}</p>
                 </div>
               )}
             </div>
@@ -280,14 +285,14 @@ export default function ProfilePage() {
             <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-sm font-semibold text-gray-200">
-                  Password
+                  {t('password')}
                 </label>
                 <button
                   type="button"
                   onClick={() => setShowChangePasswordForm(true)}
                   className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-all hover:underline"
                 >
-                  Change Password
+                  {t('changePassword')}
                 </button>
               </div>
               <input
@@ -301,13 +306,13 @@ export default function ProfilePage() {
             {/* First Name */}
             <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
               <label className="block text-sm font-semibold text-gray-200 mb-3">
-                First Name
+                {t('firstName')}
               </label>
               <input
                 type="text"
                 value={formData.firstName || ''}
                 onChange={(e) => handleInputChange('firstName', e.target.value)}
-                placeholder="Enter first name"
+                placeholder={t('enterFirstName')}
                 className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
                   errors.firstName ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
                 }`}
@@ -323,13 +328,13 @@ export default function ProfilePage() {
             {/* Last Name */}
             <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
               <label className="block text-sm font-semibold text-gray-200 mb-3">
-                Last Name
+                {t('lastName')}
               </label>
               <input
                 type="text"
                 value={formData.lastName || ''}
                 onChange={(e) => handleInputChange('lastName', e.target.value)}
-                placeholder="Enter last name"
+                placeholder={t('enterLastName')}
                 className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
                   errors.lastName ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
                 }`}
@@ -345,7 +350,7 @@ export default function ProfilePage() {
             {/* Phone */}
             <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
               <label className="block text-sm font-semibold text-gray-200 mb-3">
-                Phone
+                {t('phone')}
               </label>
               <input
                 type="tel"
@@ -367,7 +372,7 @@ export default function ProfilePage() {
             {/* Date of Birth */}
             <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
               <label className="block text-sm font-semibold text-gray-200 mb-3">
-                Date of Birth (MM/DD/YYYY)
+                {t('dateOfBirth')}
               </label>
               <input
                 type="text"
@@ -413,24 +418,29 @@ export default function ProfilePage() {
                 {submitting ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Saving...
+                    {t('saving')}
                   </div>
                 ) : (
-                  'Save Changes'
+                  t('saveChanges')
                 )}
               </Button>
             </div>
           </form>
 
+          {/* Language Switcher Section */}
+          <div className="mt-6">
+            <LanguageSwitcher />
+          </div>
+
           {/* Social Up Section */}
           <div className="mt-6 p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-gray-200 mb-1">\
-                  Connect Social Media Accounts
+                <h3 className="text-sm font-semibold text-gray-200 mb-1">
+                  {t('connectSocialMedia')}
                 </h3>
-                <p className="text-xs text-gray-400">\
-                  Connect your social media accounts for automated posting
+                <p className="text-xs text-gray-400">
+                  {t('connectSocialMediaDescription')}
                 </p>
               </div>
               <Button
@@ -442,17 +452,17 @@ export default function ProfilePage() {
                 {socialUpLoading ? (
                   <div className="flex items-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Loading...
+                    {t('saving')}
                   </div>
                 ) : (
-                  'Connect'
+                  t('connect')
                 )}
               </Button>
             </div>
             <div className="mt-3 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
               <p className="text-xs text-yellow-300 flex items-center gap-2">
                 <span>⚠️</span>
-                <span>The connection link will be valid for 1 hour only. Please complete the connection process within this time.</span>
+                <span>{t('socialUpWarning')}</span>
               </p>
             </div>
           </div>
@@ -473,7 +483,7 @@ export default function ProfilePage() {
           isOpen={showChangePasswordForm}
           onClose={() => setShowChangePasswordForm(false)}
           onSuccess={() => {
-            toast.success('Password changed successfully');
+            toast.success(t('passwordChangedSuccess'));
           }}
         />
 
@@ -487,7 +497,7 @@ export default function ProfilePage() {
           >
             <div className="bg-gray-900 rounded-xl w-full max-w-2xl border border-gray-700 shadow-2xl overflow-hidden">
               <div className="flex items-center justify-between p-6 border-b border-gray-700">
-                <h2 className="text-xl font-semibold text-white">Change avatar</h2>
+                <h2 className="text-xl font-semibold text-white">{t('changeAvatar')}</h2>
                 <button
                   onClick={() => setConfirmAvatarClose(true)}
                   className="px-3 py-1 text-gray-300 hover:text-white rounded-lg hover:bg-gray-800"
@@ -521,10 +531,10 @@ export default function ProfilePage() {
             setConfirmAvatarClose(false);
             setShowAvatarManager(false);
           }}
-          title="Discard changes?"
-          message="Are you sure you want to cancel and discard the changes?"
-          confirmText="Discard"
-          cancelText="Keep editing"
+          title={t('discardChanges')}
+          message={t('discardChangesMessage')}
+          confirmText={t('discard')}
+          cancelText={t('keepEditing')}
           type="warning"
         />
       </div>

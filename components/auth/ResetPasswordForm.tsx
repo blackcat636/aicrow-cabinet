@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { authApi } from '@/lib/apiAuth';
 import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
+import { useTranslations } from 'next-intl';
 
 interface ResetPasswordFormProps {
   isOpen: boolean;
@@ -17,6 +18,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
   onClose,
   initialEmail = ''
 }) => {
+  const t = useTranslations('auth');
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState('');
@@ -32,11 +34,11 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
 
   const validateEmail = (): boolean => {
     if (!email.trim()) {
-      setErrors({ email: 'Email is required' });
+      setErrors({ email: t('emailRequired') });
       return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setErrors({ email: 'Invalid email format' });
+      setErrors({ email: t('invalidEmailFormat') });
       return false;
     }
     return true;
@@ -44,7 +46,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
 
   const validateCode = (): boolean => {
     if (!code.trim()) {
-      setErrors({ code: 'Verification code is required' });
+      setErrors({ code: t('verificationCodeRequired') });
       return false;
     }
     return true;
@@ -54,15 +56,15 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!newPassword) {
-      newErrors.newPassword = 'New password is required';
+      newErrors.newPassword = t('newPasswordRequired');
     } else if (newPassword.length < 6) {
-      newErrors.newPassword = 'Password must be at least 6 characters';
+      newErrors.newPassword = t('passwordMin6Chars');
     }
 
     if (!confirmPassword) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = t('confirmPasswordRequired');
     } else if (newPassword !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('passwordsDoNotMatch');
     }
 
     setErrors(newErrors);
@@ -81,7 +83,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
       await authApi.forgotPassword(email);
       setStep('code');
     } catch (err: any) {
-      setError(err.message || 'Failed to send reset code');
+      setError(err.message || t('failedToSendResetCode'));
     } finally {
       setIsLoading(false);
     }
@@ -112,7 +114,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
         resetForm();
       }, 2000);
     } catch (err: any) {
-      setError(err.message || 'Failed to reset password');
+      setError(err.message || t('failedToResetPassword'));
     } finally {
       setIsLoading(false);
     }
@@ -144,9 +146,9 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 className="text-xl font-semibold text-white">
-            {step === 'email' && 'Forgot Password'}
-            {step === 'code' && 'Enter Verification Code'}
-            {step === 'password' && 'Set New Password'}
+            {step === 'email' && t('forgotPasswordTitle')}
+            {step === 'code' && t('enterVerificationCodeTitle')}
+            {step === 'password' && t('setNewPasswordTitle')}
           </h2>
           <button
             onClick={handleClose}
@@ -164,9 +166,9 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
             <div className={`flex-1 h-1 rounded ${step === 'password' ? 'bg-purple-600' : 'bg-gray-700'}`}></div>
           </div>
           <div className="flex justify-between mt-2">
-            <span className="text-xs text-purple-400">Enter Email</span>
-            <span className={`text-xs ${step === 'code' || step === 'password' ? 'text-purple-400' : 'text-gray-500'}`}>Enter Code</span>
-            <span className={`text-xs ${step === 'password' ? 'text-purple-400' : 'text-gray-500'}`}>New Password</span>
+            <span className="text-xs text-purple-400">{t('enterEmail')}</span>
+            <span className={`text-xs ${step === 'code' || step === 'password' ? 'text-purple-400' : 'text-gray-500'}`}>{t('enterCode')}</span>
+            <span className={`text-xs ${step === 'password' ? 'text-purple-400' : 'text-gray-500'}`}>{t('newPassword')}</span>
           </div>
         </div>
 
@@ -180,7 +182,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
 
           {success && (
             <div className="mb-4 p-3 bg-green-900/20 border border-green-600 rounded-lg">
-              <p className="text-sm text-green-400">Password reset successfully!</p>
+              <p className="text-sm text-green-400">{t('passwordResetSuccess')}</p>
             </div>
           )}
 
@@ -188,13 +190,13 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
             <form onSubmit={handleEmailSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Email Address *
+                  {t('emailAddress')} *
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Enter your email"
+                  placeholder={t('enterYourEmail')}
                   className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                     errors.email ? 'border-red-500' : 'border-gray-600'
                   }`}
@@ -209,7 +211,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
                 disabled={isLoading}
                 className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg shadow-purple-500/25"
               >
-                {isLoading ? 'Sending Code...' : 'Send Reset Code'}
+                {isLoading ? t('sendingCode') : t('sendResetCode')}
               </button>
             </form>
           )}
@@ -218,19 +220,19 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
             <form onSubmit={handleCodeSubmit} className="space-y-4">
               <div className="mb-4 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
                 <p className="text-sm text-blue-400">
-                  Verification code has been sent to <strong>{email}</strong>
+                  {t('verificationCodeSentTo')} <strong>{email}</strong>
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Verification Code *
+                  {t('verificationCode')} *
                 </label>
                 <input
                   type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
-                  placeholder="Enter verification code"
+                  placeholder={t('enterVerificationCode')}
                   className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                     errors.code ? 'border-red-500' : 'border-gray-600'
                   }`}
@@ -245,7 +247,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
                 onClick={() => setStep('email')}
                 className="w-full py-2 text-sm text-gray-400 hover:text-purple-400 font-medium transition-colors"
               >
-                ← Back
+                {t('back')}
               </button>
 
               <button
@@ -253,7 +255,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
                 disabled={isLoading}
                 className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg shadow-purple-500/25"
               >
-                Continue
+                {t('continue')}
               </button>
             </form>
           )}
@@ -262,14 +264,14 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  New Password *
+                  {t('newPassword')} *
                 </label>
                 <div className="relative">
                   <input
                     type={showPassword ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter new password"
+                    placeholder={t('enterNewPassword')}
                     className={`w-full p-3 pr-10 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                       errors.newPassword ? 'border-red-500' : 'border-gray-600'
                     }`}
@@ -289,14 +291,14 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Confirm New Password *
+                  {t('confirmNewPassword')} *
                 </label>
                 <div className="relative">
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Confirm new password"
+                    placeholder={t('confirmNewPasswordPlaceholder')}
                     className={`w-full p-3 pr-10 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                       errors.confirmPassword ? 'border-red-500' : 'border-gray-600'
                     }`}
@@ -319,7 +321,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
                 onClick={() => setStep('code')}
                 className="w-full py-2 text-sm text-gray-400 hover:text-purple-400 font-medium transition-colors"
               >
-                ← Back
+                {t('back')}
               </button>
 
               <button
@@ -327,7 +329,7 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
                 disabled={isLoading}
                 className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg shadow-purple-500/25"
               >
-                {isLoading ? 'Resetting Password...' : 'Reset Password'}
+                {isLoading ? t('resettingPassword') : t('resetPassword')}
               </button>
             </form>
           )}

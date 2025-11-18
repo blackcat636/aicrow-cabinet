@@ -8,9 +8,13 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { getAccessToken } from '@/lib/auth';
 import { AppLayout } from '@/components/AppLayout';
+import { useTranslations } from 'next-intl';
+
+export const dynamic = 'force-dynamic';
 
 const TelegramIntegrationPage: React.FC = () => {
   const { user } = useAuth();
+  const t = useTranslations('integrations.telegram');
   const [status, setStatus] = useState<TelegramStatusResponse['data'] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
@@ -34,10 +38,10 @@ const TelegramIntegrationPage: React.FC = () => {
     } catch (err: any) {
       // Handle 404 error gracefully - API endpoint might not exist yet
       if (err.status === 404) {
-        setError('Telegram integration is not available yet. Please contact support.');
+        setError(t('notAvailable'));
         setStatus({ isLinked: false, notificationsEnabled: false });
       } else {
-        setError(err.message || 'Error loading Telegram status');
+        setError(err.message || t('errorLoading'));
         console.error('Error loading Telegram status:', err);
       }
     } finally {
@@ -52,12 +56,12 @@ const TelegramIntegrationPage: React.FC = () => {
     try {
       const response = await telegramApi.generateLink();
       setGeneratedLink(response.data.deepLink);
-      toast.success('Link generated successfully!');
+      toast.success(t('linkGenerated'));
     } catch (err: any) {
       if (err.status === 404) {
-        setError('Telegram integration is not available yet. Please contact support.');
+        setError(t('notAvailable'));
       } else {
-        setError(err.message || 'Error generating link');
+        setError(err.message || t('errorGenerating'));
       }
       console.error('Error generating link:', err);
     } finally {
@@ -70,10 +74,10 @@ const TelegramIntegrationPage: React.FC = () => {
       try {
         await navigator.clipboard.writeText(generatedLink);
         setLinkCopied(true);
-        toast.success('Link copied to clipboard!');
+        toast.success(t('linkCopied'));
         setTimeout(() => setLinkCopied(false), 2000);
       } catch (err) {
-        toast.error('Error copying link');
+        toast.error(t('copyError'));
       }
     }
   };
@@ -91,12 +95,12 @@ const TelegramIntegrationPage: React.FC = () => {
     try {
       await telegramApi.updateSettings({ notificationsEnabled: enabled });
       setStatus(prev => prev ? { ...prev, notificationsEnabled: enabled } : null);
-      toast.success(`Notifications ${enabled ? 'enabled' : 'disabled'}`);
+      toast.success(enabled ? t('notificationsEnabled') : t('notificationsDisabled'));
     } catch (err: any) {
       if (err.status === 404) {
-        setError('Telegram integration is not available yet. Please contact support.');
+        setError(t('notAvailable'));
       } else {
-        setError(err.message || 'Error updating settings');
+        setError(err.message || t('errorUpdating'));
       }
       console.error('Error updating settings:', err);
     } finally {
@@ -116,12 +120,12 @@ const TelegramIntegrationPage: React.FC = () => {
     try {
       await telegramApi.unlink();
       setStatus(prev => prev ? { ...prev, isLinked: false } : null);
-      toast.success('Telegram account unlinked successfully');
+      toast.success(t('unlinkedSuccessfully'));
     } catch (err: any) {
       if (err.status === 404) {
-        setError('Telegram integration is not available yet. Please contact support.');
+        setError(t('notAvailable'));
       } else {
-        setError(err.message || 'Error unlinking account');
+        setError(err.message || t('errorUnlinking'));
       }
       console.error('Error unlinking account:', err);
     } finally {
@@ -138,8 +142,8 @@ const TelegramIntegrationPage: React.FC = () => {
             {/* Header inside gray block - fixed height */}
             <div className="flex items-center justify-between p-6 min-h-[100px]">
               <div className="ml-6">
-                <h2 className="text-2xl font-bold text-white">Telegram Integration</h2>
-                <p className="text-gray-300 mt-1">Manage your Telegram account connection and notifications</p>
+                <h2 className="text-2xl font-bold text-white">{t('title')}</h2>
+                <p className="text-gray-300 mt-1">{t('description')}</p>
               </div>
             </div>
 
@@ -165,18 +169,18 @@ const TelegramIntegrationPage: React.FC = () => {
                   {/* Connection Status Card */}
                   <TelegramCard>
                     <div className="bg-[#141519]/60 backdrop-blur-sm rounded-2xl p-6 h-full w-full">
-                    <h2 className="text-lg font-medium text-white mb-5 text-center">Connection Status</h2>
+                    <h2 className="text-lg font-medium text-white mb-5 text-center">{t('connectionStatus')}</h2>
                     
                     <div className="flex items-center justify-center py-4">
                       {status.isLinked ? (
                         <div className="inline-flex items-center gap-2 px-6 py-2 bg-green-900/30 border border-green-700 rounded-full">
                           <div className="w-2.5 h-2.5 bg-green-500 rounded-full"></div>
-                          <span className="text-green-400 font-medium text-sm">Telegram account connected</span>
+                          <span className="text-green-400 font-medium text-sm">{t('accountConnected')}</span>
                         </div>
                       ) : (
                         <div className="inline-flex items-center gap-2 px-6 py-2 bg-red-900/30 border border-red-700 rounded-full">
                           <div className="w-2.5 h-2.5 bg-red-500 rounded-full"></div>
-                          <span className="text-red-400 font-medium text-sm">Telegram account not connected</span>
+                          <span className="text-red-400 font-medium text-sm">{t('accountNotConnected')}</span>
                         </div>
                       )}
                     </div>
@@ -185,17 +189,17 @@ const TelegramIntegrationPage: React.FC = () => {
                       <div className="mt-6 space-y-2 text-sm">
                         {status.telegramUsername && (
                           <div className="text-gray-400">
-                            <span className="text-gray-500">Username:</span> <span className="text-gray-300">{status.telegramUsername}</span>
+                            <span className="text-gray-500">{t('username')}:</span> <span className="text-gray-300">{status.telegramUsername}</span>
                           </div>
                         )}
                         {status.telegramFirstName && (
                           <div className="text-gray-400">
-                            <span className="text-gray-500">Name:</span> <span className="text-gray-300">{status.telegramFirstName}{status.telegramLastName && ` ${status.telegramLastName}`}</span>
+                            <span className="text-gray-500">{t('name')}:</span> <span className="text-gray-300">{status.telegramFirstName}{status.telegramLastName && ` ${status.telegramLastName}`}</span>
                           </div>
                         )}
                         {status.linkedAt && (
                           <div className="text-gray-400">
-                            <span className="text-gray-500">Connected:</span> <span className="text-gray-300">{new Date(status.linkedAt).toLocaleDateString('en-US')}</span>
+                            <span className="text-gray-500">{t('connected')}:</span> <span className="text-gray-300">{new Date(status.linkedAt).toLocaleDateString('en-US')}</span>
                           </div>
                         )}
                       </div>
@@ -217,10 +221,10 @@ const TelegramIntegrationPage: React.FC = () => {
                             {isGeneratingLink ? (
                               <div className="flex items-center justify-center gap-2">
                                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                                Generating link...
+                                {t('generatingLink')}
                               </div>
                             ) : (
-                              'Connect Telegram Account'
+                              t('connectAccount')
                             )}
                           </button>
                           
@@ -251,7 +255,7 @@ const TelegramIntegrationPage: React.FC = () => {
                                 </button>
                               </div>
                               <p className="text-xs text-gray-500 text-center">
-                                Click the link or copy it to connect your Telegram account
+                                {t('clickOrCopy')}
                               </p>
                             </div>
                           )}
@@ -262,7 +266,7 @@ const TelegramIntegrationPage: React.FC = () => {
                           disabled={isLoading}
                           className="w-full py-3 bg-red-600 text-white rounded-xl hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
                         >
-                          Disconnect Telegram Account
+                          {t('disconnectAccount')}
                         </button>
                       )}
 
@@ -271,7 +275,7 @@ const TelegramIntegrationPage: React.FC = () => {
                         disabled={isLoading}
                         className="w-full py-3 bg-gray-800 text-white rounded-xl hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium text-sm"
                       >
-                        Refresh Status
+                        {t('refreshStatus')}
                       </button>
 
                       {/* Notifications Toggle (visible only when Telegram is linked) */}
@@ -285,7 +289,7 @@ const TelegramIntegrationPage: React.FC = () => {
                               : 'bg-purple-600 hover:bg-purple-700 text-white'
                           }`}
                         >
-                          {status.notificationsEnabled ? 'Disable Notifications' : 'Enable Notifications'}
+                          {status.notificationsEnabled ? t('disableNotifications') : t('enableNotifications')}
                         </button>
                       )}
                     </div>
@@ -313,12 +317,12 @@ const TelegramIntegrationPage: React.FC = () => {
 
             {/* Title */}
             <h3 className="text-xl font-semibold text-white text-center mb-4">
-              Disconnect Telegram Account
+              {t('disconnectTitle')}
             </h3>
 
             {/* Message */}
             <p className="text-gray-300 text-center mb-8 leading-relaxed">
-              Are you sure you want to disconnect your Telegram account? You will no longer receive notifications and will need to reconnect to use Telegram features.
+              {t('disconnectMessage')}
             </p>
 
             {/* Buttons */}
@@ -327,7 +331,7 @@ const TelegramIntegrationPage: React.FC = () => {
                 onClick={() => setShowConfirmDialog(false)}
                 className="flex-1 py-3 px-6 bg-gray-600 hover:bg-gray-700 text-white rounded-xl font-medium transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
               >
-                Cancel
+                {t('cancel')}
               </button>
               <button
                 onClick={confirmUnlink}
@@ -337,10 +341,10 @@ const TelegramIntegrationPage: React.FC = () => {
                 {isLoading ? (
                   <div className="flex items-center justify-center gap-2">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Disconnecting...
+                    {t('disconnecting')}
                   </div>
                 ) : (
-                  'Disconnect'
+                  t('disconnect')
                 )}
               </button>
             </div>

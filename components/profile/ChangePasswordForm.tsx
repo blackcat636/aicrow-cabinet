@@ -5,6 +5,7 @@ import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useTranslations } from 'next-intl';
 
 interface ChangePasswordFormProps {
   isOpen: boolean;
@@ -21,6 +22,8 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
   onClose,
   onSuccess
 }) => {
+  const t = useTranslations('profile.changePasswordForm');
+  const tProfile = useTranslations('profile');
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('password');
   const [email, setEmail] = useState('');
@@ -172,7 +175,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
         // This prevents second request from showing duplicate toast
         successToastShownRef.current = true;
         
-        toast.success(`Verification code has been sent to ${user.email}`);
+        toast.success(t('codeSentSuccess', { email: user.email }));
         setStep('password');
       })
       .catch((err: any) => {
@@ -263,7 +266,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
 
   const validateCode = (): boolean => {
     if (!code.trim()) {
-      setErrors({ code: 'Verification code is required' });
+      setErrors({ code: t('verificationCodeRequiredError') });
       return false;
     }
     return true;
@@ -273,15 +276,15 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
     const newErrors: Record<string, string> = {};
 
     if (!newPassword.trim()) {
-      newErrors.newPassword = 'New password is required';
+      newErrors.newPassword = t('passwordRequired');
     } else if (newPassword.length < 6) {
-      newErrors.newPassword = 'Password must be at least 6 characters';
+      newErrors.newPassword = t('passwordMinLength');
     }
 
     if (!confirmPassword.trim()) {
-      newErrors.confirmPassword = 'Please confirm your password';
+      newErrors.confirmPassword = t('confirmPasswordRequired');
     } else if (newPassword !== confirmPassword) {
-      newErrors.confirmPassword = 'Passwords do not match';
+      newErrors.confirmPassword = t('passwordsDoNotMatch');
     }
 
     setErrors(newErrors);
@@ -314,11 +317,11 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
         throw new Error(data.error || 'Failed to reset password');
       }
 
-      toast.success('Password changed successfully');
+      toast.success(t('passwordChangedSuccess'));
       onSuccess();
       handleClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to reset password');
+      setError(err.message || t('failedToReset'));
     } finally {
       setIsLoading(false);
     }
@@ -370,7 +373,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 className="text-xl font-semibold text-white">
-            Enter New Password
+            {t('enterNewPassword')}
           </h2>
           <button
             onClick={handleClose}
@@ -385,7 +388,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
           {sendingCode ? (
             <div className="flex flex-col items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mb-4"></div>
-              <p className="text-gray-300">Sending verification code...</p>
+              <p className="text-gray-300">{t('sendingCode')}</p>
             </div>
           ) : (
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -393,14 +396,14 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
               {!error && email && (
                 <div className="mb-4 p-3 bg-green-900/20 border border-green-500/50 rounded-lg">
                   <p className="text-sm text-green-400">
-                    ✓ Verification code has been sent to {email}
+                    {t('codeSentSuccessMessage', { email })}
                   </p>
                 </div>
               )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Verification Code *
+                  {t('verificationCodeRequired')}
                 </label>
                 <input
                   type="text"
@@ -411,7 +414,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                       setErrors({ ...errors, code: '' });
                     }
                   }}
-                  placeholder="Enter verification code"
+                  placeholder={t('enterVerificationCodePlaceholder')}
                   maxLength={6}
                   autoComplete="off"
                   autoFocus={false}
@@ -430,7 +433,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  New Password *
+                  {t('newPasswordRequired')}
                 </label>
                 <div className="relative">
                   <input
@@ -442,7 +445,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                         setErrors({ ...errors, newPassword: '' });
                       }
                     }}
-                    placeholder="Enter new password"
+                    placeholder={t('enterNewPasswordPlaceholder')}
                     className={`w-full p-3 pr-10 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                       errors.newPassword ? 'border-red-500' : 'border-gray-600'
                     }`}
@@ -463,13 +466,13 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                   <p className="mt-1 text-sm text-red-400">{errors.newPassword}</p>
                 )}
                 <p className="mt-1 text-xs text-gray-400">
-                  Password must be at least 6 characters
+                  {t('passwordMinLength')}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Confirm New Password *
+                  {t('confirmNewPasswordRequired')}
                 </label>
                 <div className="relative">
                   <input
@@ -481,7 +484,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                         setErrors({ ...errors, confirmPassword: '' });
                       }
                     }}
-                    placeholder="Confirm new password"
+                    placeholder={t('confirmNewPasswordPlaceholder')}
                     className={`w-full p-3 pr-10 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                       errors.confirmPassword ? 'border-red-500' : 'border-gray-600'
                     }`}
@@ -515,14 +518,14 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                   onClick={handleClose}
                   className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
                   className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? 'Changing...' : 'Change Password'}
+                  {isLoading ? t('changing') : t('changePassword')}
                 </button>
               </div>
             </form>
@@ -537,10 +540,10 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
         setConfirmOpen(false);
         handleClose();
       }}
-      title="Discard changes?"
-      message="Are you sure you want to cancel and discard the changes?"
-      confirmText="Discard"
-      cancelText="Keep editing"
+      title={tProfile('discardChanges')}
+      message={tProfile('discardChangesMessage')}
+      confirmText={tProfile('discard')}
+      cancelText={tProfile('keepEditing')}
       type="warning"
     />
     </>

@@ -89,9 +89,11 @@ export const balanceApi = {
           // 404 might mean no transactions exist, which is valid
           // Try to get response body to see if there's more info
           let responseBody = null;
+
           try {
             const clonedResponse = response.clone();
             const text = await clonedResponse.text();
+
             try {
               responseBody = JSON.parse(text);
             } catch {

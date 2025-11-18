@@ -7,6 +7,7 @@ import { WorkflowRequirements, UserField } from '@/types/workflow';
 import { XIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useTranslations } from 'next-intl';
 
 interface WorkflowExecuteModalProps {
   isOpen: boolean;
@@ -23,6 +24,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
   workflowId,
   workflowName
 }) => {
+  const t = useTranslations('workflow.executeModal');
   const [requirements, setRequirements] = useState<WorkflowRequirements | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -109,7 +111,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
       console.error('Error loading requirements:', error);
       // If requirements endpoint fails, allow execution without fields
       setRequirements(null);
-      toast.error('Could not load workflow requirements. You can still execute with default values.');
+      toast.error(t('loadRequirementsError'));
     } finally {
       setLoading(false);
     }
@@ -242,11 +244,11 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
             return;
           }
           if (field.minItems !== undefined && value.length < field.minItems) {
-            newErrors[fullKey] = `${field.label} must have at least ${field.minItems} item(s)`;
+            newErrors[fullKey] = t('minItemsError', { field: field.label, min: field.minItems });
             return;
           }
           if (field.maxItems !== undefined && value.length > field.maxItems) {
-            newErrors[fullKey] = `${field.label} must have at most ${field.maxItems} item(s)`;
+            newErrors[fullKey] = t('maxItemsError', { field: field.label, max: field.maxItems });
             return;
           }
         }
@@ -298,7 +300,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
 
   const handleSubmit = async () => {
     if (!validateForm()) {
-      toast.error('Please fix the errors in the form');
+      toast.error(t('fixFormErrors'));
       return;
     }
 
@@ -370,11 +372,39 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
     }
   };
 
+  // Map for translating common field labels and descriptions
+  const translateFieldText = (text: string | undefined, type: 'label' | 'description'): string => {
+    if (!text) return '';
+    
+    // Normalize text for comparison (trim and lowercase)
+    const normalizedText = text.trim().toLowerCase();
+    
+    const translations: Record<string, Record<string, string>> = {
+      label: {
+        'prompt': t('fieldLabels.prompt'),
+        'address url': t('fieldLabels.addressUrl'),
+        'contact email': t('fieldLabels.contactEmail'),
+        'publishing channels': t('fieldLabels.publishingChannels'),
+        'tone': t('fieldLabels.tone')
+      },
+      description: {
+        'основна інструкція для workflow': t('fieldDescriptions.prompt'),
+        'main instruction for workflow': t('fieldDescriptions.prompt'),
+        'перелік соцмереж, куди публікувати': t('fieldDescriptions.publishingChannels'),
+        'list of social networks to publish to': t('fieldDescriptions.publishingChannels')
+      }
+    };
+    
+    return translations[type]?.[normalizedText] || text;
+  };
+
   const renderField = (field: UserField, parentKey?: string) => {
     const fullKey = parentKey ? `${parentKey}.${field.key}` : field.key;
     const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
     const error = errors[fullKey];
     const hasError = !!error;
+    const translatedLabel = translateFieldText(field.label, 'label');
+    const translatedDescription = translateFieldText(field.description, 'description');
 
     switch (field.type) {
       case 'string':
@@ -383,11 +413,11 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         return (
           <div key={field.key} className="space-y-2">
             <label className="block text-sm font-medium text-gray-300">
-              {field.label}
+              {translatedLabel || field.label}
               {field.required && <span className="text-red-400 ml-1">*</span>}
             </label>
             {field.description && (
-              <p className="text-xs text-gray-400">{field.description}</p>
+              <p className="text-xs text-gray-400">{translatedDescription || field.description}</p>
             )}
             <input
               type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : 'text'}
@@ -398,7 +428,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                   ? 'border-red-500 focus:ring-red-500/50'
                   : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
               }`}
-              placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+              placeholder={field.placeholder || translatedDescription || t('enterField', { field: (translatedLabel || field.label).toLowerCase() })}
             />
             {hasError && <p className="text-xs text-red-400">{error}</p>}
           </div>
@@ -408,11 +438,11 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         return (
           <div key={field.key} className="space-y-2">
             <label className="block text-sm font-medium text-gray-300">
-              {field.label}
+              {translatedLabel || field.label}
               {field.required && <span className="text-red-400 ml-1">*</span>}
             </label>
             {field.description && (
-              <p className="text-xs text-gray-400">{field.description}</p>
+              <p className="text-xs text-gray-400">{translatedDescription || field.description}</p>
             )}
             <input
               type="number"
@@ -423,7 +453,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                   ? 'border-red-500 focus:ring-red-500/50'
                   : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
               }`}
-              placeholder={field.placeholder || field.description || `Enter ${field.label.toLowerCase()}`}
+              placeholder={field.placeholder || translatedDescription || t('enterField', { field: (translatedLabel || field.label).toLowerCase() })}
             />
             {hasError && <p className="text-xs text-red-400">{error}</p>}
           </div>
@@ -440,12 +470,12 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                 className="w-5 h-5 rounded border-gray-600 bg-[#1a1b1f] text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
               />
               <span className="text-sm font-medium text-gray-300">
-                {field.label}
+                {translatedLabel || field.label}
                 {field.required && <span className="text-red-400 ml-1">*</span>}
               </span>
             </label>
             {field.description && (
-              <p className="text-xs text-gray-400 ml-8">{field.description}</p>
+              <p className="text-xs text-gray-400 ml-8">{translatedDescription || field.description}</p>
             )}
             {hasError && <p className="text-xs text-red-400 ml-8">{error}</p>}
           </div>
@@ -456,16 +486,16 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         return (
           <div key={field.key} className="space-y-2">
             <label className="block text-sm font-medium text-gray-300">
-              {field.label}
+              {translatedLabel || field.label}
               {field.required && <span className="text-red-400 ml-1">*</span>}
               {field.minItems !== undefined && field.maxItems !== undefined && (
                 <span className="text-gray-400 text-xs font-normal ml-2">
-                  ({field.minItems}-{field.maxItems} items)
+                  ({field.minItems}-{field.maxItems} {t('items')})
                 </span>
               )}
             </label>
             {field.description && (
-              <p className="text-xs text-gray-400">{field.description}</p>
+              <p className="text-xs text-gray-400">{translatedDescription || field.description}</p>
             )}
             <div className="space-y-2">
               {arrayValue.map((item, index) => (
@@ -482,14 +512,14 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                         ? 'border-red-500 focus:ring-red-500/50'
                         : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
                     }`}
-                    placeholder={`Item ${index + 1}`}
+                    placeholder={t('item', { index: index + 1 })}
                   />
                   <button
                     type="button"
                     onClick={() => handleArrayItemRemove(field.key, index)}
                     className="px-4 py-2.5 bg-red-600/20 border border-red-600 text-red-400 rounded-lg hover:bg-red-600/30 transition-all"
                   >
-                    Remove
+                    {t('remove')}
                   </button>
                 </div>
               ))}
@@ -499,7 +529,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                   onClick={() => handleArrayItemAdd(field.key)}
                   className="px-4 py-2.5 bg-purple-600/20 border border-purple-600 text-purple-400 rounded-lg hover:bg-purple-600/30 transition-all text-sm"
                 >
-                  + Add Item
+                  {t('addItem')}
                 </button>
               )}
             </div>
@@ -512,11 +542,11 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         return (
           <div key={field.key} className="space-y-2">
             <label className="block text-sm font-medium text-gray-300">
-              {field.label}
+              {translatedLabel || field.label}
               {field.required && <span className="text-red-400 ml-1">*</span>}
             </label>
             {field.description && (
-              <p className="text-xs text-gray-400">{field.description}</p>
+              <p className="text-xs text-gray-400">{translatedDescription || field.description}</p>
             )}
             <select
               value={value !== undefined && value !== null ? String(value) : ''}
@@ -532,7 +562,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                   : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
               }`}
             >
-              {!field.required && <option value="">-- Select --</option>}
+              {!field.required && <option value="">{t('select')}</option>}
               {enumOptions.map((option) => (
                 <option key={String(option.value)} value={String(option.value)}>
                   {option.label}
@@ -574,7 +604,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-900/10 to-transparent">
             <h2 className="text-2xl font-bold text-white bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent">
-              Execute Workflow
+              {t('title')}
             </h2>
             <button
               onClick={() => setConfirmOpen(true)}
@@ -589,7 +619,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
             {loading ? (
               <div className="flex items-center justify-center py-12">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-                <span className="ml-3 text-gray-300">Loading workflow requirements...</span>
+                <span className="ml-3 text-gray-300">{t('loadingRequirements')}</span>
               </div>
             ) : requirements && ((requirements.fields && requirements.fields.length > 0) || (requirements.userFields && requirements.userFields.length > 0)) ? (
               <>
@@ -612,7 +642,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                   </div>
                 )}
                 <p className="text-sm text-gray-400">
-                  This workflow doesn't require additional fields. You can execute it directly.
+                  {t('noFieldsRequired')}
                 </p>
               </>
             )}
@@ -625,7 +655,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
               disabled={submitting}
               className="px-6 py-2.5 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-800/50 hover:border-gray-500 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Cancel
+              {t('cancel')}
             </button>
             <button
               onClick={handleSubmit}
@@ -635,10 +665,10 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
               {submitting ? (
                 <>
                   <span className="inline-block animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></span>
-                  Executing...
+                  {t('executing')}
                 </>
               ) : (
-                'Execute'
+                t('execute')
               )}
             </button>
           </div>
@@ -653,10 +683,10 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
           setConfirmOpen(false);
           onClose();
         }}
-        title="Cancel execution?"
-        message="Are you sure you want to cancel and discard the entered data?"
-        confirmText="Cancel"
-        cancelText="Keep editing"
+        title={t('cancelExecution')}
+        message={t('cancelExecutionMessage')}
+        confirmText={t('cancel')}
+        cancelText={t('keepEditing')}
         type="warning"
       />
     </div>,

@@ -11,6 +11,7 @@ import {
   CalendarIcon,
   EyeIcon
 } from '@/components/icons';
+import { useTranslations } from 'next-intl';
 
 interface WorkflowCardProps {
   workflow: UserWorkflow;
@@ -49,6 +50,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
   onViewDetails,
   isExecuting = false
 }) => {
+  const t = useTranslations('workflow');
   const [showFullDescription, setShowFullDescription] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
@@ -156,7 +158,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
                 )}
               </>
             ) : (
-              <p className="text-gray-400 italic">No description</p>
+              <p className="text-gray-400 italic">{t('noDescription')}</p>
             )}
           </div>
         </div>
@@ -165,7 +167,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
             variant={workflow.isActive ? "default" : "secondary"}
             className={workflow.isActive ? "bg-green-600 text-white" : "bg-gray-600 text-gray-300"}
           >
-            {workflow.isActive ? 'Active' : 'Inactive'}
+            {workflow.isActive ? t('active') : t('inactive')}
           </Badge>
         </div>
       </div>
@@ -204,12 +206,12 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
             {isExecuting ? (
               <>
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
-                <span>Executing...</span>
+                <span>{t('executing')}</span>
               </>
             ) : (
               <>
                 <PlayIcon className="w-4 h-4" />
-                <span>Execute</span>
+                <span>{t('execute')}</span>
               </>
             )}
           </button>
@@ -220,7 +222,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
             style={{ background: 'linear-gradient(90deg, #7B61FF 0%, #3B82F6 100%)', boxShadow: '0 10px 15px -3px rgba(165,0,225,0.25)' }}
           >
             <EyeIcon className="w-4 h-4" />
-            <span>Details</span>
+            <span>{t('details')}</span>
           </button>
           
         </div>

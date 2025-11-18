@@ -4,6 +4,7 @@ import React, { useMemo, useState, useCallback, useRef } from 'react';
 import { BalanceData, Currency } from '@/types/balance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useTranslations } from 'next-intl';
 
 interface BalanceCardProps {
   balanceData: BalanceData;
@@ -15,6 +16,7 @@ const formatAmount = (amount: number, precision: string) => {
 };
 
 export const BalanceCard: React.FC<BalanceCardProps> = React.memo(({ balanceData }) => {
+  const t = useTranslations('balance');
   const { currency, balance, frozen_balance, available_balance, total_deposited, total_withdrawn } = balanceData;
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
@@ -124,14 +126,14 @@ export const BalanceCard: React.FC<BalanceCardProps> = React.memo(({ balanceData
                 currencyIconElement
               )}
               <span className="text-lg font-semibold leading-tight min-h-[28px] flex items-center">
-                {currency.name || 'Token'}
+                {currency.name || t('token')}
               </span>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Main Balance */}
             <div className="text-center p-6 bg-black/40 backdrop-blur-sm rounded-lg border border-gray-700">
-              <p className="text-sm text-gray-400 mb-2">Total Balance</p>
+              <p className="text-sm text-gray-400 mb-2">{t('totalBalance')}</p>
               <p className="text-4xl font-bold text-white">
                 {formattedBalance}
               </p>

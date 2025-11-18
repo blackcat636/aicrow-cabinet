@@ -7,8 +7,10 @@ import { BalanceCard } from './BalanceCard';
 import { TransactionHistory } from './TransactionHistory';
 import { Card, CardContent } from '@/components/ui/card';
 import { RefreshCw, AlertCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 export const BalanceList: React.FC = () => {
+  const t = useTranslations('balance');
   const [balances, setBalances] = useState<BalanceData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,11 +31,11 @@ export const BalanceList: React.FC = () => {
       }
     } catch (err: any) {
       console.error('❌ Error fetching balances:', err);
-      setError(err.message || 'Failed to load balance');
+      setError(err.message || t('loadError'));
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!isMountedRef.current) {
@@ -79,7 +81,7 @@ export const BalanceList: React.FC = () => {
       <Card className="w-full bg-[#141519] border-gray-700">
         <CardContent className="flex flex-col items-center justify-center py-8">
           <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
-          <h3 className="text-lg font-semibold mb-2">Loading Error</h3>
+          <h3 className="text-lg font-semibold mb-2">{t('loadingError')}</h3>
           <p className="text-gray-400 text-center mb-4">{error}</p>
         </CardContent>
       </Card>
@@ -94,8 +96,8 @@ export const BalanceList: React.FC = () => {
           {/* Header - fixed height */}
           <div className="flex items-center justify-between p-6 min-h-[100px]">
             <div className="ml-6">
-              <h2 className="text-2xl font-bold text-white">Your Balance</h2>
-              <p className="text-gray-300 mt-1">Check balances and recent transactions</p>
+              <h2 className="text-2xl font-bold text-white">{t('title')}</h2>
+              <p className="text-gray-300 mt-1">{t('description')}</p>
             </div>
           </div>
           <div className="text-center py-12">
@@ -104,10 +106,10 @@ export const BalanceList: React.FC = () => {
                 <RefreshCw className="w-8 h-8 text-white" />
               </div>
               <h3 className="text-lg font-medium text-white mb-2">
-                No balances found
+                {t('noBalance')}
               </h3>
               <p className="text-gray-300 mb-6">
-                You don't have any active balances yet
+                {t('noBalanceDescription')}
               </p>
             </div>
           </div>
@@ -117,8 +119,8 @@ export const BalanceList: React.FC = () => {
           {/* Header - fixed height */}
           <div className="flex items-center justify-between p-6 min-h-[100px]">
             <div className="ml-6">
-              <h2 className="text-2xl font-bold text-white">Your Balance</h2>
-              <p className="text-gray-300 mt-1">Check balances and recent transactions</p>
+              <h2 className="text-2xl font-bold text-white">{t('title')}</h2>
+              <p className="text-gray-300 mt-1">{t('description')}</p>
             </div>
           </div>
           <div className="p-6">

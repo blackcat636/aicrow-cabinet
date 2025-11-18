@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { XIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { useTranslations } from 'next-intl';
 
 interface ChangeEmailFormProps {
   isOpen: boolean;
@@ -20,6 +21,8 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
   currentEmail,
   onSuccess
 }) => {
+  const t = useTranslations('profile.changeEmailForm');
+  const tProfile = useTranslations('profile');
   const [step, setStep] = useState<Step>('email');
   const [newEmail, setNewEmail] = useState('');
   const [code, setCode] = useState('');
@@ -35,7 +38,7 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
     if (!validateEmail(newEmail)) return;
 
     if (newEmail === currentEmail) {
-      setError('New email must be different from current email');
+      setError(t('newEmailDifferent'));
       return;
     }
 
@@ -61,11 +64,11 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
         throw new Error(data.error || 'Failed to send verification code');
       }
 
-      toast.success(`Код для зміни пошти був відправлений на ${currentEmail}`);
+      toast.success(t('codeSentSuccess', { email: currentEmail }));
       setStep('code'); // Move to code step
     } catch (err: any) {
-      setError(err.message || 'Failed to send verification code');
-      toast.error(err.message || 'Не вдалося відправити код підтвердження');
+      setError(err.message || t('failedToSendCode'));
+      toast.error(err.message || t('failedToSendCode'));
     } finally {
       setSendingCode(false);
     }
@@ -73,11 +76,11 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
 
   const validateEmail = (email: string): boolean => {
     if (!email.trim()) {
-      setErrors({ email: 'Email is required' });
+      setErrors({ email: t('emailRequired') });
       return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setErrors({ email: 'Invalid email format' });
+      setErrors({ email: t('invalidEmailFormat') });
       return false;
     }
     return true;
@@ -85,7 +88,7 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
 
   const validateCode = (): boolean => {
     if (!code.trim()) {
-      setErrors({ code: 'Verification code is required' });
+      setErrors({ code: t('verificationCodeRequiredError') });
       return false;
     }
     return true;
@@ -118,12 +121,12 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
         throw new Error(data.error || 'Failed to confirm email change');
       }
 
-      toast.success('Email changed successfully');
+      toast.success(t('emailChangedSuccess'));
       onSuccess();
       handleClose();
     } catch (err: any) {
-      setError(err.message || 'Failed to confirm email change');
-      toast.error(err.message || 'Не вдалося підтвердити зміну пошти');
+      setError(err.message || t('failedToConfirm'));
+      toast.error(err.message || t('failedToConfirm'));
     } finally {
       setIsLoading(false);
     }
@@ -172,7 +175,7 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-700">
           <h2 className="text-xl font-semibold text-white">
-            {step === 'email' ? 'Enter New Email' : 'Enter Verification Code'}
+            {step === 'email' ? t('enterNewEmail') : t('enterVerificationCode')}
           </h2>
           <button
             onClick={handleClose}
@@ -187,13 +190,13 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
           {sendingCode ? (
             <div className="flex flex-col items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mb-4"></div>
-              <p className="text-gray-300">Відправка коду підтвердження...</p>
+              <p className="text-gray-300">{t('sendingCodeMessage')}</p>
             </div>
           ) : step === 'email' ? (
             <form onSubmit={handleEmailSubmit} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Current Email
+                  {t('currentEmail')}
                 </label>
                 <input
                   type="email"
@@ -205,7 +208,7 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  New Email *
+                  {t('newEmailRequired')}
                 </label>
                 <input
                   type="email"
@@ -216,7 +219,7 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
                       setErrors({ ...errors, email: '' });
                     }
                   }}
-                  placeholder="Enter new email address"
+                  placeholder={t('enterNewEmailPlaceholder')}
                   className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
                     errors.email ? 'border-red-500' : 'border-gray-600'
                   }`}
@@ -238,14 +241,14 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
                   onClick={handleClose}
                   className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium"
                 >
-                  Cancel
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={sendingCode}
                   className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {sendingCode ? 'Sending...' : 'Send Code'}
+                  {sendingCode ? t('sendingCode') : t('sendCode')}
                 </button>
               </div>
             </form>
@@ -254,13 +257,13 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
               {/* Success message about code being sent */}
               <div className="mb-4 p-3 bg-green-900/20 border border-green-500/50 rounded-lg">
                 <p className="text-sm text-green-400">
-                  ✓ Код для зміни пошти був відправлений на {currentEmail}
+                  {t('codeSentSuccessMessage', { email: currentEmail })}
                 </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  New Email
+                  {t('newEmail')}
                 </label>
                 <input
                   type="email"
@@ -272,7 +275,7 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Verification Code *
+                  {t('verificationCodeRequired')}
                 </label>
                 <input
                   type="text"
@@ -283,7 +286,7 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
                       setErrors({ ...errors, code: '' });
                     }
                   }}
-                  placeholder="Enter verification code"
+                  placeholder={t('enterVerificationCodePlaceholder')}
                   maxLength={6}
                   className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 uppercase ${
                     errors.code ? 'border-red-500' : 'border-gray-600'
@@ -293,7 +296,7 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
                   <p className="mt-1 text-sm text-red-400">{errors.code}</p>
                 )}
                 <p className="mt-1 text-xs text-gray-400">
-                  Введіть код, який був відправлений на вашу поточну пошту ({currentEmail})
+                  {t('codeSentToCurrentEmail', { email: currentEmail })}
                 </p>
               </div>
 
@@ -309,14 +312,14 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
                   onClick={() => setStep('email')}
                   className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium"
                 >
-                  Back
+                  {t('back')}
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
                   className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? 'Confirming...' : 'Confirm Change'}
+                  {isLoading ? t('confirming') : t('confirmChange')}
                 </button>
               </div>
             </form>
@@ -331,10 +334,10 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
         setConfirmOpen(false);
         handleClose();
       }}
-      title="Discard changes?"
-      message="Are you sure you want to cancel and discard the changes?"
-      confirmText="Discard"
-      cancelText="Keep editing"
+      title={tProfile('discardChanges')}
+      message={tProfile('discardChangesMessage')}
+      confirmText={tProfile('discard')}
+      cancelText={tProfile('keepEditing')}
       type="warning"
     />
     </>

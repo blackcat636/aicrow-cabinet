@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
 
-export const runtime = 'edge';
+export const dynamic = 'force-dynamic';
 
 export default function RedirectWorkflowDetail() {
   const params = useParams();

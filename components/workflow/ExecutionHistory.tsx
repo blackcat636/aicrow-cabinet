@@ -12,6 +12,7 @@ import {
   PlayIcon,
   EyeIcon
 } from '@/components/icons';
+import { useTranslations } from 'next-intl';
 
 // Move helper functions outside component to prevent recreation
 const getStatusColor = (status: string) => {
@@ -52,37 +53,39 @@ const getStatusIcon = (status: string) => {
   }
 };
 
-const getStatusLabel = (status: string) => {
-  switch (status) {
-    case '1':
-    case 'completed':
-      return 'Completed';
-    case '2':
-    case 'failed':
-      return 'Failed';
-    case '3':
-    case 'running':
-      return 'Running';
-    case '0':
-    case 'pending':
-      return 'Pending';
-    default:
-      return 'Unknown';
-  }
-};
-
-const getTriggerTypeLabel = (type: string) => {
-  switch (type) {
-    case 'manual': return 'Manual';
-    case 'cron': return 'Scheduled';
-    case 'scheduled': return 'One-time';
-    case 'telegram': return 'Telegram';
-    default: return type;
-  }
-};
-
 export const ExecutionHistory: React.FC = () => {
   const router = useRouter();
+  const t = useTranslations('executions');
+  const tWorkflow = useTranslations('workflow');
+  
+  const getStatusLabel = useCallback((status: string) => {
+    switch (status) {
+      case '1':
+      case 'completed':
+        return tWorkflow('status.completed');
+      case '2':
+      case 'failed':
+        return tWorkflow('status.failed');
+      case '3':
+      case 'running':
+        return tWorkflow('status.running');
+      case '0':
+      case 'pending':
+        return tWorkflow('status.pending');
+      default:
+        return tWorkflow('status.unknown');
+    }
+  }, [tWorkflow]);
+
+  const getTriggerTypeLabel = useCallback((type: string) => {
+    switch (type) {
+      case 'manual': return tWorkflow('triggerType.manual');
+      case 'cron': return tWorkflow('triggerType.cron');
+      case 'scheduled': return tWorkflow('triggerType.scheduled');
+      case 'telegram': return tWorkflow('triggerType.telegram');
+      default: return type;
+    }
+  }, [tWorkflow]);
   const [executionsData, setExecutionsData] = useState<ExecutionsResponse>({
     items: [],
     total: 0,
@@ -103,11 +106,11 @@ export const ExecutionHistory: React.FC = () => {
       setExecutionsData(data);
     } catch (err) {
       console.error('❌ Error loading executions:', err);
-      setError(`Failed to load execution history: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setError(t('loadError'));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [t]);
 
   useEffect(() => {
     if (!isMountedRef.current) {
@@ -183,7 +186,7 @@ export const ExecutionHistory: React.FC = () => {
           className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors mx-auto shadow-lg shadow-purple-500/25"
         >
           <PlayIcon className="w-4 h-4" />
-          Try Again
+          {t('retry')}
         </button>
       </div>
     );
@@ -199,25 +202,25 @@ export const ExecutionHistory: React.FC = () => {
               <div className="text-2xl font-bold text-white">
                 {stats.total}
               </div>
-              <div className="text-sm text-gray-300">Total Executions</div>
+              <div className="text-sm text-gray-300">{t('totalExecutions')}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {stats.completed}
               </div>
-              <div className="text-sm text-gray-300">Completed</div>
+              <div className="text-sm text-gray-300">{tWorkflow('status.completed')}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">
                 {stats.failed}
               </div>
-              <div className="text-sm text-gray-300">Failed</div>
+              <div className="text-sm text-gray-300">{tWorkflow('status.failed')}</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
                 {stats.inProgress}
               </div>
-              <div className="text-sm text-gray-300">In Progress</div>
+              <div className="text-sm text-gray-300">{t('inProgress')}</div>
             </div>
           </div>
         </div>
@@ -229,8 +232,8 @@ export const ExecutionHistory: React.FC = () => {
           {/* Header - fixed height */}
           <div className="flex items-center justify-between p-6 min-h-[100px]">
             <div className="ml-6">
-              <h2 className="text-2xl font-bold text-white">Execution History</h2>
-              <p className="text-gray-300 mt-1">View results and logs of your workflow runs</p>
+              <h2 className="text-2xl font-bold text-white">{t('title')}</h2>
+              <p className="text-gray-300 mt-1">{t('description')}</p>
             </div>
           </div>
           <div className="p-6">
@@ -239,8 +242,8 @@ export const ExecutionHistory: React.FC = () => {
               <div className="w-16 h-16 bg-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg shadow-purple-500/25">
                 <ClockIcon className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-lg font-medium text-white mb-2">No executions yet</h3>
-              <p className="text-gray-300">Execute your workflows to see their history here.</p>
+              <h3 className="text-lg font-medium text-white mb-2">{t('noExecutions')}</h3>
+              <p className="text-gray-300">{t('noExecutionsDescription')}</p>
               </div>
             </div>
           </div>
@@ -250,14 +253,14 @@ export const ExecutionHistory: React.FC = () => {
           {/* Header - fixed height */}
           <div className="flex items-center justify-between p-6 min-h-[100px]">
             <div className="ml-6">
-              <h2 className="text-2xl font-bold text-white">Execution History</h2>
-              <p className="text-gray-300 mt-1">View results and logs of your workflow runs</p>
+              <h2 className="text-2xl font-bold text-white">{t('title')}</h2>
+              <p className="text-gray-300 mt-1">{t('description')}</p>
             </div>
           </div>
           <div className="p-6">
             <div className="space-y-4 ml-6 mr-6">
               {executionsData.items.map((execution) => (
-                <ExecutionCard key={execution.id} execution={execution} onViewWorkflow={handleViewWorkflow} />
+                <ExecutionCard key={execution.id} execution={execution} onViewWorkflow={handleViewWorkflow} getStatusLabel={getStatusLabel} getTriggerTypeLabel={getTriggerTypeLabel} t={t} tWorkflow={tWorkflow} />
               ))}
             </div>
           </div>
@@ -271,7 +274,11 @@ export const ExecutionHistory: React.FC = () => {
 const ExecutionCard: React.FC<{
   execution: WorkflowExecution;
   onViewWorkflow: (workflowId: number) => void;
-}> = React.memo(({ execution, onViewWorkflow }) => {
+  getStatusLabel: (status: string) => string;
+  getTriggerTypeLabel: (type: string) => string;
+  t: any;
+  tWorkflow: any;
+}> = React.memo(({ execution, onViewWorkflow, getStatusLabel, getTriggerTypeLabel, t, tWorkflow }) => {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -335,7 +342,7 @@ const ExecutionCard: React.FC<{
               </Badge>
               {execution.notificationSent && (
                 <Badge variant="outline" className="text-xs bg-green-600 text-white">
-                  Notified
+                  {tWorkflow('notified')}
                 </Badge>
               )}
             </div>
@@ -344,14 +351,14 @@ const ExecutionCard: React.FC<{
               className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg transition-all font-medium hover:brightness-110 shadow-lg shadow-[#A500E1]/25 bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)]"
             >
               <EyeIcon className="w-4 h-4" />
-              <span>View Workflow</span>
+              <span>{t('viewWorkflow')}</span>
             </button>
           </div>
 
           {/* Input Data */}
           {execution.inputData && (
             <div className="mb-4 mt-4">
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Input Data:</h4>
+              <h4 className="text-sm font-medium text-gray-300 mb-2">{tWorkflow('inputData')}:</h4>
               <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300 break-all">
                 {execution.inputData}
               </div>
@@ -361,7 +368,7 @@ const ExecutionCard: React.FC<{
           {/* Output Data */}
           {execution.outputData && (
             <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Output Data:</h4>
+              <h4 className="text-sm font-medium text-gray-300 mb-2">{tWorkflow('outputData')}:</h4>
               <div className="p-3 bg-green-900/20 rounded text-sm font-mono text-green-300 break-all">
                 {execution.outputData}
               </div>
@@ -371,7 +378,7 @@ const ExecutionCard: React.FC<{
           {/* Result Data */}
           {execution.resultData && (
             <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Result:</h4>
+              <h4 className="text-sm font-medium text-gray-300 mb-2">{tWorkflow('result')}:</h4>
               <div className="p-3 bg-gray-800 rounded text-sm font-mono text-gray-200 break-all">
                 {typeof execution.resultData === 'object' ? (execution.resultData.message ?? JSON.stringify(execution.resultData)) : String(execution.resultData)}
               </div>
@@ -381,7 +388,7 @@ const ExecutionCard: React.FC<{
           {/* Error Message */}
           {execution.errorMessage && (
             <div className="mb-4">
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Error:</h4>
+              <h4 className="text-sm font-medium text-gray-300 mb-2">{tWorkflow('error')}:</h4>
               <div className="p-3 bg-red-900/20 rounded text-sm font-mono text-red-300 break-all">
                 {execution.errorMessage}
               </div>
@@ -391,8 +398,8 @@ const ExecutionCard: React.FC<{
           {/* Execution ID */}
           <div className="pt-4 border-t border-gray-600">
             <div className="flex items-center justify-between text-xs text-gray-400">
-              <span>Execution ID: {execution.id}</span>
-              <span>Workflow ID: {execution.workflowId ?? execution.userWorkflowId}</span>
+              <span>{tWorkflow('executionId')}: {execution.id}</span>
+              <span>{tWorkflow('workflowId')}: {execution.workflowId ?? execution.userWorkflowId}</span>
             </div>
           </div>
         </div>
