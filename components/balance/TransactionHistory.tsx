@@ -345,6 +345,13 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
     return translated && translated !== `transactionStatuses.${status}` ? translated : status;
   };
 
+  // Known transaction descriptions that have translations
+  // This list should match the keys in messages/*.json files
+  const knownTransactionDescriptions = useMemo(() => new Set([
+    'Administrative deposit',
+    'Manual balance adjustment'
+  ]), []);
+
   // Get translated transaction description
   const getTranslatedDescription = useCallback((description: string): string => {
     if (!description) return description;
@@ -353,30 +360,38 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
     const normalizedDescription = description.trim();
     if (!normalizedDescription) return description;
     
-    // onError and getMessageFallback in NextIntlClientProvider will handle missing translations
-    // getMessageFallback returns empty string for missing transactionDescriptions keys
+    // Only try to translate if we know this description has a translation
+    // This prevents MISSING_MESSAGE errors for dynamic descriptions from API
+    if (!knownTransactionDescriptions.has(normalizedDescription)) {
+      // Return original description for unknown/API descriptions
+      return description;
+    }
+    
+    // For known descriptions, try to get translation
+    const translationKey = `transactionDescriptions.${normalizedDescription}` as any;
+    
     try {
-      const translationKey = `transactionDescriptions.${normalizedDescription}` as any;
-      // t() will use getMessageFallback which returns empty string if translation not found
       const translated = t(translationKey);
       
-      // If we got a valid translation (not empty, not the key path, not error message)
+      // Check if we got a valid translation
       if (translated && 
           typeof translated === 'string' &&
-          translated !== '' &&
           translated !== translationKey && 
+          translated !== normalizedDescription &&
           !translated.startsWith('balance.transactionDescriptions.') &&
-          !translated.includes('MISSING_MESSAGE')) {
+          !translated.includes('MISSING_MESSAGE') &&
+          !translated.startsWith('transactionDescriptions.') &&
+          !translated.includes('Could not resolve')) {
         return translated;
       }
       
-      // If translation not found (empty string from getMessageFallback), return original description
+      // If translation not found, return original description
       return description;
-    } catch (error) {
-      // If error occurs (shouldn't happen with onError handler), return original description
+    } catch (error: any) {
+      // Silently catch any errors and return original description
       return description;
     }
-  }, [t]);
+  }, [t, knownTransactionDescriptions]);
 
   // Get transaction icon
   const getTransactionIcon = (type: string) => {

@@ -28,12 +28,12 @@ export default getRequestConfig(async ({ requestLocale }) => {
     },
     // Return fallback value if translation is missing
     getMessageFallback({ namespace, key, error }) {
-      // For transactionDescriptions, return empty string to indicate missing translation
-      // The component will handle this and return the original description
+      // For transactionDescriptions, return the description itself (without namespace prefix)
+      // This prevents MISSING_MESSAGE errors for dynamic descriptions from API
       if (namespace === 'balance' && key && typeof key === 'string' && key.startsWith('transactionDescriptions.')) {
-        // Return empty string to indicate missing translation
-        // The component's getTranslatedDescription will return the original description
-        return '';
+        // Return the description itself (remove the 'transactionDescriptions.' prefix)
+        // The component will check if this matches the original and use it if so
+        return key.replace('transactionDescriptions.', '');
       }
       // For other missing keys, return the key path
       const path = [namespace, key].filter((part) => part != null).join('.');
