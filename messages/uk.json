@@ -442,7 +442,24 @@
     "filtered": "(відфільтровано)",
     "page": "Сторінка",
     "of": "з",
-    "failedToLoadTransactions": "Не вдалося завантажити транзакції"
+    "failedToLoadTransactions": "Не вдалося завантажити транзакції",
+    "transactionTypes": {
+      "DEPOSIT": "ДЕПОЗИТ",
+      "WITHDRAWAL": "ВИВЕДЕННЯ",
+      "TRANSFER": "ПЕРЕКАЗ",
+      "FEE": "КОМІСІЯ"
+    },
+    "transactionStatuses": {
+      "COMPLETED": "ЗАВЕРШЕНО",
+      "PENDING": "В ОЧІКУВАННІ",
+      "FAILED": "НЕ ВДАЛОСЯ",
+      "CANCELLED": "СКАСОВАНО"
+    },
+    "transactionDescriptions": {
+      "Administrative deposit": "Адміністративний депозит",
+      "Manual balance adjustment": "Ручне коригування балансу"
+    },
+    "dateFormat": "ДД/ММ/РРРР"
   },
   "integrations": {
     "telegram": {

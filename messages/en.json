@@ -442,7 +442,24 @@
     "filtered": "(filtered)",
     "page": "Page",
     "of": "of",
-    "failedToLoadTransactions": "Failed to load transactions"
+    "failedToLoadTransactions": "Failed to load transactions",
+    "transactionTypes": {
+      "DEPOSIT": "DEPOSIT",
+      "WITHDRAWAL": "WITHDRAWAL",
+      "TRANSFER": "TRANSFER",
+      "FEE": "FEE"
+    },
+    "transactionStatuses": {
+      "COMPLETED": "COMPLETED",
+      "PENDING": "PENDING",
+      "FAILED": "FAILED",
+      "CANCELLED": "CANCELLED"
+    },
+    "transactionDescriptions": {
+      "Administrative deposit": "Administrative deposit",
+      "Manual balance adjustment": "Manual balance adjustment"
+    },
+    "dateFormat": "MM/DD/YYYY"
   },
   "integrations": {
     "telegram": {
