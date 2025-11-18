@@ -1,12 +1,11 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
-import { useTranslations } from 'next-intl';
-import { Link as I18nLink } from '@/i18n/routing';
+import { useTranslations, useLocale } from 'next-intl';
+import { Link as I18nLink, useRouter } from '@/i18n/routing';
 import aiPillsLogo from '@/public/brand/aiPillsLogo.png';
 import {
   LogOutIcon,
@@ -46,9 +45,36 @@ const TopNavItem: React.FC<{
   isActive: boolean;
   onClick?: () => void;
 }> = React.memo(({ href, icon, label, isActive, onClick }) => {
+  const locale = useLocale();
+  const router = useRouter();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const labelRef = useRef<HTMLSpanElement>(null);
+  
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    // Log navigation
+    console.log('[TopNavItem] Navigation clicked:', {
+      href,
+      currentLocale: locale,
+      currentUrl: window.location.href,
+      currentPathname: window.location.pathname,
+      cookies: document.cookie,
+      expectedUrl: `/${locale}${href}`
+    });
+    
+    if (onClick) {
+      onClick();
+    }
+    
+    // Log after navigation
+    setTimeout(() => {
+      console.log('[TopNavItem] After navigation:', {
+        newUrl: window.location.href,
+        newPathname: window.location.pathname,
+        cookies: document.cookie
+      });
+    }, 100);
+  };
 
   // Mouse tracking for interactive gradient on label text
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -72,9 +98,9 @@ const TopNavItem: React.FC<{
   }, []);
 
   return (
-    <Link
+    <I18nLink
       href={href}
-      onClick={onClick}
+      onClick={handleClick}
       onMouseMove={handleMouseMove}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
@@ -121,7 +147,7 @@ const TopNavItem: React.FC<{
       {isActive && (
         <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#A500E1] to-[#7B61FF]"></span>
       )}
-    </Link>
+    </I18nLink>
   );
 });
 
@@ -397,7 +423,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                     ? 'opacity-100 translate-y-0 pointer-events-auto scale-100' 
                     : 'opacity-0 -translate-y-4 pointer-events-none scale-95'
                 }`}>
-                  <Link
+                  <I18nLink
                     href="/integrations/telegram"
                     onClick={closeIntegrationsDropdown}
                     className={`w-full flex items-center gap-3 px-4 py-3 transition-colors ${
@@ -410,7 +436,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                       <TelegramIcon className="w-4 h-4 text-white" />
                     </div>
                     <span className='font-medium'>Telegram</span>
-                  </Link>
+                  </I18nLink>
                 </div>
               </div>
 
@@ -559,7 +585,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                     </I18nLink>
                     <div className='flex flex-col items-center gap-2 mt-2'>
                       <span className='text-sm uppercase tracking-wider text-gray-400'>{t('integrations')}</span>
-                      <Link
+                      <I18nLink
                         href='/integrations/telegram'
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={`text-2xl md:text-3xl transition-all ${
@@ -569,7 +595,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         }`}
                       >
                         Telegram
-                      </Link>
+                      </I18nLink>
                     </div>
                   </nav>
                 </div>
@@ -632,7 +658,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                   <div className='space-y-2'>
                     <h3 className='text-xs font-medium text-gray-400 uppercase tracking-wider px-3'>Main Menu</h3>
                     <div className='space-y-2'>
-                      <Link
+                      <I18nLink
                         href="/dashboard"
                         onClick={closeMobileMenu}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
@@ -643,8 +669,8 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                       >
                         <WorkflowsIcon className='w-5 h-5' />
                         <span className='font-medium'>Dashboard</span>
-                      </Link>
-                      <Link
+                      </I18nLink>
+                      <I18nLink
                         href="/workflows"
                         onClick={closeMobileMenu}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
@@ -655,7 +681,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                       >
                         <WorkflowsIcon className='w-5 h-5' />
                         <span className='font-medium'>Workflows</span>
-                      </Link>
+                      </I18nLink>
                       
                       {/* Integrations Section */}
                       <div className="relative">
@@ -678,7 +704,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         {/* Integrations Submenu */}
                         {isIntegrationsDropdownOpen && (
                           <div className="ml-4 mt-2 space-y-1 border-l border-gray-600 pl-4">
-                            <Link
+                            <I18nLink
                               href="/integrations/telegram"
                               onClick={closeMobileMenu}
                               className={`w-full flex items-center gap-3 p-2 rounded-lg text-sm transition-colors ${
@@ -691,12 +717,12 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                                 <TelegramIcon className="w-4 h-4 text-white" />
                               </div>
                               <span>Telegram</span>
-                            </Link>
+                            </I18nLink>
                           </div>
                         )}
                       </div>
                       
-                      <Link
+                      <I18nLink
                         href="/executions"
                         onClick={closeMobileMenu}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
@@ -707,8 +733,8 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                       >
                         <ExecutionIcon className='w-5 h-5' />
                         <span className='font-medium'>Executions</span>
-                      </Link>
-                      <Link
+                      </I18nLink>
+                      <I18nLink
                         href="/balance"
                         onClick={closeMobileMenu}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
@@ -719,7 +745,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                       >
                         <BalanceIcon className='w-5 h-5' />
                         <span className='font-medium'>Balance</span>
-                      </Link>
+                      </I18nLink>
                     </div>
                   </div>
                 </nav>
