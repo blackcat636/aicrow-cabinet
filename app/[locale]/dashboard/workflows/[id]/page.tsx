@@ -23,6 +23,7 @@ import {
 import { Search, Calendar, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { WorkflowForm } from '@/components/workflow/WorkflowForm';
+import { WorkflowExecuteModal } from '@/components/workflow/WorkflowExecuteModal';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export const dynamic = 'force-dynamic';
@@ -265,6 +266,7 @@ export default function WorkflowDetailPage() {
   const [showEditForm, setShowEditForm] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [toggling, setToggling] = useState(false);
+  const [showExecuteModal, setShowExecuteModal] = useState(false);
   
   // Filters for executions
   const [dateFrom, setDateFrom] = useState<string>('');
@@ -393,24 +395,39 @@ export default function WorkflowDetailPage() {
     }
   };
 
-  const handleExecute = async () => {
+  const handleExecute = () => {
+    if (!workflow) return;
+    
+    if (!workflow.isActive) {
+      toast.error(t('executeErrorInactive'));
+      return;
+    }
+
+    // Open modal instead of executing directly
+    setShowExecuteModal(true);
+  };
+
+  const handleExecuteWithPayload = async (payload?: Record<string, any>) => {
     if (!workflow) return;
     
     try {
       setExecuting(true);
       
-      if (!workflow.isActive) {
-        toast.error(t('executeErrorInactive'));
-        return;
-      }
-
-      const inputData = workflow.inputDataTemplate || '{"message": "Hello", "timestamp": "' + new Date().toISOString() + '"}';
+      // Build request data
+      const requestData: any = {};
       
-      await workflowApi.executeWorkflowManually(workflow.id, {
-        inputData
-      });
+      if (payload && Object.keys(payload).length > 0) {
+        requestData.payload = payload;
+      } else {
+        // If no payload, use inputDataTemplate as fallback
+        const inputData = workflow.inputDataTemplate || '{"message": "Hello", "timestamp": "' + new Date().toISOString() + '"}';
+        requestData.inputData = inputData;
+      }
+      
+      await workflowApi.executeWorkflowManually(workflow.id, requestData);
       
       toast.success(t('executeSuccess'));
+      setShowExecuteModal(false);
       // Reload executions to show the new one
       await loadExecutions();
     } catch (error: any) {
@@ -1244,6 +1261,17 @@ export default function WorkflowDetailPage() {
         cancelText={tCommon('cancel')}
         type="danger"
       />
+
+      {/* Execute Workflow Modal */}
+      {workflow && (
+        <WorkflowExecuteModal
+          isOpen={showExecuteModal}
+          onClose={() => setShowExecuteModal(false)}
+          onExecute={handleExecuteWithPayload}
+          workflowId={workflow.workflowId}
+          workflowName={workflow.name || workflow.workflow.name}
+        />
+      )}
     </AppLayout>
   );
 }

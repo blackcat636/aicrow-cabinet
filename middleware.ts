@@ -16,8 +16,12 @@ const protectedRoutes = [
 ];
 const authRoutes = ['/login', '/signup']; // Public auth routes
 
-// Create next-intl middleware
-const intlMiddleware = createMiddleware(routing);
+// Create next-intl middleware with locale detection disabled
+// This ensures we always use default locale unless explicitly set via cookie or URL
+const intlMiddleware = createMiddleware({
+  ...routing,
+  localeDetection: false
+});
 
 // Helper function to extract locale from pathname
 function getLocaleFromPathname(pathname: string): string | null {
@@ -82,34 +86,51 @@ export async function middleware(request: NextRequest) {
         ? localeCookie
         : routing.defaultLocale;
 
+    // Create redirect response
+    let redirectResponse: NextResponse;
+
     if (!accessToken && !refreshToken) {
       // Redirect to login with current locale
-      return NextResponse.redirect(
+      redirectResponse = NextResponse.redirect(
         createLocalizedUrl('/login', currentLocale, request)
       );
-    }
-
-    // If authenticated, redirect to dashboard with current locale
-    if (accessToken) {
+    } else if (accessToken) {
+      // If authenticated, redirect to dashboard with current locale
       try {
         const decoded = decodeToken(accessToken);
         if (decoded && decoded.exp > Math.floor(Date.now() / 1000)) {
-          return NextResponse.redirect(
+          redirectResponse = NextResponse.redirect(
             createLocalizedUrl('/dashboard', currentLocale, request)
+          );
+        } else {
+          redirectResponse = NextResponse.redirect(
+            createLocalizedUrl('/login', currentLocale, request)
           );
         }
       } catch (error) {
         // Token invalid, redirect to login
-        return NextResponse.redirect(
+        redirectResponse = NextResponse.redirect(
           createLocalizedUrl('/login', currentLocale, request)
         );
       }
+    } else {
+      // Default: redirect to login
+      redirectResponse = NextResponse.redirect(
+        createLocalizedUrl('/login', currentLocale, request)
+      );
     }
 
-    // Default: redirect to login
-    return NextResponse.redirect(
-      createLocalizedUrl('/login', currentLocale, request)
-    );
+    // Set locale cookie if not set, to ensure default locale is used
+    if (!localeCookie) {
+      redirectResponse.cookies.set('NEXT_LOCALE', routing.defaultLocale, {
+        path: '/',
+        maxAge: 365 * 24 * 60 * 60, // 1 year
+        sameSite: 'lax',
+        secure: process.env.NODE_ENV === 'production'
+      });
+    }
+
+    return redirectResponse;
   }
 
   // Check if path has no locale prefix - if so, get locale from cookie or use default
@@ -213,8 +234,30 @@ export async function middleware(request: NextRequest) {
     // Continue with auth logic using the rewrite response
     intlResponse = rewriteResponse;
   } else {
-    // Path has locale or is API route, use normal intl middleware
-    intlResponse = intlMiddleware(request);
+    // Path has locale or is API route
+    // Get locale from cookie or use default, and override Accept-Language to prevent auto-detection
+    const localeCookie =
+      request.cookies.get('NEXT_LOCALE')?.value ||
+      request.cookies.get('locale')?.value ||
+      request.cookies.get('next-intl-locale')?.value;
+    const preferredLocale =
+      localeCookie && routing.locales.includes(localeCookie as any)
+        ? localeCookie
+        : routing.defaultLocale;
+
+    // Override Accept-Language header to prevent next-intl from auto-detecting locale
+    const modifiedHeaders = new Headers(request.headers);
+    modifiedHeaders.set('Accept-Language', preferredLocale);
+
+    // Create modified request
+    const modifiedRequest = new NextRequest(request.url, {
+      method: request.method,
+      headers: modifiedHeaders,
+      body: request.body
+    });
+
+    // Use modified request for intl middleware
+    intlResponse = intlMiddleware(modifiedRequest);
 
     // If intl middleware returns a redirect, return it
     if (intlResponse && intlResponse.status === 307) {
@@ -222,7 +265,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Get the current locale (after intl processing)
-    currentLocale = getLocaleFromPathname(pathname) || routing.defaultLocale;
+    currentLocale = getLocaleFromPathname(pathname) || preferredLocale;
     normalizedPathname = normalizePathname(pathname);
   }
 

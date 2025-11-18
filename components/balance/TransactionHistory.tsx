@@ -29,39 +29,67 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
   const [dateToNative, setDateToNative] = useState<string>('');
   const [amountSearch, setAmountSearch] = useState<string>('');
 
-  // Convert YYYY-MM-DD to MM/DD/YYYY
+  // Get date format from translations (JJ/MM/AAAA for French, MM/DD/YYYY for others)
+  const dateFormat = t('dateFormat') || 'MM/DD/YYYY';
+  const isFrenchFormat = dateFormat === 'JJ/MM/AAAA' || dateFormat.includes('JJ') || dateFormat.includes('DD');
+
+  // Convert YYYY-MM-DD to locale-specific format (JJ/MM/AAAA or MM/DD/YYYY)
   const formatToDisplay = (value: string): string => {
     if (!value) return '';
     const parts = value.split('-');
     if (parts.length === 3) {
-      return `${parts[1]}/${parts[2]}/${parts[0]}`;
+      if (isFrenchFormat) {
+        // French format: JJ/MM/AAAA
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+      } else {
+        // US format: MM/DD/YYYY
+        return `${parts[1]}/${parts[2]}/${parts[0]}`;
+      }
     }
     return value;
   };
 
-  // Convert MM/DD/YYYY to YYYY-MM-DD
+  // Convert locale-specific format to YYYY-MM-DD
   const formatToNative = (value: string): string => {
     if (!value) return '';
     const parts = value.split('/');
     if (parts.length === 3) {
-      const month = parts[0].padStart(2, '0');
-      const day = parts[1].padStart(2, '0');
-      const year = parts[2];
-      return `${year}-${month}-${day}`;
+      if (isFrenchFormat) {
+        // French format: JJ/MM/AAAA -> YYYY-MM-DD
+        const day = parts[0].padStart(2, '0');
+        const month = parts[1].padStart(2, '0');
+        const year = parts[2];
+        return `${year}-${month}-${day}`;
+      } else {
+        // US format: MM/DD/YYYY -> YYYY-MM-DD
+        const month = parts[0].padStart(2, '0');
+        const day = parts[1].padStart(2, '0');
+        const year = parts[2];
+        return `${year}-${month}-${day}`;
+      }
     }
     return value;
   };
 
-  // Parse MM/DD/YYYY to Date object
+  // Parse locale-specific format to Date object
   const parseDateInput = (value: string): Date | null => {
     if (!value) return null;
     
-    // Try MM/DD/YYYY format first
     const parts = value.split('/');
     if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
-      const month = parseInt(parts[0], 10) - 1; // Month is 0-indexed
-      const day = parseInt(parts[1], 10);
-      const year = parseInt(parts[2], 10);
+      let month: number, day: number, year: number;
+      
+      if (isFrenchFormat) {
+        // French format: JJ/MM/AAAA
+        day = parseInt(parts[0], 10);
+        month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+        year = parseInt(parts[2], 10);
+      } else {
+        // US format: MM/DD/YYYY
+        month = parseInt(parts[0], 10) - 1; // Month is 0-indexed
+        day = parseInt(parts[1], 10);
+        year = parseInt(parts[2], 10);
+      }
       
       if (month >= 0 && month <= 11 && day >= 1 && day <= 31 && year >= 1900) {
         const date = new Date(year, month, day);
@@ -96,18 +124,29 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
     setDateTo(formatToDisplay(value));
   };
 
-  // Format date input to MM/DD/YYYY
+  // Format date input to locale-specific format
   const formatDateInput = (value: string): string => {
     // Remove all non-digits
     const digits = value.replace(/\D/g, '');
     
-    // Format as MM/DD/YYYY
-    if (digits.length <= 2) {
-      return digits;
-    } else if (digits.length <= 4) {
-      return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+    if (isFrenchFormat) {
+      // French format: JJ/MM/AAAA
+      if (digits.length <= 2) {
+        return digits;
+      } else if (digits.length <= 4) {
+        return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+      } else {
+        return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+      }
     } else {
-      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+      // US format: MM/DD/YYYY
+      if (digits.length <= 2) {
+        return digits;
+      } else if (digits.length <= 4) {
+        return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+      } else {
+        return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
+      }
     }
   };
 
@@ -249,9 +288,16 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
   // Format date: mm/dd/yyyy
   const formatDate = (dateString: string) => {
     const d = new Date(dateString);
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
     const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
     const yyyy = d.getFullYear();
+    // Use locale-specific format from translations
+    const dateFormat = t('dateFormat') || 'DD/MM/YYYY';
+    if (dateFormat === 'JJ/MM/AAAA' || dateFormat.includes('DD') || dateFormat.includes('JJ')) {
+      // French format: JJ/MM/AAAA
+      return `${dd}/${mm}/${yyyy}`;
+    }
+    // Default: MM/DD/YYYY
     return `${mm}/${dd}/${yyyy}`;
   };
 
@@ -285,6 +331,24 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
       default:
         return 'bg-gray-500/20 text-gray-400 border-gray-500/30';
     }
+  };
+
+  // Get translated transaction type
+  const getTranslatedType = (type: string): string => {
+    const translated = t(`transactionTypes.${type}` as any);
+    return translated && translated !== `transactionTypes.${type}` ? translated : type;
+  };
+
+  // Get translated transaction status
+  const getTranslatedStatus = (status: string): string => {
+    const translated = t(`transactionStatuses.${status}` as any);
+    return translated && translated !== `transactionStatuses.${status}` ? translated : status;
+  };
+
+  // Get translated transaction description
+  const getTranslatedDescription = (description: string): string => {
+    const translated = t(`transactionDescriptions.${description}` as any);
+    return translated && translated !== `transactionDescriptions.${description}` ? translated : description;
   };
 
   // Get transaction icon
@@ -457,12 +521,12 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                 id="date-from-picker"
                 style={{ pointerEvents: 'none' }}
               />
-              {/* Display input in MM/DD/YYYY format */}
+              {/* Display input in locale-specific format */}
               <input
                 type="text"
                 value={dateFrom}
                 onChange={handleDateFromTextChange}
-                placeholder="MM/DD/YYYY"
+                placeholder={t('dateFormat') || 'MM/DD/YYYY'}
                 maxLength={10}
                 className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 relative z-0"
               />
@@ -528,12 +592,12 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                 id="date-to-picker"
                 style={{ pointerEvents: 'none' }}
               />
-              {/* Display input in MM/DD/YYYY format */}
+              {/* Display input in locale-specific format */}
               <input
                 type="text"
                 value={dateTo}
                 onChange={handleDateToTextChange}
-                placeholder="MM/DD/YYYY"
+                placeholder={t('dateFormat') || 'MM/DD/YYYY'}
                 maxLength={10}
                 className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 relative z-0"
               />
@@ -617,17 +681,17 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                           variant="outline"
                           className={`${getTypeColor(transaction.type)} border text-xs font-semibold`}
                         >
-                          {transaction.type}
+                          {getTranslatedType(transaction.type)}
                         </Badge>
                         <Badge
                           variant="outline"
                           className={`${getStatusColor(transaction.status)} border text-xs font-semibold`}
                         >
-                          {transaction.status}
+                          {getTranslatedStatus(transaction.status)}
                         </Badge>
                       </div>
 
-                      <p className="text-white font-medium mb-1">{transaction.description}</p>
+                      <p className="text-white font-medium mb-1">{getTranslatedDescription(transaction.description)}</p>
 
                       {transaction.reference_id && (
                         <p className="text-xs text-gray-400 mb-2">
