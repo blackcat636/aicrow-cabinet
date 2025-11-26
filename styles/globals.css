@@ -166,8 +166,24 @@ html {
   }
 }
 
+@keyframes toggle-bounce {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
 .animate-shimmer {
   animation: shimmer 2s infinite;
+}
+
+.animate-toggle-bounce {
+  animation: toggle-bounce 0.3s ease-in-out;
 }
 
 /* Custom Scrollbar (global) */

@@ -7,6 +7,7 @@ import { WorkflowRequirements, UserField } from '@/types/workflow';
 import { XIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Switch } from '@/components/ui/switch';
 import { useTranslations } from 'next-intl';
 
 interface WorkflowExecuteModalProps {
@@ -189,8 +190,16 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         const value = prefix ? (formData[prefix]?.[field.key]) : formData[field.key];
 
         // Check if field is empty
+        // For boolean fields, only undefined/null is considered empty (false is a valid value)
         // For enum fields, also check if value is valid (not just empty string)
-        let isEmpty = value === undefined || value === null || value === '';
+        let isEmpty = false;
+        
+        if (field.type === 'boolean') {
+          // For boolean fields, only undefined/null is considered empty
+          isEmpty = value === undefined || value === null;
+        } else {
+          isEmpty = value === undefined || value === null || value === '';
+        }
         
         // For enum fields, check if value is in valid options
         if (field.type === 'enum' && !isEmpty && field.options && field.options.length > 0) {
@@ -204,7 +213,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         
         // Check required fields
         if (field.required && isEmpty) {
-          newErrors[fullKey] = `${field.label} is required`;
+          newErrors[fullKey] = t('fieldRequired', { field: field.label }) || `${field.label} is required`;
           return;
         }
 
@@ -239,6 +248,16 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
 
         // Validate array fields
         if (field.type === 'array') {
+          const isSimpleArrayDropdown =
+            field.options && field.options.length > 0 && field.itemType === 'string';
+
+          // For "array" fields that actually represent a simple dropdown
+          // (itemType string + flat options), we treat them like a single-value enum
+          // and skip strict array-shape validation.
+          if (isSimpleArrayDropdown) {
+            return;
+          }
+
           if (!Array.isArray(value)) {
             newErrors[fullKey] = `${field.label} must be an array`;
             return;
@@ -459,30 +478,99 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
           </div>
         );
 
-      case 'boolean':
+      case 'boolean': {
+        const handleInfoClick = (e: React.MouseEvent) => {
+          e.preventDefault();
+          e.stopPropagation();
+          const description = translatedDescription || field.description;
+          if (description) {
+            toast.info(description, {
+              duration: 5000,
+            });
+          }
+        };
+
         return (
           <div key={field.key} className="space-y-2">
-            <label className="flex items-center gap-3 cursor-pointer">
-              <input
-                type="checkbox"
+            <div className="flex items-center gap-3">
+              <Switch
                 checked={value || false}
-                onChange={(e) => handleFieldChange(field.key, e.target.checked, parentKey)}
-                className="w-5 h-5 rounded border-gray-600 bg-[#1a1b1f] text-purple-600 focus:ring-purple-500 focus:ring-offset-0"
+                onCheckedChange={(checked) => handleFieldChange(field.key, checked, parentKey)}
               />
-              <span className="text-sm font-medium text-gray-300">
-                {translatedLabel || field.label}
-                {field.required && <span className="text-red-400 ml-1">*</span>}
-              </span>
-            </label>
-            {field.description && (
-              <p className="text-xs text-gray-400 ml-8">{translatedDescription || field.description}</p>
-            )}
-            {hasError && <p className="text-xs text-red-400 ml-8">{error}</p>}
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-300">
+                  {translatedLabel || field.label}
+                  {field.required && <span className="text-red-400 ml-1">*</span>}
+                </span>
+                {(translatedDescription || field.description) && (
+                  <button
+                    type="button"
+                    onClick={handleInfoClick}
+                    className="text-gray-400 hover:text-purple-400 transition-colors duration-200 cursor-pointer"
+                    title={translatedDescription || field.description || ''}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+            {hasError && <p className="text-xs text-red-400 ml-14">{error}</p>}
           </div>
         );
+      }
 
-      case 'array':
-        const arrayValue = (value as any[]) || [];
+      case 'array': {
+        const isSimpleArrayDropdown =
+          field.options && field.options.length > 0 && field.itemType === 'string';
+
+        // Special case: backend sends "array" with options as a simple dropdown
+        if (isSimpleArrayDropdown) {
+          const enumOptions = field.options!;
+          const currentValue =
+            typeof value === 'string'
+              ? value
+              : Array.isArray(value) && value.length > 0
+              ? value[0]
+              : '';
+
+          return (
+            <div key={field.key} className="space-y-2">
+              <label className="block text-sm font-medium text-gray-300">
+                {translatedLabel || field.label}
+                {field.required && <span className="text-red-400 ml-1">*</span>}
+              </label>
+              {field.description && (
+                <p className="text-xs text-gray-400">{translatedDescription || field.description}</p>
+              )}
+              <select
+                value={currentValue !== undefined && currentValue !== null ? String(currentValue) : ''}
+                onChange={(e) => {
+                  const selected = e.target.value;
+                  const option = enumOptions.find((opt) => String(opt.value) === selected);
+                  handleFieldChange(field.key, option ? option.value : selected, parentKey);
+                }}
+                className={`w-full px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white focus:outline-none focus:ring-2 transition-all ${
+                  hasError
+                    ? 'border-red-500 focus:ring-red-500/50'
+                    : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
+                }`}
+              >
+                {!field.required && <option value="">{t('select')}</option>}
+                {enumOptions.map((option) => (
+                  <option key={String(option.value)} value={String(option.value)}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {hasError && <p className="text-xs text-red-400">{error}</p>}
+            </div>
+          );
+        }
+
+        // Regular array input (without options)
+        const arrayValue = Array.isArray(value) ? value : [];
         return (
           <div key={field.key} className="space-y-2">
             <label className="block text-sm font-medium text-gray-300">
@@ -504,7 +592,8 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                     type={field.itemType === 'number' ? 'number' : 'text'}
                     value={item || ''}
                     onChange={(e) => {
-                      const newValue = field.itemType === 'number' ? Number(e.target.value) : e.target.value;
+                      const newValue =
+                        field.itemType === 'number' ? Number(e.target.value) : e.target.value;
                       handleArrayItemChange(field.key, index, newValue);
                     }}
                     className={`flex-1 px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
@@ -536,6 +625,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
             {hasError && <p className="text-xs text-red-400">{error}</p>}
           </div>
         );
+      }
 
       case 'enum':
         const enumOptions = field.options || (field.enum ? field.enum.map(v => ({ label: String(v), value: v })) : []);
