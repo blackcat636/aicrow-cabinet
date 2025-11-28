@@ -8,6 +8,7 @@ import { XIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Switch } from '@/components/ui/switch';
+import { InfoIcon } from '@/components/ui/InfoIcon';
 import { useTranslations } from 'next-intl';
 
 interface WorkflowExecuteModalProps {
@@ -424,6 +425,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
     const hasError = !!error;
     const translatedLabel = translateFieldText(field.label, 'label');
     const translatedDescription = translateFieldText(field.description, 'description');
+    const translatedHint = field.hint || '';
 
     switch (field.type) {
       case 'string':
@@ -431,13 +433,13 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
       case 'url':
         return (
           <div key={field.key} className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
               {translatedLabel || field.label}
-              {field.required && <span className="text-red-400 ml-1">*</span>}
+              {field.required && <span className="text-red-400">*</span>}
+              {(translatedDescription || field.description) && (
+                <InfoIcon description={translatedDescription || field.description || ''} />
+              )}
             </label>
-            {field.description && (
-              <p className="text-xs text-gray-400">{translatedDescription || field.description}</p>
-            )}
             <input
               type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : 'text'}
               value={value || ''}
@@ -447,7 +449,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                   ? 'border-red-500 focus:ring-red-500/50'
                   : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
               }`}
-              placeholder={field.placeholder || translatedDescription || t('enterField', { field: (translatedLabel || field.label).toLowerCase() })}
+              placeholder={translatedHint || field.placeholder || ''}
             />
             {hasError && <p className="text-xs text-red-400">{error}</p>}
           </div>
@@ -456,13 +458,13 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
       case 'number':
         return (
           <div key={field.key} className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
               {translatedLabel || field.label}
-              {field.required && <span className="text-red-400 ml-1">*</span>}
+              {field.required && <span className="text-red-400">*</span>}
+              {(translatedDescription || field.description) && (
+                <InfoIcon description={translatedDescription || field.description || ''} />
+              )}
             </label>
-            {field.description && (
-              <p className="text-xs text-gray-400">{translatedDescription || field.description}</p>
-            )}
             <input
               type="number"
               value={value || ''}
@@ -472,49 +474,27 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                   ? 'border-red-500 focus:ring-red-500/50'
                   : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
               }`}
-              placeholder={field.placeholder || translatedDescription || t('enterField', { field: (translatedLabel || field.label).toLowerCase() })}
+              placeholder={translatedHint || field.placeholder || ''}
             />
             {hasError && <p className="text-xs text-red-400">{error}</p>}
           </div>
         );
 
       case 'boolean': {
-        const handleInfoClick = (e: React.MouseEvent) => {
-          e.preventDefault();
-          e.stopPropagation();
-          const description = translatedDescription || field.description;
-          if (description) {
-            toast.info(description, {
-              duration: 5000,
-            });
-          }
-        };
-
         return (
           <div key={field.key} className="space-y-2">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-300">
+                {translatedLabel || field.label}
+                {field.required && <span className="text-red-400 ml-1">*</span>}
+              </span>
+              {(translatedDescription || field.description) && (
+                <InfoIcon description={translatedDescription || field.description || ''} />
+              )}
               <Switch
                 checked={value || false}
                 onCheckedChange={(checked) => handleFieldChange(field.key, checked, parentKey)}
               />
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-gray-300">
-                  {translatedLabel || field.label}
-                  {field.required && <span className="text-red-400 ml-1">*</span>}
-                </span>
-                {(translatedDescription || field.description) && (
-                  <button
-                    type="button"
-                    onClick={handleInfoClick}
-                    className="text-gray-400 hover:text-purple-400 transition-colors duration-200 cursor-pointer"
-                    title={translatedDescription || field.description || ''}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                  </button>
-                )}
-              </div>
             </div>
             {hasError && <p className="text-xs text-red-400 ml-14">{error}</p>}
           </div>
@@ -537,19 +517,23 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
 
           return (
             <div key={field.key} className="space-y-2">
-              <label className="block text-sm font-medium text-gray-300">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
                 {translatedLabel || field.label}
-                {field.required && <span className="text-red-400 ml-1">*</span>}
+                {field.required && <span className="text-red-400">*</span>}
+                {(translatedDescription || field.description) && (
+                  <InfoIcon description={translatedDescription || field.description || ''} />
+                )}
               </label>
-              {field.description && (
-                <p className="text-xs text-gray-400">{translatedDescription || field.description}</p>
-              )}
               <select
                 value={currentValue !== undefined && currentValue !== null ? String(currentValue) : ''}
                 onChange={(e) => {
                   const selected = e.target.value;
-                  const option = enumOptions.find((opt) => String(opt.value) === selected);
-                  handleFieldChange(field.key, option ? option.value : selected, parentKey);
+                  if (selected === '') {
+                    handleFieldChange(field.key, '', parentKey);
+                  } else {
+                    const option = enumOptions.find((opt) => String(opt.value) === selected);
+                    handleFieldChange(field.key, option ? option.value : selected, parentKey);
+                  }
                 }}
                 className={`w-full px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white focus:outline-none focus:ring-2 transition-all ${
                   hasError
@@ -557,7 +541,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                     : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
                 }`}
               >
-                {!field.required && <option value="">{t('select')}</option>}
+                <option value="">{t('select')}</option>
                 {enumOptions.map((option) => (
                   <option key={String(option.value)} value={String(option.value)}>
                     {option.label}
@@ -573,18 +557,18 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         const arrayValue = Array.isArray(value) ? value : [];
         return (
           <div key={field.key} className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
               {translatedLabel || field.label}
-              {field.required && <span className="text-red-400 ml-1">*</span>}
+              {field.required && <span className="text-red-400">*</span>}
               {field.minItems !== undefined && field.maxItems !== undefined && (
-                <span className="text-gray-400 text-xs font-normal ml-2">
+                <span className="text-gray-400 text-xs font-normal">
                   ({field.minItems}-{field.maxItems} {t('items')})
                 </span>
               )}
+              {(translatedDescription || field.description) && (
+                <InfoIcon description={translatedDescription || field.description || ''} />
+              )}
             </label>
-            {field.description && (
-              <p className="text-xs text-gray-400">{translatedDescription || field.description}</p>
-            )}
             <div className="space-y-2">
               {arrayValue.map((item, index) => (
                 <div key={index} className="flex gap-2">
@@ -631,20 +615,24 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         const enumOptions = field.options || (field.enum ? field.enum.map(v => ({ label: String(v), value: v })) : []);
         return (
           <div key={field.key} className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
               {translatedLabel || field.label}
-              {field.required && <span className="text-red-400 ml-1">*</span>}
+              {field.required && <span className="text-red-400">*</span>}
+              {(translatedDescription || field.description) && (
+                <InfoIcon description={translatedDescription || field.description || ''} />
+              )}
             </label>
-            {field.description && (
-              <p className="text-xs text-gray-400">{translatedDescription || field.description}</p>
-            )}
             <select
               value={value !== undefined && value !== null ? String(value) : ''}
               onChange={(e) => {
                 const selectedValue = e.target.value;
-                // Convert to proper type if needed
-                const option = enumOptions.find(opt => String(opt.value) === selectedValue);
-                handleFieldChange(field.key, option ? option.value : selectedValue, parentKey);
+                if (selectedValue === '') {
+                  handleFieldChange(field.key, '', parentKey);
+                } else {
+                  // Convert to proper type if needed
+                  const option = enumOptions.find(opt => String(opt.value) === selectedValue);
+                  handleFieldChange(field.key, option ? option.value : selectedValue, parentKey);
+                }
               }}
               className={`w-full px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white focus:outline-none focus:ring-2 transition-all ${
                 hasError
@@ -652,7 +640,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                   : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
               }`}
             >
-              {!field.required && <option value="">{t('select')}</option>}
+              <option value="">{t('select')}</option>
               {enumOptions.map((option) => (
                 <option key={String(option.value)} value={String(option.value)}>
                   {option.label}

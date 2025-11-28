@@ -398,26 +398,6 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
             </div>
           </div>
 
-
-          {/* Input Data Template */}
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {t('inputDataTemplate')}
-            </label>
-            <textarea
-              value={formData.inputDataTemplate || ''}
-              onChange={(e) => setFormData({ ...formData, inputDataTemplate: e.target.value })}
-              placeholder={t('inputDataTemplatePlaceholder')}
-              rows={4}
-              className={`w-full p-3.5 border rounded-lg bg-gray-800/50 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 font-mono text-sm transition-all resize-none ${
-                errors.inputDataTemplate ? 'border-red-500' : 'border-gray-600 hover:border-gray-500'
-              }`}
-            />
-            {errors.inputDataTemplate && (
-              <p className="mt-1 text-sm text-red-400">{errors.inputDataTemplate}</p>
-            )}
-          </div>
-
           {/* Actions - Fixed at bottom */}
           <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-700/50 flex-shrink-0">
             <button

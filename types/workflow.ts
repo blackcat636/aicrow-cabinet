@@ -101,6 +101,7 @@ export interface UserField {
   type: 'string' | 'number' | 'boolean' | 'email' | 'url' | 'array' | 'object' | 'enum';
   required?: boolean;
   description?: string;
+  hint?: string;
   placeholder?: string;
   defaultValue?: any;
   itemType?: 'string' | 'number' | 'boolean' | 'email' | 'url';
