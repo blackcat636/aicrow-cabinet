@@ -26,6 +26,8 @@ import { WorkflowForm } from '@/components/workflow/WorkflowForm';
 import { WorkflowExecuteModal } from '@/components/workflow/WorkflowExecuteModal';
 import { ResultDisplay } from '@/components/workflow/ResultDisplay';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ChainToWorkflowModal } from '@/components/workflow/ChainToWorkflowModal';
+import { AvailableChainsResponse } from '@/types/workflow';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -79,11 +81,17 @@ const ExecutionCard: React.FC<{
   getTriggerTypeLabel: (triggerType: string) => string;
 }> = ({ execution, getStatusColor, getStatusIcon, getStatusLabel, getTriggerTypeLabel }) => {
   const t = useTranslations('workflow');
+  const tExecutions = useTranslations('executions');
+  const tCommon = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const [availableChains, setAvailableChains] = useState<AvailableChainsResponse | null>(null);
+  const [showChainModal, setShowChainModal] = useState(false);
+  const [showRestartConfirm, setShowRestartConfirm] = useState(false);
+  const [restarting, setRestarting] = useState(false);
 
   const formatDateTime = useCallback(
     (value?: string | null) => (value ? new Date(value).toLocaleString(locale) : '-'),
@@ -107,6 +115,37 @@ const ExecutionCard: React.FC<{
   const handleMouseLeave = useCallback(() => {
     setIsHovering(false);
   }, []);
+
+  const isCompleted = execution.status === 'completed' || execution.status === '1';
+
+  // Load available chains when execution is completed
+  useEffect(() => {
+    if (isCompleted && execution.id) {
+      workflowApi.getAvailableChains(execution.id)
+        .then(data => setAvailableChains(data))
+        .catch(() => {
+          // Silently fail - chains are optional
+        });
+    }
+  }, [isCompleted, execution.id]);
+
+  const handleRestart = async () => {
+    try {
+      setRestarting(true);
+      const data = await workflowApi.restartExecution(execution.id);
+      if (data.id) {
+        toast.success('Виконання перезапущено');
+        router.push(`/dashboard/executions/${data.id}`, { locale });
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'Не вдалося перезапустити виконання');
+    } finally {
+      setRestarting(false);
+      setShowRestartConfirm(false);
+    }
+  };
+
+  const canChain = isCompleted && availableChains && availableChains.availableChains.length > 0;
 
   return (
     <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30">
@@ -166,12 +205,32 @@ const ExecutionCard: React.FC<{
           {execution.inputData && (
             <div className="mb-3">
               <h4 className="text-sm font-medium text-gray-300 mb-1">{t('inputData')}:</h4>
-              <div className="p-2 bg-gray-700 rounded text-xs font-mono text-gray-300">
-                <TruncatedText 
-                  text={execution.inputData} 
-                  maxLength={50}
-                  className="break-all whitespace-pre-wrap"
-                />
+              <div className="p-2 bg-gray-700 rounded text-xs text-gray-300">
+                {typeof execution.inputData === 'string' ? (
+                  <TruncatedText 
+                    text={execution.inputData} 
+                    maxLength={50}
+                    className="break-all whitespace-pre-wrap font-mono"
+                  />
+                ) : (
+                  <div className="space-y-1">
+                    {Object.entries(execution.inputData).slice(0, 3).map(([key, value]) => (
+                      <div key={key} className="break-all">
+                        <span className="font-medium text-gray-400">{key}:</span>{' '}
+                        <span>
+                          {typeof value === 'object' && value !== null
+                            ? JSON.stringify(value)
+                            : String(value)}
+                        </span>
+                      </div>
+                    ))}
+                    {Object.keys(execution.inputData).length > 3 && (
+                      <div className="text-gray-400 text-xs">
+                        ... і ще {Object.keys(execution.inputData).length - 3}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -208,8 +267,47 @@ const ExecutionCard: React.FC<{
             </div>
           )}
 
+          {/* Action Buttons */}
+          {isCompleted && (
+            <div className="mb-3 pt-3 border-t border-gray-600">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowRestartConfirm(true);
+                  }}
+                  disabled={restarting}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gray-700 text-white rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {restarting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                      {tExecutions('restarting')}
+                    </>
+                  ) : (
+                    <>
+                      🔄 {tExecutions('restart')}
+                    </>
+                  )}
+                </button>
+
+                {canChain && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowChainModal(true);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-500 hover:to-purple-600 transition-all"
+                  >
+                    ➡️ {tExecutions('chainToWorkflow')}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Execution Details */}
-          <div className="pt-3 border-t border-gray-600">
+          <div className={`${isCompleted ? '' : 'pt-3 border-t border-gray-600'}`}>
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span>{t('executionId')}: {execution.id}</span>
               <div className="flex items-center gap-3">
@@ -229,6 +327,31 @@ const ExecutionCard: React.FC<{
           </div>
         </div>
       </div>
+
+      {/* Modals */}
+      <ConfirmDialog
+        isOpen={showRestartConfirm}
+        onClose={() => setShowRestartConfirm(false)}
+        onConfirm={handleRestart}
+        title={tExecutions('restartExecution')}
+        message={tExecutions('restartExecutionConfirm')}
+        confirmText={tExecutions('restart')}
+        cancelText={tCommon('cancel')}
+        type="warning"
+      />
+
+      {showChainModal && availableChains && (
+        <ChainToWorkflowModal
+          isOpen={showChainModal}
+          executionId={execution.id}
+          availableChains={availableChains.availableChains}
+          resultData={execution.resultData}
+          onClose={() => setShowChainModal(false)}
+          onSuccess={(newExecutionId) => {
+            router.push(`/dashboard/executions/${newExecutionId}`, { locale });
+          }}
+        />
+      )}
     </div>
   );
 };
@@ -627,7 +750,10 @@ export default function WorkflowDetailPage() {
       const searchValue = inputDataSearch.trim().toLowerCase();
       filtered = filtered.filter(execution => {
         const inputData = execution.inputData || '';
-        return inputData.toLowerCase().includes(searchValue);
+        const inputDataString = typeof inputData === 'string' 
+          ? inputData 
+          : JSON.stringify(inputData);
+        return inputDataString.toLowerCase().includes(searchValue);
       });
     }
 

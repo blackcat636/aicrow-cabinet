@@ -302,11 +302,24 @@ export default function ExecutionDetailsPage() {
               <div className="mb-4">
                 <h3 className="text-sm font-medium text-gray-300 mb-2">{t('inputData')}:</h3>
                 <div className="p-3 bg-gray-800/50 rounded border border-gray-700/50">
-                  <pre className="text-xs text-gray-300 whitespace-pre-wrap break-words">
-                    {typeof execution.inputData === 'string' 
-                      ? execution.inputData 
-                      : JSON.stringify(execution.inputData, null, 2)}
-                  </pre>
+                  {typeof execution.inputData === 'string' ? (
+                    <pre className="text-xs text-gray-300 whitespace-pre-wrap break-words">
+                      {execution.inputData}
+                    </pre>
+                  ) : (
+                    <div className="space-y-2">
+                      {Object.entries(execution.inputData).map(([key, value]) => (
+                        <div key={key} className="text-xs text-gray-300">
+                          <span className="font-medium text-gray-400">{key}:</span>{' '}
+                          <span className="break-words">
+                            {typeof value === 'object' && value !== null
+                              ? JSON.stringify(value)
+                              : String(value)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -398,6 +411,7 @@ export default function ExecutionDetailsPage() {
             isOpen={showChainModal}
             executionId={executionId}
             availableChains={availableChains.availableChains}
+            resultData={execution?.resultData}
             onClose={() => setShowChainModal(false)}
             onSuccess={(newExecutionId) => {
               router.push(`/dashboard/executions/${newExecutionId}`, { locale });

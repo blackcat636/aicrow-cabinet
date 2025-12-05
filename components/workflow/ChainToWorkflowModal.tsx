@@ -15,6 +15,7 @@ interface ChainToWorkflowModalProps {
   isOpen: boolean;
   executionId: number;
   availableChains: AvailableChain[];
+  resultData?: any; // Result data from source execution for auto-filling fields
   onClose: () => void;
   onSuccess: (newExecutionId: number) => void;
 }
@@ -23,6 +24,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   isOpen,
   executionId,
   availableChains,
+  resultData,
   onClose,
   onSuccess
 }) => {
@@ -32,6 +34,31 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   const [customMapping, setCustomMapping] = useState<Record<string, string>>({});
   const [useCustomMapping, setUseCustomMapping] = useState(false);
   const [additionalData, setAdditionalData] = useState<string>('{}');
+
+  // Format JSON string nicely
+  const formatJson = (jsonString: string): string => {
+    try {
+      const parsed = JSON.parse(jsonString);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      return jsonString;
+    }
+  };
+
+  // Handle additional data change with formatting
+  const handleAdditionalDataChange = (value: string) => {
+    setAdditionalData(value);
+    // Try to format on blur
+    try {
+      const formatted = formatJson(value);
+      if (formatted !== value) {
+        // Only update if formatting changed something (valid JSON)
+        setTimeout(() => setAdditionalData(formatted), 100);
+      }
+    } catch {
+      // Invalid JSON, keep as is
+    }
+  };
   const [userText, setUserText] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -40,20 +67,129 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   const [loadingRequirements, setLoadingRequirements] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
+  const [sourceResultData, setSourceResultData] = useState<any>(resultData);
+
+  // Whitelist of fields to show (currently only 'prompt')
+  const FIELD_WHITELIST = ['prompt'];
 
   const selectedChain = availableChains.find(c => c.userWorkflowId === selectedWorkflow);
   const defaultMapping = selectedChain?.defaultDataMapping || {};
 
+  // Function to parse template strings like {{resultData.url}} or {{url}} and extract values from resultData
+  // Note: data parameter is already the resultData object, not wrapped in {resultData: ...}
+  const parseTemplate = (template: string, data: any): any => {
+    if (!template || typeof template !== 'string') return template;
+    if (!data) return template;
+    
+    // Match patterns like {{resultData.url}} or {{url}} or {{resultData.path.to.value}}
+    const matches = template.match(/\{\{([^}]+)\}\}/g);
+    if (!matches) return template;
+    
+    // If the entire template is a single placeholder, return the value directly
+    if (matches.length === 1 && template.trim() === matches[0]) {
+      const path = matches[0].replace(/[{}]/g, '').trim();
+      const keys = path.split('.');
+      
+      // Navigate through the data object
+      let value = data;
+      let startIndex = 0;
+      
+      // If path starts with resultData, skip it since data IS resultData
+      if (keys[0] === 'resultData') {
+        startIndex = 1;
+      }
+      
+      // Navigate through the keys
+      for (let i = startIndex; i < keys.length; i++) {
+        if (value && typeof value === 'object' && keys[i] in value) {
+          value = value[keys[i]];
+        } else {
+          return template;
+        }
+      }
+      
+      return value !== undefined && value !== null ? value : template;
+    }
+    
+    // If multiple placeholders or mixed content, replace each placeholder
+    let result = template;
+    matches.forEach(match => {
+      const path = match.replace(/[{}]/g, '').trim();
+      const keys = path.split('.');
+      
+      // Navigate through the data object
+      let value = data;
+      let startIndex = 0;
+      
+      // If path starts with resultData, skip it since data IS resultData
+      if (keys[0] === 'resultData') {
+        startIndex = 1;
+      }
+      
+      for (let i = startIndex; i < keys.length; i++) {
+        if (value && typeof value === 'object' && keys[i] in value) {
+          value = value[keys[i]];
+        } else {
+          value = undefined;
+          break;
+        }
+      }
+      
+      // Replace the template with the actual value
+      if (value !== undefined && value !== null) {
+        result = result.replace(match, String(value));
+      }
+    });
+    
+    return result;
+  };
+
+  // Load source execution resultData if not provided
+  useEffect(() => {
+    if (isOpen && executionId) {
+      // Always try to get resultData from chain endpoint to get parent's resultData
+      // This ensures we get the correct parent resultData for chaining
+      workflowApi.getExecutionChain(executionId)
+        .then(chainData => {
+          // If this execution has a parent, use parent's resultData (this is the source for chaining)
+          if (chainData?.parent?.resultData) {
+            setSourceResultData(chainData.parent.resultData);
+          } else if (chainData?.execution?.resultData) {
+            // Otherwise use current execution's resultData
+            setSourceResultData(chainData.execution.resultData);
+          } else if (resultData) {
+            // Fallback to resultData from props
+            setSourceResultData(resultData);
+          }
+        })
+        .catch(() => {
+          // Fallback to resultData from props if chain endpoint fails
+          if (resultData) {
+            setSourceResultData(resultData);
+          }
+        });
+    } else if (resultData) {
+      setSourceResultData(resultData);
+    }
+  }, [isOpen, executionId, resultData]);
+
   // Load requirements for target workflow when selected
+  // Wait for sourceResultData to be loaded first if it's being fetched
   useEffect(() => {
     if (selectedChain?.workflowId && isOpen) {
-      loadTargetRequirements();
+      // Small delay to ensure sourceResultData is loaded if it was being fetched
+      const timer = setTimeout(() => {
+        loadTargetRequirements();
+      }, 100);
+      return () => clearTimeout(timer);
     } else {
       setTargetRequirements(null);
       setFormData({});
       setErrors({});
+      setAutoFilledFields(new Set());
     }
-  }, [selectedChain?.workflowId, isOpen]);
+  }, [selectedChain?.workflowId, isOpen, sourceResultData]);
 
   const loadTargetRequirements = async () => {
     if (!selectedChain?.workflowId) return;
@@ -96,10 +232,95 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       };
       
       setDefaults(fields);
+      
+      // Auto-fill fields from resultData even if defaultMapping is empty
+      // This handles cases where backend doesn't provide defaultDataMapping
+      if (sourceResultData) {
+        const autoFilled = new Set<string>();
+        
+        // Helper function to find field by key (including nested fields)
+        const findFieldByKey = (key: string, fieldList: UserField[]): UserField | null => {
+          for (const field of fieldList) {
+            if (field.key === key) return field;
+            if (field.type === 'object' && field.fields) {
+              const found = findFieldByKey(key, field.fields);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        
+        // If defaultMapping exists, use it
+        if (defaultMapping && Object.keys(defaultMapping).length > 0) {
+          Object.entries(defaultMapping).forEach(([targetField, template]) => {
+          if (typeof template === 'string') {
+            const mappedValue = parseTemplate(template, sourceResultData);
+            if (mappedValue !== undefined && mappedValue !== null && mappedValue !== template) {
+              // Find the field in requirements
+              const field = findFieldByKey(targetField, fields);
+              if (field) {
+                // For array fields, convert single value to array if needed
+                if (field.type === 'array') {
+                  // If mappedValue is a string (like URL), wrap it in array
+                  if (typeof mappedValue === 'string') {
+                    initialData[targetField] = [mappedValue];
+                  } else if (Array.isArray(mappedValue)) {
+                    initialData[targetField] = mappedValue;
+                  } else {
+                    initialData[targetField] = [mappedValue];
+                  }
+                  autoFilled.add(targetField);
+                } else {
+                  // For non-array fields, auto-fill if in whitelist and required
+                  // OR if field is required (even if not in whitelist, we still want to fill it for backend)
+                  if (field.required) {
+                    initialData[targetField] = mappedValue;
+                    autoFilled.add(targetField);
+                  } else if (FIELD_WHITELIST.includes(field.key)) {
+                    // Also fill non-required fields if in whitelist
+                    initialData[targetField] = mappedValue;
+                    autoFilled.add(targetField);
+                  }
+                }
+              }
+            }
+          }
+        });
+        } else {
+          // If no defaultMapping, try to auto-fill common patterns
+          // Look for fields that might accept image URLs from resultData
+          // Check if resultData has a URL (image result)
+          if (sourceResultData?.url && typeof sourceResultData.url === 'string') {
+            fields.forEach(field => {
+              // Check if field name suggests it accepts images/URLs
+              const fieldNameLower = field.key.toLowerCase();
+              const isImageField = fieldNameLower.includes('img') || 
+                                   fieldNameLower.includes('image') || 
+                                   fieldNameLower.includes('url') ||
+                                   fieldNameLower === 'arrayimg';
+              
+              if (isImageField) {
+                // For array fields, add URL to array
+                if (field.type === 'array') {
+                  initialData[field.key] = [sourceResultData.url];
+                  autoFilled.add(field.key);
+                } else if (field.type === 'string' && fieldNameLower.includes('array')) {
+                  // Handle case where arrayImg might be defined as string type but should be array
+                  // This is a workaround for backend type definition issues
+                  initialData[field.key] = [sourceResultData.url];
+                  autoFilled.add(field.key);
+                }
+              }
+            });
+          }
+        }
+        
+        setAutoFilledFields(autoFilled);
+      }
+      
       setFormData(initialData);
     } catch (err: any) {
       // Silently handle error - requirements may not be available
-      console.debug('Could not load target workflow requirements:', err.message);
       setTargetRequirements(null);
     } finally {
       setLoadingRequirements(false);
@@ -148,6 +369,10 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
 
     const validateFields = (fieldList: UserField[], prefix = '') => {
       fieldList.forEach(field => {
+        // Skip hidden fields and fields not in whitelist
+        if (field.hidden === true || !FIELD_WHITELIST.includes(field.key)) {
+          return;
+        }
         const fullKey = prefix ? `${prefix}.${field.key}` : field.key;
         const value = prefix ? (formData[prefix]?.[field.key]) : formData[field.key];
 
@@ -185,6 +410,14 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           }
         }
 
+        // Check maxItems for arrays
+        if (field.type === 'array' && field.maxItems !== undefined) {
+          if (Array.isArray(value) && value.length > field.maxItems) {
+            newErrors[fullKey] = `${field.label} must have at most ${field.maxItems} items`;
+            return;
+          }
+        }
+
         if (field.type === 'object' && field.fields) {
           validateFields(field.fields, fullKey);
         }
@@ -197,10 +430,21 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   };
 
   const renderField = (field: UserField, parentKey?: string) => {
+    // Skip hidden fields
+    if (field.hidden === true) {
+      return null;
+    }
+
+    // Only show fields in whitelist
+    if (!FIELD_WHITELIST.includes(field.key)) {
+      return null;
+    }
+
     const fullKey = parentKey ? `${parentKey}.${field.key}` : field.key;
     const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
     const error = errors[fullKey];
     const hasError = !!error;
+    const isAutoFilled = autoFilledFields.has(field.key);
 
     switch (field.type) {
       case 'string':
@@ -222,10 +466,18 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
               className={`w-full px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
                 hasError
                   ? 'border-red-500 focus:ring-red-500/50'
+                  : isAutoFilled
+                  ? 'border-green-500/50 focus:border-green-500 focus:ring-green-500/50'
                   : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
               }`}
               placeholder={field.placeholder || field.hint || ''}
             />
+            {isAutoFilled && (
+              <p className="text-xs text-green-400 flex items-center gap-1">
+                <span>✓</span>
+                <span>Автоматично заповнено з попереднього workflow</span>
+              </p>
+            )}
             {hasError && <p className="text-xs text-red-400">{error}</p>}
           </div>
         );
@@ -384,10 +636,19 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
 
         // Regular array input (without options)
         const arrayValue = Array.isArray(value) ? value : [];
+        const canAddMore = field.maxItems === undefined || arrayValue.length < field.maxItems;
+        const canRemove = field.minItems === undefined || arrayValue.length > field.minItems;
+        
+        // Check if array has enum itemType (array of enum values)
+        const isEnumArray = field.itemType === 'enum' || (field.options && field.options.length > 0 && field.itemType === 'string');
+        const enumOptions = isEnumArray ? (field.options || []) : [];
         
         const handleArrayItemAdd = () => {
+          if (!canAddMore) return; // Don't add if maxItems reached
           const currentArray = Array.isArray(value) ? [...value] : [];
-          handleFieldChange(field.key, [...currentArray, ''], parentKey);
+          // For enum arrays, add first option value, otherwise empty string
+          const newItem = isEnumArray && enumOptions.length > 0 ? enumOptions[0].value : '';
+          handleFieldChange(field.key, [...currentArray, newItem], parentKey);
         };
 
         const handleArrayItemChange = (index: number, newValue: any) => {
@@ -397,6 +658,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
         };
 
         const handleArrayItemRemove = (index: number) => {
+          if (!canRemove) return; // Don't remove if minItems reached
           const currentArray = Array.isArray(value) ? [...value] : [];
           currentArray.splice(index, 1);
           handleFieldChange(field.key, currentArray, parentKey);
@@ -419,31 +681,67 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
             <div className="space-y-2">
               {arrayValue.map((item, index) => (
                 <div key={index} className="flex gap-2">
-                  <input
-                    type={field.itemType === 'number' ? 'number' : 'text'}
-                    value={item || ''}
-                    onChange={(e) => {
-                      const newValue =
-                        field.itemType === 'number' ? Number(e.target.value) : e.target.value;
-                      handleArrayItemChange(index, newValue);
-                    }}
-                    className={`flex-1 px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
-                      hasError
-                        ? 'border-red-500 focus:ring-red-500/50'
-                        : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
-                    }`}
-                    placeholder={`Item ${index + 1}`}
-                  />
+                  {isEnumArray ? (
+                    <div className="relative flex-1">
+                      <select
+                        value={item !== undefined && item !== null ? String(item) : ''}
+                        onChange={(e) => {
+                          const selectedValue = e.target.value;
+                          if (selectedValue === '') {
+                            handleArrayItemChange(index, '');
+                          } else {
+                            const option = enumOptions.find(opt => String(opt.value) === selectedValue);
+                            handleArrayItemChange(index, option ? option.value : selectedValue);
+                          }
+                        }}
+                        className={`w-full pl-4 pr-12 py-2.5 bg-[#1a1b1f] border rounded-lg text-white focus:outline-none focus:ring-2 transition-all appearance-none ${
+                          hasError
+                            ? 'border-red-500 focus:ring-red-500/50'
+                            : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
+                        }`}
+                        style={{ paddingRight: '3.5rem' }}
+                      >
+                        <option value="">{tCommon('select') || 'Select...'}</option>
+                        {enumOptions.map((option) => (
+                          <option key={String(option.value)} value={String(option.value)}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                        <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </div>
+                  ) : (
+                    <input
+                      type={field.itemType === 'number' ? 'number' : 'text'}
+                      value={item || ''}
+                      onChange={(e) => {
+                        const newValue =
+                          field.itemType === 'number' ? Number(e.target.value) : e.target.value;
+                        handleArrayItemChange(index, newValue);
+                      }}
+                      className={`flex-1 px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
+                        hasError
+                          ? 'border-red-500 focus:ring-red-500/50'
+                          : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
+                      }`}
+                      placeholder={`Item ${index + 1}`}
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={() => handleArrayItemRemove(index)}
-                    className="px-4 py-2.5 bg-red-600/20 border border-red-600 text-red-400 rounded-lg hover:bg-red-600/30 transition-all"
+                    disabled={!canRemove}
+                    className="px-4 py-2.5 bg-red-600/20 border border-red-600 text-red-400 rounded-lg hover:bg-red-600/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Remove
                   </button>
                 </div>
               ))}
-              {(!field.maxItems || arrayValue.length < field.maxItems) && (
+              {canAddMore && (
                 <button
                   type="button"
                   onClick={handleArrayItemAdd}
@@ -451,6 +749,11 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                 >
                   Add Item
                 </button>
+              )}
+              {!canAddMore && field.maxItems !== undefined && (
+                <p className="text-xs text-gray-400">
+                  Maximum {field.maxItems} item(s) allowed
+                </p>
               )}
             </div>
             {hasError && <p className="text-xs text-red-400">{error}</p>}
@@ -500,36 +803,101 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       
       const buildPayload = (fieldList: UserField[], parentKey?: string) => {
         fieldList.forEach(field => {
+          // Skip hidden fields
+          if (field.hidden === true) {
+            return;
+          }
+
           const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
+          const isInWhitelist = FIELD_WHITELIST.includes(field.key);
+          const isInDefaultMapping = defaultMapping && field.key in defaultMapping;
+          const isAutoFilled = autoFilledFields.has(field.key);
           
           if (field.type === 'object' && field.fields) {
             return;
           } else {
             // Determine if field should be included in payload
             let shouldInclude = false;
+            let valueToSend: any = value;
             
-            // For arrays, include if:
-            // 1. It's required (even if empty, backend will validate)
-            // 2. It has values (not empty array)
-            // 3. It has minItems requirement (even if empty, backend will validate)
-            if (field.type === 'array') {
-              if (field.required || (field.minItems !== undefined && field.minItems > 0)) {
-                // Always include required arrays or arrays with minItems
+            // For fields in whitelist OR fields that are auto-filled from defaultMapping - use form data
+            if (isInWhitelist || isAutoFilled) {
+              // For arrays, include if:
+              // 1. It has values (not empty array) - always include
+              // 2. It's required or has minItems - include even if empty (backend will validate)
+              if (field.type === 'array') {
+                if (Array.isArray(value) && value.length > 0) {
+                  // Include non-empty arrays
+                  shouldInclude = true;
+                } else if (field.required || (field.minItems !== undefined && field.minItems > 0)) {
+                  // Include required arrays or arrays with minItems (even if empty)
+                  shouldInclude = true;
+                }
+              } else if (value !== undefined && value !== null && value !== '') {
+                // For other types, include if not empty
                 shouldInclude = true;
-              } else if (Array.isArray(value) && value.length > 0) {
-                // Include non-empty arrays
+              } else if (field.required) {
+                // Include required fields even if empty
                 shouldInclude = true;
               }
-            } else if (value !== undefined && value !== null && value !== '') {
-              // For other types, include if not empty
-              shouldInclude = true;
+            } else {
+              // For fields NOT in whitelist - check if they were auto-filled from defaultMapping
+              const isInDefaultMapping = defaultMapping && field.key in defaultMapping;
+              
+              // If field was auto-filled from defaultMapping, include it in payload
+              if (isAutoFilled) {
+                shouldInclude = true;
+                // Use the auto-filled value
+                valueToSend = value;
+              } else if (field.required && !isInDefaultMapping) {
+                // For required fields not in defaultMapping, include with default value
+                shouldInclude = true;
+                
+                // Set default value based on field type
+                if (value === undefined || value === null || value === '') {
+                  if (field.defaultValue !== undefined && field.defaultValue !== null) {
+                    valueToSend = field.defaultValue;
+                  } else if (field.default !== undefined && field.default !== null) {
+                    valueToSend = field.default;
+                  } else {
+                    // Generate default value based on type
+                    switch (field.type) {
+                      case 'string':
+                      case 'email':
+                      case 'url':
+                        valueToSend = '';
+                        break;
+                      case 'number':
+                        valueToSend = 0;
+                        break;
+                      case 'boolean':
+                        valueToSend = false;
+                        break;
+                      case 'array':
+                        valueToSend = [];
+                        break;
+                      case 'enum':
+                        // Use first option if available
+                        if (field.options && field.options.length > 0) {
+                          valueToSend = field.options[0].value;
+                        } else if (field.enum && field.enum.length > 0) {
+                          valueToSend = field.enum[0];
+                        } else {
+                          valueToSend = '';
+                        }
+                        break;
+                      default:
+                        valueToSend = '';
+                    }
+                  }
+                }
+              }
             }
             
             if (shouldInclude) {
-              let valueToSend = value;
-              
-              if (field.type === 'enum' && field.options && field.options.length > 0) {
-                const selectedOption = field.options.find(opt => String(opt.value) === String(value));
+              // For enum fields with options, convert value to label if needed
+              if (field.type === 'enum' && field.options && field.options.length > 0 && isInWhitelist) {
+                const selectedOption = field.options.find(opt => String(opt.value) === String(valueToSend));
                 if (selectedOption) {
                   valueToSend = selectedOption.label;
                 }
@@ -550,26 +918,11 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
         buildPayload(fields);
       }
 
-      // Merge form data with additional data
-      let parsedAdditionalData: Record<string, any> = {};
-      if (additionalData.trim() && additionalData !== '{}') {
-        try {
-          parsedAdditionalData = JSON.parse(additionalData);
-        } catch (e) {
-          setError(t('chainModal.invalidJson'));
-          setLoading(false);
-          return;
-        }
-      }
-
-      // Merge form payload with additional data (form data takes precedence)
-      const mergedData = { ...parsedAdditionalData, ...formPayload };
-
       const request: ChainExecutionRequest = {
         targetUserWorkflowId: selectedWorkflow,
-        dataMapping: useCustomMapping ? customMapping : undefined,
-        additionalData: Object.keys(mergedData).length > 0 ? mergedData : undefined,
-        userText: userText || undefined
+        // Use custom mapping if enabled, otherwise use default mapping (backend will apply it)
+        dataMapping: useCustomMapping ? customMapping : (Object.keys(defaultMapping).length > 0 ? defaultMapping : undefined),
+        additionalData: Object.keys(formPayload).length > 0 ? formPayload : undefined
       };
 
       const data = await workflowApi.chainExecution(executionId, request);
@@ -717,68 +1070,39 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                   </div>
                 ) : null}
 
-                {/* Additional Data */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('chainModal.additionalData')}
-                  </label>
-                  <textarea
-                    value={additionalData}
-                    onChange={(e) => setAdditionalData(e.target.value)}
-                    placeholder='{"key": "value"}'
-                    rows={4}
-                    className="w-full p-3.5 border rounded-lg bg-gray-800/50 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all resize-none border-gray-600 hover:border-gray-500 font-mono text-sm"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">{t('chainModal.additionalDataHint')}</p>
-                </div>
-
-                {/* User Text */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    {t('chainModal.userText')}
-                  </label>
-                  <textarea
-                    value={userText}
-                    onChange={(e) => setUserText(e.target.value)}
-                    placeholder={t('chainModal.userTextPlaceholder')}
-                    rows={3}
-                    className="w-full p-3.5 border rounded-lg bg-gray-800/50 text-white placeholder-gray-500 focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all resize-none border-gray-600 hover:border-gray-500"
-                  />
-                </div>
-
                 {/* Error Message */}
                 {error && (
                   <div className="p-3 bg-red-900/20 border border-red-500/50 rounded-lg text-red-300 text-sm">
                     {error}
                   </div>
                 )}
+              </div>
 
-                {/* Actions */}
-                <div className="flex items-center justify-end gap-3 pt-6 mt-6 border-t border-gray-700/50 flex-shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setConfirmOpen(true)}
-                    className="px-6 py-2.5 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-800/50 hover:border-gray-500 transition-all font-medium"
-                    disabled={loading}
-                  >
-                    {tCommon('cancel')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSubmit}
-                    disabled={loading || !selectedWorkflow}
-                    className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-500 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02] active:scale-[0.98]"
-                  >
-                    {loading ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                        {t('chainModal.chaining')}
-                      </>
-                    ) : (
-                      t('chainModal.chain')
-                    )}
-                  </button>
-                </div>
+              {/* Actions - moved outside scrollable area */}
+              <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-700/50 flex-shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setConfirmOpen(true)}
+                  className="px-6 py-2.5 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-800/50 hover:border-gray-500 transition-all font-medium"
+                  disabled={loading}
+                >
+                  {tCommon('cancel')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={loading || !selectedWorkflow}
+                  className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-500 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  {loading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      {t('chainModal.chaining')}
+                    </>
+                  ) : (
+                    t('chainModal.chain')
+                  )}
+                </button>
               </div>
             </div>
           </div>

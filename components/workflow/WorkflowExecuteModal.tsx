@@ -469,6 +469,11 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
   };
 
   const renderField = (field: UserField, parentKey?: string) => {
+    // Skip hidden fields
+    if (field.hidden === true) {
+      return null;
+    }
+
     const fullKey = parentKey ? `${parentKey}.${field.key}` : field.key;
     const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
     const error = errors[fullKey];

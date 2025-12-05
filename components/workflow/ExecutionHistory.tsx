@@ -382,10 +382,23 @@ const ExecutionCard: React.FC<{
           {execution.inputData && (
             <div className="mb-4 mt-4">
               <h4 className="text-sm font-medium text-gray-300 mb-2">{tWorkflow('inputData')}:</h4>
-              <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300 break-all">
-                {typeof execution.inputData === 'string' 
-                  ? execution.inputData 
-                  : JSON.stringify(execution.inputData, null, 2)}
+              <div className="p-3 bg-gray-700 rounded text-sm text-gray-300">
+                {typeof execution.inputData === 'string' ? (
+                  <pre className="whitespace-pre-wrap break-all font-mono">{execution.inputData}</pre>
+                ) : (
+                  <div className="space-y-2">
+                    {Object.entries(execution.inputData).map(([key, value]) => (
+                      <div key={key} className="break-all">
+                        <span className="font-medium text-gray-400">{key}:</span>{' '}
+                        <span>
+                          {typeof value === 'object' && value !== null
+                            ? JSON.stringify(value)
+                            : String(value)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           )}
