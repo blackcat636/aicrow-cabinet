@@ -128,9 +128,12 @@ export default function DashboardPage() {
     } catch (error: any) {
       console.error('Error executing workflow:', error);
       
-      if (error.message && typeof error.message === 'string' && error.message.includes('errors')) {
+      const errorMessage = error?.message || String(error) || t('executeError');
+      
+      // Handle validation errors (array of errors)
+      if (typeof errorMessage === 'string' && errorMessage.includes('errors')) {
         try {
-          const errorData = JSON.parse(error.message);
+          const errorData = JSON.parse(errorMessage);
           if (errorData.errors && Array.isArray(errorData.errors)) {
             errorData.errors.forEach((err: string) => {
               toast.error(err);
@@ -138,26 +141,20 @@ export default function DashboardPage() {
             return;
           }
         } catch (parseErr) {
-          // If parsing fails, surface a generic validation error
-          const msg =
-            (parseErr instanceof Error && parseErr.message) ||
-            t('executeError');
-          console.error('Error parsing execution errors:', parseErr);
-          toast.error(msg);
+          // If parsing fails, continue with normal error handling
         }
       }
       
       // Handle specific error messages
-      if (error.message && error.message.includes('Workflow is not active')) {
+      if (errorMessage.includes('Workflow is not active') || errorMessage.includes('not active')) {
         toast.error(t('executeErrorInactive'));
-      } else if (error.message && error.message.includes('No active webhook found')) {
+      } else if (errorMessage.includes('No active webhook found') || errorMessage.includes('webhook')) {
         toast.error(t('executeErrorNoWebhook'));
-      } else if (error.message && error.message.includes('404')) {
+      } else if (errorMessage.includes('404') || errorMessage.includes('not found')) {
         toast.error(t('executeErrorNotFound'));
       } else {
-        toast.error(error.message || t('executeError'));
+        toast.error(errorMessage);
       }
-      throw error;
     } finally {
       setExecutingWorkflowId(null);
     }

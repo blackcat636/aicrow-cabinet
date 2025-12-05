@@ -414,10 +414,12 @@ export default function WorkflowDetailPage() {
     } catch (error: any) {
       console.error('Error executing workflow:', error);
       
+      const errorMessage = error?.message || String(error) || 'Failed to execute workflow';
+      
       // Handle validation errors from backend
-      if (error.message && typeof error.message === 'string' && error.message.includes('errors')) {
+      if (typeof errorMessage === 'string' && errorMessage.includes('errors')) {
         try {
-          const errorData = JSON.parse(error.message);
+          const errorData = JSON.parse(errorMessage);
           if (errorData.errors && Array.isArray(errorData.errors)) {
             errorData.errors.forEach((err: string) => {
               toast.error(err);
@@ -429,16 +431,16 @@ export default function WorkflowDetailPage() {
         }
       }
       
-      if (error.message && error.message.includes('Workflow is not active')) {
+      // Handle specific error messages
+      if (errorMessage.includes('Workflow is not active') || errorMessage.includes('not active')) {
         toast.error('Cannot execute inactive workflow. Please activate the workflow first.');
-      } else if (error.message && error.message.includes('No active webhook found')) {
+      } else if (errorMessage.includes('No active webhook found') || errorMessage.includes('webhook')) {
         toast.error('No active webhook found for this workflow. Please check your webhook configuration in the workflow settings.');
-      } else if (error.message && error.message.includes('404')) {
+      } else if (errorMessage.includes('404') || errorMessage.includes('not found')) {
         toast.error('Workflow endpoint not found. Please check your webhook URL configuration.');
       } else {
-        toast.error(error.message || 'Failed to execute workflow');
+        toast.error(errorMessage);
       }
-      throw error; // Re-throw to let modal handle it
     } finally {
       setExecuting(false);
     }

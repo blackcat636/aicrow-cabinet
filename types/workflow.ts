@@ -23,6 +23,9 @@ export interface UserWorkflow {
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
+  schedules?: WorkflowSchedule[];
+  recentExecutions?: WorkflowExecution[];
+  totalExecutions?: number;
 }
 
 export interface WorkflowSchedule {
@@ -53,6 +56,9 @@ export interface WorkflowExecution {
   startedAt?: string | null;
   completedAt?: string | null;
   createdAt?: string;
+  parentExecutionId?: number;
+  isChainExecution?: boolean;
+  chainId?: number;
 }
 
 export type CredentialType = 'telegram' | 'email' | 'webhook';
@@ -136,4 +142,53 @@ export interface TelegramCommand {
   command: string;
   description: string;
   example?: string;
+}
+
+// Chainable Workflows Types
+export interface ChainableWorkflowsConfig {
+  allowedTargets?: number[];
+  defaultDataMapping?: Record<string, string>;
+}
+
+export interface AvailableChain {
+  userWorkflowId: number;
+  workflowId: number;
+  workflowName: string;
+  workflowDescription?: string;
+  isAttached: boolean;
+  defaultDataMapping?: Record<string, string> | null;
+}
+
+export interface AvailableChainsResponse {
+  executionId: number;
+  sourceWorkflow: {
+    id: number;
+    name: string;
+  };
+  availableChains: AvailableChain[];
+  requiresAttachment: boolean;
+  canChainToAny: boolean;
+  message?: string;
+}
+
+export interface ChainExecutionRequest {
+  targetUserWorkflowId: number;
+  dataMapping?: Record<string, string>;
+  additionalData?: Record<string, any>;
+  userText?: string;
+}
+
+export interface ChainExecutionResponse {
+  chain: {
+    id: number;
+    parentExecutionId: number;
+    childExecutionId: number;
+  };
+  execution: WorkflowExecution;
+}
+
+export interface ChainHistoryData {
+  execution: WorkflowExecution;
+  parent: WorkflowExecution | null;
+  children: WorkflowExecution[];
 }

@@ -7,7 +7,11 @@ import {
   AttachWorkflowRequest,
   CreateScheduleRequest,
   ExecuteWorkflowRequest,
-  WorkflowRequirements
+  WorkflowRequirements,
+  AvailableChainsResponse,
+  ChainExecutionRequest,
+  ChainExecutionResponse,
+  ChainHistoryData
 } from '@/types/workflow';
 import { buildApiUrl, API_CONFIG } from '@/config/api';
 import { fetchWithAuth } from './auth';
@@ -57,6 +61,28 @@ export const workflowApi = {
         return data;
       } else {
         return [];
+      }
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getUserWorkflow: async (id: number): Promise<UserWorkflow> => {
+    try {
+      const url = buildApiUrl(`/automations/user/my-workflows/${id}`);
+
+      const response = await fetchWithAuth(url, {
+        method: 'GET'
+      });
+
+      const data = await response.json();
+
+      if (data.userWorkflow) {
+        return data.userWorkflow;
+      } else if (data.data) {
+        return data.data;
+      } else {
+        throw new Error('User workflow not found');
       }
     } catch (error) {
       throw error;
@@ -249,12 +275,26 @@ export const workflowApi = {
             // Return errors in a format that can be parsed by the caller
             errorMessage = JSON.stringify({ errors: errorData.data.errors });
           } else {
+            // Try multiple paths for error message
             errorMessage =
-              errorData.message || errorData.data?.message || errorMessage;
+              errorData.message ||
+              errorData.data?.message ||
+              errorData.error?.message ||
+              errorData.error ||
+              errorMessage;
           }
         } catch (parseError) {
-          // If we can't parse the error response, use the status text
-          errorMessage = response.statusText || errorMessage;
+          // If we can't parse the error response, try to get text
+          try {
+            const text = await response.text();
+            if (text) {
+              errorMessage = text;
+            } else {
+              errorMessage = response.statusText || errorMessage;
+            }
+          } catch {
+            errorMessage = response.statusText || errorMessage;
+          }
         }
         throw new Error(errorMessage);
       }
@@ -326,6 +366,119 @@ export const workflowApi = {
     try {
       const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/workflows/${workflowId}/requirements`),
+        {
+          method: 'GET'
+        }
+      );
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      return result.data || result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Chainable Workflows
+  getAvailableChains: async (executionId: number): Promise<AvailableChainsResponse> => {
+    try {
+      const response = await fetchWithAuth(
+        buildApiUrl(`/automations/user/executions/${executionId}/available-chains`),
+        {
+          method: 'GET'
+        }
+      );
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      return result.data || result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  chainExecution: async (
+    executionId: number,
+    request: ChainExecutionRequest
+  ): Promise<ChainExecutionResponse> => {
+    try {
+      const response = await fetchWithAuth(
+        buildApiUrl(`/automations/user/executions/${executionId}/chain-to`),
+        {
+          method: 'POST',
+          body: JSON.stringify(request)
+        }
+      );
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      return result.data || result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  restartExecution: async (executionId: number): Promise<WorkflowExecution> => {
+    try {
+      const response = await fetchWithAuth(
+        buildApiUrl(`/automations/user/executions/${executionId}/restart`),
+        {
+          method: 'POST'
+        }
+      );
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      return result.data || result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getExecutionChain: async (executionId: number): Promise<ChainHistoryData> => {
+    try {
+      const response = await fetchWithAuth(
+        buildApiUrl(`/automations/user/executions/${executionId}/chain`),
         {
           method: 'GET'
         }

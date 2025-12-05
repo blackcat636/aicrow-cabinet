@@ -74,9 +74,11 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
           const fullKey = prefix ? `${prefix}.${field.key}` : field.key;
           
           // Use defaultValue or default property
+          // Check both undefined and null - if defaultValue is explicitly null, don't set it
           const defaultValue = field.defaultValue !== undefined ? field.defaultValue : field.default;
           
-          if (defaultValue !== undefined && initialData[fullKey] === undefined) {
+          // Only set default if it's not null and not undefined
+          if (defaultValue !== undefined && defaultValue !== null && initialData[fullKey] === undefined) {
             // For enum fields, if defaultValue is a label, find the corresponding value
             if (field.type === 'enum' && field.options && field.options.length > 0) {
               // Check if defaultValue matches a label
@@ -94,6 +96,12 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
               }
             } else {
               initialData[fullKey] = defaultValue;
+            }
+          } else if (defaultValue === null && initialData[fullKey] === undefined) {
+            // Explicitly set null if defaultValue is null (for non-required fields)
+            // This allows the select to show empty option
+            if (!field.required) {
+              initialData[fullKey] = null;
             }
           } else if (field.type === 'enum' && field.required && field.options && field.options.length > 0 && initialData[fullKey] === undefined) {
             // For required enum fields without default, set first option as default
@@ -193,11 +201,26 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         // Check if field is empty
         // For boolean fields, only undefined/null is considered empty (false is a valid value)
         // For enum fields, also check if value is valid (not just empty string)
+        // For array fields, check if array is empty or doesn't meet minItems
         let isEmpty = false;
         
         if (field.type === 'boolean') {
           // For boolean fields, only undefined/null is considered empty
           isEmpty = value === undefined || value === null;
+        } else if (field.type === 'array') {
+          // For array fields, check if it's undefined/null or empty array with minItems requirement
+          if (value === undefined || value === null) {
+            isEmpty = true;
+          } else if (Array.isArray(value)) {
+            // Check minItems requirement
+            if (field.minItems !== undefined && value.length < field.minItems) {
+              isEmpty = true;
+            } else if (value.length === 0 && field.required) {
+              isEmpty = true;
+            }
+          } else {
+            isEmpty = true;
+          }
         } else {
           isEmpty = value === undefined || value === null || value === '';
         }
@@ -216,6 +239,14 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         if (field.required && isEmpty) {
           newErrors[fullKey] = t('fieldRequired', { field: field.label }) || `${field.label} is required`;
           return;
+        }
+
+        // Check minItems for arrays even if not required
+        if (field.type === 'array' && field.minItems !== undefined && !isEmpty) {
+          if (Array.isArray(value) && value.length < field.minItems) {
+            newErrors[fullKey] = t('minItemsError', { field: field.label, min: field.minItems }) || `${field.label} requires at least ${field.minItems} items`;
+            return;
+          }
         }
 
         // Skip validation if field is empty and not required
@@ -340,8 +371,27 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
             // Skip object fields - they are not included in payload
             return;
           } else {
-            // Only include fields that have values
-            if (value !== undefined && value !== null && value !== '') {
+            // Determine if field should be included in payload
+            let shouldInclude = false;
+            
+            // For arrays, include if:
+            // 1. It's required (even if empty, backend will validate)
+            // 2. It has values (not empty array)
+            // 3. It has minItems requirement (even if empty, backend will validate)
+            if (field.type === 'array') {
+              if (field.required || (field.minItems !== undefined && field.minItems > 0)) {
+                // Always include required arrays or arrays with minItems
+                shouldInclude = true;
+              } else if (Array.isArray(value) && value.length > 0) {
+                // Include non-empty arrays
+                shouldInclude = true;
+              }
+            } else if (value !== undefined && value !== null && value !== '') {
+              // For other types, include if not empty
+              shouldInclude = true;
+            }
+            
+            if (shouldInclude) {
               let valueToSend = value;
               
               // For enum fields with options, send label instead of value
@@ -524,30 +574,39 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                   <InfoIcon description={translatedDescription || field.description || ''} />
                 )}
               </label>
-              <select
-                value={currentValue !== undefined && currentValue !== null ? String(currentValue) : ''}
-                onChange={(e) => {
-                  const selected = e.target.value;
-                  if (selected === '') {
-                    handleFieldChange(field.key, '', parentKey);
-                  } else {
-                    const option = enumOptions.find((opt) => String(opt.value) === selected);
-                    handleFieldChange(field.key, option ? option.value : selected, parentKey);
-                  }
-                }}
-                className={`w-full px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white focus:outline-none focus:ring-2 transition-all ${
-                  hasError
-                    ? 'border-red-500 focus:ring-red-500/50'
-                    : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
-                }`}
-              >
+              <div className="relative">
+                <select
+                  value={currentValue !== undefined && currentValue !== null ? String(currentValue) : ''}
+                  onChange={(e) => {
+                    const selected = e.target.value;
+                    if (selected === '') {
+                      handleFieldChange(field.key, '', parentKey);
+                    } else {
+                      const option = enumOptions.find((opt) => String(opt.value) === selected);
+                      handleFieldChange(field.key, option ? option.value : selected, parentKey);
+                    }
+                  }}
+                  className={`w-full pl-4 pr-12 py-2.5 bg-[#1a1b1f] border rounded-lg text-white focus:outline-none focus:ring-2 transition-all appearance-none ${
+                    hasError
+                      ? 'border-red-500 focus:ring-red-500/50'
+                      : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
+                  }`}
+                  style={{ paddingRight: '3.5rem' }}
+                >
                 <option value="">{t('select')}</option>
                 {enumOptions.map((option) => (
                   <option key={String(option.value)} value={String(option.value)}>
                     {option.label}
                   </option>
                 ))}
-              </select>
+                </select>
+                {/* Custom dropdown arrow */}
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                  <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              </div>
               {hasError && <p className="text-xs text-red-400">{error}</p>}
             </div>
           );
@@ -622,31 +681,41 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                 <InfoIcon description={translatedDescription || field.description || ''} />
               )}
             </label>
-            <select
-              value={value !== undefined && value !== null ? String(value) : ''}
-              onChange={(e) => {
-                const selectedValue = e.target.value;
-                if (selectedValue === '') {
-                  handleFieldChange(field.key, '', parentKey);
-                } else {
-                  // Convert to proper type if needed
-                  const option = enumOptions.find(opt => String(opt.value) === selectedValue);
-                  handleFieldChange(field.key, option ? option.value : selectedValue, parentKey);
-                }
-              }}
-              className={`w-full px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white focus:outline-none focus:ring-2 transition-all ${
-                hasError
-                  ? 'border-red-500 focus:ring-red-500/50'
-                  : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
-              }`}
-            >
-              <option value="">{t('select')}</option>
-              {enumOptions.map((option) => (
-                <option key={String(option.value)} value={String(option.value)}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={value !== undefined && value !== null ? String(value) : ''}
+                onChange={(e) => {
+                  const selectedValue = e.target.value;
+                  if (selectedValue === '') {
+                    // Set null instead of empty string for better handling
+                    handleFieldChange(field.key, null, parentKey);
+                  } else {
+                    // Convert to proper type if needed
+                    const option = enumOptions.find(opt => String(opt.value) === selectedValue);
+                    handleFieldChange(field.key, option ? option.value : selectedValue, parentKey);
+                  }
+                }}
+                className={`w-full pl-4 pr-12 py-2.5 bg-[#1a1b1f] border rounded-lg text-white focus:outline-none focus:ring-2 transition-all appearance-none ${
+                  hasError
+                    ? 'border-red-500 focus:ring-red-500/50'
+                    : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
+                }`}
+                style={{ paddingRight: '3.5rem' }}
+              >
+                <option value="">{t('select')}</option>
+                {enumOptions.map((option) => (
+                  <option key={String(option.value)} value={String(option.value)}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {/* Custom dropdown arrow */}
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+            </div>
             {hasError && <p className="text-xs text-red-400">{error}</p>}
           </div>
         );

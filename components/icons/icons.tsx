@@ -895,7 +895,12 @@ export const CheckCircleIcon: React.FC<IconSvgProps> = ({
   </svg>
 );
 
-export const XIcon = ({ size = 24, className }: IconSvgProps) => (
+export const XIcon = ({ size = 24, className = '' }: IconSvgProps) => {
+  // Check if className contains text-black to use black color, otherwise use red
+  const useBlack = className.includes('text-black');
+  const strokeColor = useBlack ? 'currentColor' : '#CC0000';
+  
+  return (
   <svg
     width={size}
     height={size}
@@ -906,27 +911,28 @@ export const XIcon = ({ size = 24, className }: IconSvgProps) => (
   >
     <path
       d='M7.86 2H16.14L22 7.86V16.14L16.14 22H7.86L2 16.14V7.86L7.86 2Z'
-      stroke='#CC0000'
+      stroke={strokeColor}
       strokeWidth='1.5'
       strokeLinecap='round'
       strokeLinejoin='round'
     />
     <path
       d='M15 9L9 15'
-      stroke='#CC0000'
+      stroke={strokeColor}
       strokeWidth='1.5'
       strokeLinecap='round'
       strokeLinejoin='round'
     />
     <path
       d='M9 9L15 15'
-      stroke='#CC0000'
+      stroke={strokeColor}
       strokeWidth='1.5'
       strokeLinecap='round'
       strokeLinejoin='round'
     />
   </svg>
-);
+  );
+};
 
 export const ClosedIcon: React.FC<IconSvgProps> = ({ size = 24, ...props }) => (
   <svg

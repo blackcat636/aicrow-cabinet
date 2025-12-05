@@ -1,10 +1,12 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/i18n/routing';
+import { useLocale } from 'next-intl';
 import { WorkflowExecution, ExecutionsResponse } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
 import { Badge } from '@/components/ui/badge';
+import { ResultDisplay } from '@/components/workflow/ResultDisplay';
 import {
   ClockIcon,
   CheckIcon, 
@@ -278,7 +280,9 @@ const ExecutionCard: React.FC<{
   getTriggerTypeLabel: (type: string) => string;
   t: any;
   tWorkflow: any;
-}> = React.memo(({ execution, onViewWorkflow, getStatusLabel, getTriggerTypeLabel, t, tWorkflow }) => {
+}> = ({ execution, onViewWorkflow, getStatusLabel, getTriggerTypeLabel, t, tWorkflow }) => {
+  const router = useRouter();
+  const locale = useLocale();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -346,13 +350,32 @@ const ExecutionCard: React.FC<{
                 </Badge>
               )}
             </div>
-            <button
-              onClick={() => onViewWorkflow((execution.workflowId ?? execution.userWorkflowId) as number)}
-              className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg transition-all font-medium hover:brightness-110 shadow-lg shadow-[#A500E1]/25 bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)]"
-            >
-              <EyeIcon className="w-4 h-4" />
-              <span>{t('viewWorkflow')}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  router.push(`/dashboard/executions/${execution.id}`, { locale });
+                }}
+                className="flex items-center gap-2 px-3 py-1.5 text-xs text-purple-300 border border-purple-500/50 rounded-lg transition-all font-medium hover:bg-purple-900/20 hover:border-purple-500"
+                title={tWorkflow('details')}
+              >
+                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                {tWorkflow('details')}
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onViewWorkflow((execution.workflowId ?? execution.userWorkflowId) as number);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-sm text-white rounded-lg transition-all font-medium hover:brightness-110 shadow-lg shadow-[#A500E1]/25 bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)]"
+              >
+                <EyeIcon className="w-4 h-4" />
+                <span>{t('viewWorkflow')}</span>
+              </button>
+            </div>
           </div>
 
           {/* Input Data */}
@@ -360,7 +383,9 @@ const ExecutionCard: React.FC<{
             <div className="mb-4 mt-4">
               <h4 className="text-sm font-medium text-gray-300 mb-2">{tWorkflow('inputData')}:</h4>
               <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300 break-all">
-                {execution.inputData}
+                {typeof execution.inputData === 'string' 
+                  ? execution.inputData 
+                  : JSON.stringify(execution.inputData, null, 2)}
               </div>
             </div>
           )}
@@ -379,9 +404,7 @@ const ExecutionCard: React.FC<{
           {execution.resultData && (
             <div className="mb-4">
               <h4 className="text-sm font-medium text-gray-300 mb-2">{tWorkflow('result')}:</h4>
-              <div className="p-3 bg-gray-800 rounded text-sm font-mono text-gray-200 break-all">
-                {typeof execution.resultData === 'object' ? (execution.resultData.message ?? JSON.stringify(execution.resultData)) : String(execution.resultData)}
-              </div>
+              <ResultDisplay resultData={execution.resultData} className="text-sm" />
             </div>
           )}
 
@@ -406,6 +429,4 @@ const ExecutionCard: React.FC<{
       </div>
     </div>
   );
-});
-
-ExecutionCard.displayName = 'ExecutionCard';
+};

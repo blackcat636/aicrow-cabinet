@@ -24,6 +24,7 @@ import { Search, Calendar, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { WorkflowForm } from '@/components/workflow/WorkflowForm';
 import { WorkflowExecuteModal } from '@/components/workflow/WorkflowExecuteModal';
+import { ResultDisplay } from '@/components/workflow/ResultDisplay';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 
 export const dynamic = 'force-dynamic';
@@ -79,6 +80,7 @@ const ExecutionCard: React.FC<{
 }> = ({ execution, getStatusColor, getStatusIcon, getStatusLabel, getTriggerTypeLabel }) => {
   const t = useTranslations('workflow');
   const locale = useLocale();
+  const router = useRouter();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -192,28 +194,7 @@ const ExecutionCard: React.FC<{
           {execution.resultData && (
             <div className="mb-3">
               <h4 className="text-sm font-medium text-gray-300 mb-1">{t('result')}:</h4>
-              <div className="p-2 bg-gray-800 rounded text-xs font-mono text-gray-200">
-                {(() => {
-                  let resultText: string;
-                  if (typeof execution.resultData === 'object' && execution.resultData !== null) {
-                    // Try to get message first, then result, then stringify the whole object
-                    resultText = (execution.resultData as any).message 
-                      ?? (execution.resultData as any).result 
-                      ?? (execution.resultData as any).data
-                      ?? JSON.stringify(execution.resultData, null, 2);
-                  } else {
-                    resultText = String(execution.resultData);
-                  }
-                  
-                  return (
-                    <TruncatedText 
-                      text={resultText}
-                      maxLength={50}
-                      className="break-all whitespace-pre-wrap"
-                    />
-                  );
-                })()}
-              </div>
+              <ResultDisplay resultData={execution.resultData} className="text-xs" />
             </div>
           )}
 
@@ -231,7 +212,19 @@ const ExecutionCard: React.FC<{
           <div className="pt-3 border-t border-gray-600">
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span>{t('executionId')}: {execution.id}</span>
-              <span>{t('workflowId')}: {(execution.workflowId ?? execution.userWorkflowId) as number}</span>
+              <div className="flex items-center gap-3">
+                <span>{t('workflowId')}: {(execution.workflowId ?? execution.userWorkflowId) as number}</span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/dashboard/executions/${execution.id}`, { locale });
+                  }}
+                  className="px-2 py-1 text-xs text-purple-300 border border-purple-500/50 rounded hover:bg-purple-900/20 hover:border-purple-500 transition-all"
+                  title={t('details')}
+                >
+                  {t('details')}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -351,16 +344,27 @@ export default function WorkflowDetailPage() {
     if (workflowId && isAuthenticated && !didInitialLoadRef.current) {
       didInitialLoadRef.current = true;
       loadWorkflow();
-      loadExecutions();
     }
   }, [workflowId, isAuthenticated]);
 
+  // Load executions from workflow data (recentExecutions field)
+  useEffect(() => {
+    if (workflow && isAuthenticated) {
+      loadExecutions();
+    }
+  }, [workflow, isAuthenticated]);
+
   const loadWorkflow = async () => {
+    if (!workflowId) {
+      setError(t('notFound'));
+      return;
+    }
+    
     try {
       setLoading(true);
       setError(null);
-      const workflows = await workflowApi.getMyWorkflows();
-      const foundWorkflow = workflows.find(w => w.id === workflowId);
+      // Use getUserWorkflow to fetch only the specific workflow instead of all workflows
+      const foundWorkflow = await workflowApi.getUserWorkflow(workflowId);
       
       if (!foundWorkflow) {
         setError(t('notFound'));
@@ -368,8 +372,9 @@ export default function WorkflowDetailPage() {
       }
       
       setWorkflow(foundWorkflow);
-    } catch {
-      setError(t('loadError'));
+    } catch (err) {
+      console.error('Error loading workflow:', err);
+      setError(t('notFound'));
       toast.error(t('loadError'));
     } finally {
       setLoading(false);
@@ -377,17 +382,31 @@ export default function WorkflowDetailPage() {
   };
 
   const loadExecutions = async () => {
+    if (!workflow) return;
+    
     try {
       setExecutionsLoading(true);
-      const data = await workflowApi.getMyExecutions();
-      // Filter executions for this specific workflow
-      const filteredItems = data.items.filter(execution => (execution.workflowId ?? execution.userWorkflowId) === workflowId);
-      const filteredExecutions = {
-        ...data,
-        items: filteredItems,
-        total: filteredItems.length // Update total to reflect only this workflow's executions
-      };
-      setExecutions(filteredExecutions);
+      // Use recentExecutions from workflow data instead of making separate API call
+      // The workflow response already includes recentExecutions and totalExecutions
+      if (workflow.recentExecutions) {
+        const executionsData: ExecutionsResponse = {
+          items: workflow.recentExecutions,
+          total: workflow.totalExecutions || workflow.recentExecutions.length,
+          page: 1,
+          limit: workflow.recentExecutions.length,
+          totalPages: 1
+        };
+        setExecutions(executionsData);
+      } else {
+        // Fallback: if recentExecutions is not available, use empty array
+        setExecutions({
+          items: [],
+          total: 0,
+          page: 1,
+          limit: 20,
+          totalPages: 0
+        });
+      }
     } catch {
       toast.error(tExecutions('loadError'));
     } finally {
@@ -641,7 +660,7 @@ export default function WorkflowDetailPage() {
         return <CheckIcon className="w-4 h-4" />;
       case '2':
       case 'failed':
-        return <XIcon className="w-4 h-4" />;
+        return <XIcon className="w-4 h-4 text-black" />;
       case '3':
       case 'running':
         return <PlayIcon className="w-4 h-4" />;
