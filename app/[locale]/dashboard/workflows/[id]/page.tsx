@@ -20,7 +20,7 @@ import {
   PauseIcon,
   TrashIcon
 } from '@/components/icons';
-import { Search, Calendar, X, RefreshCw } from 'lucide-react';
+import { Search, Calendar, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { WorkflowForm } from '@/components/workflow/WorkflowForm';
 import { WorkflowExecuteModal } from '@/components/workflow/WorkflowExecuteModal';
@@ -31,6 +31,8 @@ import { AvailableChainsResponse } from '@/types/workflow';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
+
+const RUNNING_STATUSES = ['3', 'running', '0', 'pending'];
 
 // Truncated text component with expand/collapse
 const TruncatedText: React.FC<{
@@ -134,7 +136,7 @@ const ExecutionCard: React.FC<{
       setRestarting(true);
       const data = await workflowApi.restartExecution(execution.id);
       if (data.id) {
-        toast.success('Виконання перезапущено');
+        toast.success(tExecutions('restart'));
         router.push(`/dashboard/executions/${data.id}`, { locale });
       }
     } catch (err: any) {
@@ -396,6 +398,7 @@ export default function WorkflowDetailPage() {
   const workflowInfoRef = useRef<HTMLDivElement>(null);
   const didInitialLoadRef = useRef(false);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const executionsRef = useRef<WorkflowExecution[]>([]);
   
   // Mouse tracking for Input Data Template card
   const [inputTemplateMousePosition, setInputTemplateMousePosition] = useState({ x: 0, y: 0 });
@@ -477,9 +480,104 @@ export default function WorkflowDetailPage() {
     }
   }, [workflow, isAuthenticated]);
 
-  // Auto-refresh executions every 5 seconds if there are running/pending executions
+  const sortExecutions = useCallback((items: WorkflowExecution[]) => {
+    return [...items].sort((a, b) => {
+      const dateA = a.startedAt ? new Date(a.startedAt).getTime() : 0;
+      const dateB = b.startedAt ? new Date(b.startedAt).getTime() : 0;
+      return dateB - dateA;
+    });
+  }, []);
+
   useEffect(() => {
-    // Clear any existing interval
+    executionsRef.current = executions.items;
+  }, [executions.items]);
+
+  const refreshRunningExecutions = useCallback(async () => {
+    if (!workflow) return;
+
+    const runningExecutions = executionsRef.current.filter(exec =>
+      RUNNING_STATUSES.includes(exec.status)
+    );
+
+    if (runningExecutions.length === 0) {
+      console.log('[refreshRunningExecutions] no running/pending executions, skip');
+      return;
+    }
+
+    console.log('[refreshRunningExecutions] refreshing ids', runningExecutions.map(r => r.id));
+
+    try {
+      const updates = await Promise.all(
+        runningExecutions.map(exec =>
+          workflowApi
+            .getExecutionDetails(exec.id)
+            .catch(err => {
+              console.error(`Error refreshing execution ${exec.id}:`, err);
+              return null;
+            })
+        )
+      );
+
+      const validUpdates = updates.filter(Boolean) as WorkflowExecution[];
+      if (validUpdates.length === 0) {
+        console.log('[refreshRunningExecutions] no valid updates');
+        return;
+      }
+
+      setExecutions(prev => {
+        const updatedMap = new Map(prev.items.map(exec => [getExecutionMapKey(exec), exec]));
+        let hasChanges = false;
+
+        validUpdates.forEach(exec => {
+          const mapKey = getExecutionMapKey(exec);
+          const prevExec = updatedMap.get(mapKey);
+          const statusChanged = !prevExec || prevExec.status !== exec.status;
+          const completionChanged = prevExec?.completedAt !== exec.completedAt;
+
+          if (statusChanged || completionChanged) {
+            updatedMap.set(mapKey, exec);
+            hasChanges = true;
+            console.log('[refreshRunningExecutions] updated', {
+              id: exec.id,
+              statusFrom: prevExec?.status,
+              statusTo: exec.status,
+              completedFrom: prevExec?.completedAt,
+              completedTo: exec.completedAt
+            });
+          }
+        });
+
+        if (!hasChanges) {
+          console.log('[refreshRunningExecutions] no changes detected, keeping previous state');
+          return prev;
+        }
+
+        const items = sortExecutions(Array.from(updatedMap.values()));
+
+        const nextState = {
+          ...prev,
+          items,
+          total: items.length,
+          limit: items.length,
+          totalPages: 1
+        };
+
+        const stillRunning = items.some(item => RUNNING_STATUSES.includes(item.status));
+        if (!stillRunning && refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+          refreshIntervalRef.current = null;
+          console.log('[refreshRunningExecutions] all executions finished, interval cleared');
+        }
+
+        return nextState;
+      });
+    } catch (err) {
+      console.error('Error refreshing running executions:', err);
+    }
+  }, [workflow, sortExecutions]);
+
+  // Auto-refresh only running/pending executions every 5 seconds
+  useEffect(() => {
     if (refreshIntervalRef.current) {
       clearInterval(refreshIntervalRef.current);
       refreshIntervalRef.current = null;
@@ -487,18 +585,15 @@ export default function WorkflowDetailPage() {
 
     if (!workflow || !isAuthenticated) return;
 
-    // Check if there are running/pending executions
-    const hasRunningExecutions = executions.items.some(
-      e => e.status === '3' || e.status === 'running' || e.status === '0' || e.status === 'pending'
+    const hasRunningExecutions = executions.items.some(exec =>
+      RUNNING_STATUSES.includes(exec.status)
     );
 
     if (!hasRunningExecutions) return;
 
-    // Create new interval
     refreshIntervalRef.current = setInterval(() => {
-      // Preserve completed executions, only update running/pending
-      loadExecutions(true);
-    }, 5000); // Refresh every 5 seconds
+      refreshRunningExecutions();
+    }, 30000);
 
     return () => {
       if (refreshIntervalRef.current) {
@@ -506,11 +601,7 @@ export default function WorkflowDetailPage() {
         refreshIntervalRef.current = null;
       }
     };
-    // Note: We intentionally don't include executions.items in dependencies
-    // to avoid recreating the interval on every execution update
-    // The interval will continue running until all executions are completed
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workflow?.id, isAuthenticated]); // Only depend on workflow ID and auth status
+  }, [workflow?.id, isAuthenticated, executions.items, refreshRunningExecutions]);
 
   const loadWorkflow = async () => {
     if (!workflowId) {
@@ -539,75 +630,17 @@ export default function WorkflowDetailPage() {
     }
   };
 
-  const loadExecutions = async (preserveCompleted = false) => {
+  const loadExecutions = async () => {
     if (!workflow) return;
     
     try {
       setExecutionsLoading(true);
-      // Fetch all executions and filter by this workflow's userWorkflowId
-      // Don't use recentExecutions as it only contains 5 items
       const data = await workflowApi.getMyExecutions();
-      // Filter executions for this specific user workflow
-      // workflow.id is the userWorkflowId
       const filteredItems = data.items.filter(execution => {
-        // Check both workflowId (which might be userWorkflowId) and userWorkflowId
         return (execution.workflowId === workflow.id) || (execution.userWorkflowId === workflow.id);
       });
       
-      let finalItems: WorkflowExecution[];
-      
-      if (preserveCompleted && executions.items.length > 0) {
-        // Merge strategy: keep completed executions, update/add running/pending/new ones
-        const completedStatuses = ['completed', '1', 'failed', '2'];
-        const existingCompleted = new Map<number, WorkflowExecution>();
-        const existingRunning = new Map<number, WorkflowExecution>();
-        
-        // Separate existing executions by status
-        executions.items.forEach(exec => {
-          if (completedStatuses.includes(exec.status)) {
-            existingCompleted.set(exec.id, exec);
-          } else {
-            existingRunning.set(exec.id, exec);
-          }
-        });
-        
-        // Create map of new executions
-        const newExecutionsMap = new Map<number, WorkflowExecution>();
-        filteredItems.forEach(exec => {
-          newExecutionsMap.set(exec.id, exec);
-        });
-        
-        // Merge: keep completed from existing, use new data for running/pending/new
-        const mergedItems: WorkflowExecution[] = [];
-        
-        // Add all completed executions from existing (preserve them)
-        existingCompleted.forEach(exec => {
-          mergedItems.push(exec);
-        });
-        
-        // Add/update running/pending executions from new data
-        filteredItems.forEach(newExec => {
-          if (!completedStatuses.includes(newExec.status)) {
-            // This is a running/pending execution - use new data
-            mergedItems.push(newExec);
-          } else if (!existingCompleted.has(newExec.id)) {
-            // This is a newly completed execution - add it
-            mergedItems.push(newExec);
-          }
-        });
-        
-        finalItems = mergedItems;
-      } else {
-        // Full refresh - use all new data
-        finalItems = filteredItems;
-      }
-      
-      // Sort by startedAt descending (newest first)
-      const sortedItems = [...finalItems].sort((a, b) => {
-        const dateA = a.startedAt ? new Date(a.startedAt).getTime() : 0;
-        const dateB = b.startedAt ? new Date(b.startedAt).getTime() : 0;
-        return dateB - dateA; // Descending order (newest first)
-      });
+      const sortedItems = sortExecutions(filteredItems);
       
       const executionsData: ExecutionsResponse = {
         items: sortedItems,
@@ -660,10 +693,7 @@ export default function WorkflowDetailPage() {
       setShowExecuteModal(false);
       // Reload workflow to get updated totalExecutions
       await loadWorkflow();
-      // Small delay to ensure execution is created in backend
-      setTimeout(async () => {
-        await loadExecutions();
-      }, 1000);
+      await loadExecutions();
     } catch (error: any) {
       const message = error?.message as string | undefined;
 
@@ -864,6 +894,13 @@ export default function WorkflowDetailPage() {
 
     return filtered;
   }, [executions.items, dateFromNative, dateFrom, dateToNative, dateTo, inputDataSearch]);
+
+  const getExecutionKey = (execution: WorkflowExecution) =>
+    execution.id ??
+    execution.n8nExecutionId ??
+    `${execution.workflowId ?? execution.userWorkflowId ?? 'wf'}-${execution.startedAt ?? execution.createdAt ?? 'na'}`;
+
+  const getExecutionMapKey = (execution: WorkflowExecution) => String(getExecutionKey(execution));
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1258,22 +1295,11 @@ export default function WorkflowDetailPage() {
               <div>
                 <div className="flex items-center justify-between mb-6 ml-6 mr-6">
                   <h2 className="text-xl font-semibold text-white">{t('executionHistory')}</h2>
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={() => loadExecutions(false)}
-                      disabled={executionsLoading}
-                      className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={tCommon('refresh')}
-                    >
-                      <RefreshCw className={`w-4 h-4 ${executionsLoading ? 'animate-spin' : ''}`} />
-                      {tCommon('refresh')}
-                    </button>
-                    <div className="text-sm text-gray-400">
-                      {t('executionsCount', { count: filteredExecutions.length, total: executions.items.length })}
-                      {(dateFrom || dateTo || inputDataSearch) && (
-                        <span className="ml-2 text-purple-400">{t('filtered')}</span>
-                      )}
-                    </div>
+                  <div className="text-sm text-gray-400">
+                    {t('executionsCount', { count: filteredExecutions.length, total: executions.items.length })}
+                    {(dateFrom || dateTo || inputDataSearch) && (
+                      <span className="ml-2 text-purple-400">{t('filtered')}</span>
+                    )}
                   </div>
                 </div>
 
@@ -1486,7 +1512,7 @@ export default function WorkflowDetailPage() {
                     ) : (
                       filteredExecutions.map((execution) => (
                         <ExecutionCard
-                          key={execution.id}
+                          key={getExecutionKey(execution)}
                           execution={execution}
                           getStatusColor={getStatusColor}
                           getStatusIcon={getStatusIcon}

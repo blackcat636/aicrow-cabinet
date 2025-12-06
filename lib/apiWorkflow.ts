@@ -361,7 +361,19 @@ export const workflowApi = {
       );
 
       const result = await response.json();
-      return result.execution || result;
+      // API sometimes wraps execution in data / data.execution
+      const execution =
+        result?.execution ||
+        result?.data?.execution ||
+        result?.data ||
+        result;
+
+      // Ensure the execution has an id for stable keying
+      if (!execution?.id && id) {
+        execution.id = id;
+      }
+
+      return execution;
     } catch (error) {
       throw error;
     }

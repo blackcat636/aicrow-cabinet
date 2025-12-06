@@ -1,6 +1,7 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface ResultData {
   type?: string;
@@ -18,6 +19,13 @@ interface ResultDisplayProps {
 }
 
 export const ResultDisplay: React.FC<ResultDisplayProps> = ({ resultData, className = '' }) => {
+  const [openImage, setOpenImage] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Handle string results
   if (typeof resultData === 'string') {
     try {
@@ -82,18 +90,30 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ resultData, classN
 
     // Image type
     if (type === 'image' && data.url) {
+      const isOpen = openImage === data.url;
+
       return (
         <div className={`p-3 bg-gray-800/50 rounded border border-gray-700/50 ${className}`}>
           {data.title && (
             <h5 className="text-sm font-medium text-gray-300 mb-2">{data.title}</h5>
           )}
-          <div className="w-full max-w-2xl">
-            <img
-              src={data.url}
-              alt={data.title || 'Result image'}
-              className="w-full rounded-lg"
-              style={{ maxHeight: '600px', objectFit: 'contain' }}
-            />
+          <div className="w-full max-w-sm">
+            <button
+              type="button"
+              onClick={() => setOpenImage(data.url!)}
+              className="group relative block w-full overflow-hidden rounded-lg border border-gray-700/60 bg-black"
+            >
+              <img
+                src={data.url}
+                alt={data.title || 'Result image'}
+                className="w-full max-h-48 object-contain transition-transform duration-200 group-hover:scale-[1.01]"
+              />
+              <div className="absolute inset-0 flex items-end justify-end p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-black/60 to-transparent">
+                <span className="text-[11px] px-2 py-1 rounded bg-black/70 text-gray-200 border border-white/10">
+                  Click to enlarge
+                </span>
+              </div>
+            </button>
           </div>
           {data.url && (
             <a
@@ -105,6 +125,32 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ resultData, classN
               {data.url}
             </a>
           )}
+
+          {isOpen && mounted && (createPortal(
+            <div
+              className="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+              onClick={() => setOpenImage(null)}
+            >
+              <div
+                className="relative max-h-[90vh] max-w-[90vw] rounded-lg overflow-hidden bg-black shadow-xl border border-white/10"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  type="button"
+                  onClick={() => setOpenImage(null)}
+                  className="absolute top-2 right-2 z-10 px-3 py-1 text-xs bg-black/70 text-white rounded border border-white/20 hover:bg-black/90"
+                >
+                  Close
+                </button>
+                <img
+                  src={data.url}
+                  alt={data.title || 'Result image'}
+                  className="block max-h-[90vh] max-w-[90vw] object-contain"
+                />
+              </div>
+            </div>,
+            document.body
+          ) as React.ReactNode)}
         </div>
       );
     }
