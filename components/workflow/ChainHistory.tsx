@@ -182,7 +182,14 @@ export const ChainHistory: React.FC<ChainHistoryProps> = ({ executionId, isChain
               <span className="text-sm text-gray-400">{t('childExecutions')}</span>
             </div>
             <div className="space-y-3">
-              {chainData.children.map((child, index) => (
+              {[...chainData.children]
+                .sort((a, b) => {
+                  // Sort by startedAt descending (newest first)
+                  const dateA = a.startedAt ? new Date(a.startedAt).getTime() : 0;
+                  const dateB = b.startedAt ? new Date(b.startedAt).getTime() : 0;
+                  return dateB - dateA; // Descending order (newest first)
+                })
+                .map((child, index) => (
                 <div key={child.id}>
                   <ExecutionCard
                     execution={child}

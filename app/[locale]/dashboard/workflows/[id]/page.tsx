@@ -345,7 +345,6 @@ const ExecutionCard: React.FC<{
           isOpen={showChainModal}
           executionId={execution.id}
           availableChains={availableChains.availableChains}
-          resultData={execution.resultData}
           onClose={() => setShowChainModal(false)}
           onSuccess={(newExecutionId) => {
             router.push(`/dashboard/executions/${newExecutionId}`, { locale });
@@ -470,12 +469,27 @@ export default function WorkflowDetailPage() {
     }
   }, [workflowId, isAuthenticated]);
 
-  // Load executions from workflow data (recentExecutions field)
+  // Load executions when workflow is loaded
   useEffect(() => {
     if (workflow && isAuthenticated) {
       loadExecutions();
     }
   }, [workflow, isAuthenticated]);
+
+  // Auto-refresh executions every 5 seconds if there are running/pending executions
+  useEffect(() => {
+    const hasRunningExecutions = executions.items.some(
+      e => e.status === '3' || e.status === 'running' || e.status === '0' || e.status === 'pending'
+    );
+
+    if (hasRunningExecutions && workflow && isAuthenticated) {
+      const interval = setInterval(() => {
+        loadExecutions();
+      }, 5000); // Refresh every 5 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [executions.items, workflow, isAuthenticated]);
 
   const loadWorkflow = async () => {
     if (!workflowId) {
@@ -509,28 +523,32 @@ export default function WorkflowDetailPage() {
     
     try {
       setExecutionsLoading(true);
-      // Use recentExecutions from workflow data instead of making separate API call
-      // The workflow response already includes recentExecutions and totalExecutions
-      if (workflow.recentExecutions) {
-        const executionsData: ExecutionsResponse = {
-          items: workflow.recentExecutions,
-          total: workflow.totalExecutions || workflow.recentExecutions.length,
-          page: 1,
-          limit: workflow.recentExecutions.length,
-          totalPages: 1
-        };
-        setExecutions(executionsData);
-      } else {
-        // Fallback: if recentExecutions is not available, use empty array
-        setExecutions({
-          items: [],
-          total: 0,
-          page: 1,
-          limit: 20,
-          totalPages: 0
-        });
-      }
-    } catch {
+      // Fetch all executions and filter by this workflow's userWorkflowId
+      const data = await workflowApi.getMyExecutions();
+      // Filter executions for this specific user workflow
+      // workflow.id is the userWorkflowId
+      const filteredItems = data.items.filter(execution => {
+        // Check both workflowId (which might be userWorkflowId) and userWorkflowId
+        return (execution.workflowId === workflow.id) || (execution.userWorkflowId === workflow.id);
+      });
+      
+      // Sort by startedAt descending (newest first)
+      const sortedItems = [...filteredItems].sort((a, b) => {
+        const dateA = a.startedAt ? new Date(a.startedAt).getTime() : 0;
+        const dateB = b.startedAt ? new Date(b.startedAt).getTime() : 0;
+        return dateB - dateA; // Descending order (newest first)
+      });
+      
+      const executionsData: ExecutionsResponse = {
+        items: sortedItems,
+        total: sortedItems.length,
+        page: 1,
+        limit: sortedItems.length,
+        totalPages: 1
+      };
+      setExecutions(executionsData);
+    } catch (err) {
+      console.error('Error loading executions:', err);
       toast.error(tExecutions('loadError'));
     } finally {
       setExecutionsLoading(false);
@@ -570,8 +588,12 @@ export default function WorkflowDetailPage() {
       
       toast.success(t('executeSuccess'));
       setShowExecuteModal(false);
-      // Reload executions to show the new one
-      await loadExecutions();
+      // Reload workflow to get updated totalExecutions
+      await loadWorkflow();
+      // Small delay to ensure execution is created in backend
+      setTimeout(async () => {
+        await loadExecutions();
+      }, 1000);
     } catch (error: any) {
       const message = error?.message as string | undefined;
 
@@ -590,12 +612,18 @@ export default function WorkflowDetailPage() {
   };
 
   const handleToggle = async () => {
-    if (!workflow) return;
+    if (!workflow || !workflow.id) return;
     
     try {
       setToggling(true);
       const updated = await workflowApi.toggleUserWorkflow(workflow.id);
-      setWorkflow(updated);
+      // Preserve id and workflow object if they exist, otherwise keep the existing ones
+      const updatedWithWorkflow = {
+        ...updated,
+        id: updated.id || workflow.id, // Ensure id is preserved
+        workflow: updated.workflow || workflow.workflow
+      };
+      setWorkflow(updatedWithWorkflow);
       const statusKey = updated.isActive ? 'toggleSuccessActivated' : 'toggleSuccessDeactivated';
       toast.success(t('toggleSuccess', { status: t(statusKey as 'toggleSuccessActivated' | 'toggleSuccessDeactivated') }));
     } catch (error: any) {
@@ -756,6 +784,13 @@ export default function WorkflowDetailPage() {
         return inputDataString.toLowerCase().includes(searchValue);
       });
     }
+
+    // Sort by startedAt descending (newest first)
+    filtered.sort((a, b) => {
+      const dateA = a.startedAt ? new Date(a.startedAt).getTime() : 0;
+      const dateB = b.startedAt ? new Date(b.startedAt).getTime() : 0;
+      return dateB - dateA; // Descending order (newest first)
+    });
 
     return filtered;
   }, [executions.items, dateFromNative, dateFrom, dateToNative, dateTo, inputDataSearch]);
@@ -1043,11 +1078,11 @@ export default function WorkflowDetailPage() {
               {/* Title and description */}
               <div className="ml-6">
                 <h1 className="text-3xl font-bold text-white break-words break-all mb-2">
-                  {workflow.name || workflow.workflow.name || tWorkflows('unnamedWorkflow')}
+                  {workflow.name || workflow.workflow?.name || tWorkflows('unnamedWorkflow')}
                 </h1>
                 {workflow.description || workflow.workflow?.description ? (
                   <p className="text-gray-300 text-lg break-words break-all">
-                    {workflow.description || workflow.workflow.description}
+                    {workflow.description || workflow.workflow?.description}
                   </p>
                 ) : (
                   <p className="text-gray-400 italic text-lg">{t('noDescription')}</p>
@@ -1401,7 +1436,7 @@ export default function WorkflowDetailPage() {
         onClose={() => setShowDeleteDialog(false)}
         onConfirm={handleDelete}
         title={t('deleteConfirm')}
-        message={t('deleteConfirmMessage', { name: workflow.name || workflow.workflow.name || tWorkflows('unnamedWorkflow') })}
+        message={t('deleteConfirmMessage', { name: workflow.name || workflow.workflow?.name || tWorkflows('unnamedWorkflow') })}
         confirmText={tCommon('delete')}
         cancelText={tCommon('cancel')}
         type="danger"
@@ -1414,7 +1449,7 @@ export default function WorkflowDetailPage() {
           onClose={() => setShowExecuteModal(false)}
           onExecute={handleExecuteWithPayload}
           workflowId={workflow.workflowId}
-          workflowName={workflow.name || workflow.workflow.name}
+          workflowName={workflow.name || workflow.workflow?.name || tWorkflows('unnamedWorkflow')}
         />
       )}
     </AppLayout>

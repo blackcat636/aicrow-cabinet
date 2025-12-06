@@ -411,7 +411,6 @@ export default function ExecutionDetailsPage() {
             isOpen={showChainModal}
             executionId={executionId}
             availableChains={availableChains.availableChains}
-            resultData={execution?.resultData}
             onClose={() => setShowChainModal(false)}
             onSuccess={(newExecutionId) => {
               router.push(`/dashboard/executions/${newExecutionId}`, { locale });

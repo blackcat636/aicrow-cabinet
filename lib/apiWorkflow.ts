@@ -158,7 +158,14 @@ export const workflowApi = {
       );
 
       const result = await response.json();
-      return result.userWorkflow || result;
+      const userWorkflow = result.userWorkflow || result.data || result;
+      
+      // Ensure id is present in the response
+      if (!userWorkflow.id && id) {
+        userWorkflow.id = id;
+      }
+      
+      return userWorkflow;
     } catch (error) {
       throw error;
     }

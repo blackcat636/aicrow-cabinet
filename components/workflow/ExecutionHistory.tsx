@@ -105,7 +105,13 @@ export const ExecutionHistory: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await workflowApi.getMyExecutions();
-      setExecutionsData(data);
+      // Sort executions by startedAt descending (newest first)
+      const sortedItems = [...(data.items || [])].sort((a, b) => {
+        const dateA = a.startedAt ? new Date(a.startedAt).getTime() : 0;
+        const dateB = b.startedAt ? new Date(b.startedAt).getTime() : 0;
+        return dateB - dateA; // Descending order (newest first)
+      });
+      setExecutionsData({ ...data, items: sortedItems });
     } catch (err) {
       console.error('❌ Error loading executions:', err);
       setError(t('loadError'));

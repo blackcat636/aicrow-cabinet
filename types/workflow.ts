@@ -110,14 +110,14 @@ export interface UserField {
   hint?: string;
   placeholder?: string;
   defaultValue?: any;
-  itemType?: 'string' | 'number' | 'boolean' | 'email' | 'url' | 'enum';
+  itemType?: 'string' | 'number' | 'boolean' | 'email' | 'url';
   minItems?: number;
   maxItems?: number;
   default?: any;
   enum?: any[];
   options?: EnumOption[];
   fields?: UserField[]; // For object type - nested fields
-  hidden?: boolean; // If true, field should not be displayed in UI
+  hidden?: boolean; // If true, field should not be rendered in UI
 }
 
 export interface WorkflowRequirements {

@@ -15,7 +15,6 @@ interface ChainToWorkflowModalProps {
   isOpen: boolean;
   executionId: number;
   availableChains: AvailableChain[];
-  resultData?: any; // Result data from source execution for auto-filling fields
   onClose: () => void;
   onSuccess: (newExecutionId: number) => void;
 }
@@ -24,7 +23,6 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   isOpen,
   executionId,
   availableChains,
-  resultData,
   onClose,
   onSuccess
 }) => {
@@ -67,8 +65,6 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   const [loadingRequirements, setLoadingRequirements] = useState(false);
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [autoFilledFields, setAutoFilledFields] = useState<Set<string>>(new Set());
-  const [sourceResultData, setSourceResultData] = useState<any>(resultData);
 
   // Whitelist of fields to show (currently only 'prompt')
   const FIELD_WHITELIST = ['prompt'];
@@ -76,120 +72,16 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   const selectedChain = availableChains.find(c => c.userWorkflowId === selectedWorkflow);
   const defaultMapping = selectedChain?.defaultDataMapping || {};
 
-  // Function to parse template strings like {{resultData.url}} or {{url}} and extract values from resultData
-  // Note: data parameter is already the resultData object, not wrapped in {resultData: ...}
-  const parseTemplate = (template: string, data: any): any => {
-    if (!template || typeof template !== 'string') return template;
-    if (!data) return template;
-    
-    // Match patterns like {{resultData.url}} or {{url}} or {{resultData.path.to.value}}
-    const matches = template.match(/\{\{([^}]+)\}\}/g);
-    if (!matches) return template;
-    
-    // If the entire template is a single placeholder, return the value directly
-    if (matches.length === 1 && template.trim() === matches[0]) {
-      const path = matches[0].replace(/[{}]/g, '').trim();
-      const keys = path.split('.');
-      
-      // Navigate through the data object
-      let value = data;
-      let startIndex = 0;
-      
-      // If path starts with resultData, skip it since data IS resultData
-      if (keys[0] === 'resultData') {
-        startIndex = 1;
-      }
-      
-      // Navigate through the keys
-      for (let i = startIndex; i < keys.length; i++) {
-        if (value && typeof value === 'object' && keys[i] in value) {
-          value = value[keys[i]];
-        } else {
-          return template;
-        }
-      }
-      
-      return value !== undefined && value !== null ? value : template;
-    }
-    
-    // If multiple placeholders or mixed content, replace each placeholder
-    let result = template;
-    matches.forEach(match => {
-      const path = match.replace(/[{}]/g, '').trim();
-      const keys = path.split('.');
-      
-      // Navigate through the data object
-      let value = data;
-      let startIndex = 0;
-      
-      // If path starts with resultData, skip it since data IS resultData
-      if (keys[0] === 'resultData') {
-        startIndex = 1;
-      }
-      
-      for (let i = startIndex; i < keys.length; i++) {
-        if (value && typeof value === 'object' && keys[i] in value) {
-          value = value[keys[i]];
-        } else {
-          value = undefined;
-          break;
-        }
-      }
-      
-      // Replace the template with the actual value
-      if (value !== undefined && value !== null) {
-        result = result.replace(match, String(value));
-      }
-    });
-    
-    return result;
-  };
-
-  // Load source execution resultData if not provided
-  useEffect(() => {
-    if (isOpen && executionId) {
-      // Always try to get resultData from chain endpoint to get parent's resultData
-      // This ensures we get the correct parent resultData for chaining
-      workflowApi.getExecutionChain(executionId)
-        .then(chainData => {
-          // If this execution has a parent, use parent's resultData (this is the source for chaining)
-          if (chainData?.parent?.resultData) {
-            setSourceResultData(chainData.parent.resultData);
-          } else if (chainData?.execution?.resultData) {
-            // Otherwise use current execution's resultData
-            setSourceResultData(chainData.execution.resultData);
-          } else if (resultData) {
-            // Fallback to resultData from props
-            setSourceResultData(resultData);
-          }
-        })
-        .catch(() => {
-          // Fallback to resultData from props if chain endpoint fails
-          if (resultData) {
-            setSourceResultData(resultData);
-          }
-        });
-    } else if (resultData) {
-      setSourceResultData(resultData);
-    }
-  }, [isOpen, executionId, resultData]);
-
   // Load requirements for target workflow when selected
-  // Wait for sourceResultData to be loaded first if it's being fetched
   useEffect(() => {
     if (selectedChain?.workflowId && isOpen) {
-      // Small delay to ensure sourceResultData is loaded if it was being fetched
-      const timer = setTimeout(() => {
-        loadTargetRequirements();
-      }, 100);
-      return () => clearTimeout(timer);
+      loadTargetRequirements();
     } else {
       setTargetRequirements(null);
       setFormData({});
       setErrors({});
-      setAutoFilledFields(new Set());
     }
-  }, [selectedChain?.workflowId, isOpen, sourceResultData]);
+  }, [selectedChain?.workflowId, isOpen]);
 
   const loadTargetRequirements = async () => {
     if (!selectedChain?.workflowId) return;
@@ -206,6 +98,11 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       
       const setDefaults = (fieldList: UserField[], prefix = '') => {
         fieldList.forEach(field => {
+          // Skip hidden fields and fields not in whitelist
+          if (field.hidden === true || !FIELD_WHITELIST.includes(field.key)) {
+            return;
+          }
+          
           const fullKey = prefix ? `${prefix}.${field.key}` : field.key;
           const defaultValue = field.defaultValue !== undefined ? field.defaultValue : field.default;
           
@@ -232,95 +129,10 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       };
       
       setDefaults(fields);
-      
-      // Auto-fill fields from resultData even if defaultMapping is empty
-      // This handles cases where backend doesn't provide defaultDataMapping
-      if (sourceResultData) {
-        const autoFilled = new Set<string>();
-        
-        // Helper function to find field by key (including nested fields)
-        const findFieldByKey = (key: string, fieldList: UserField[]): UserField | null => {
-          for (const field of fieldList) {
-            if (field.key === key) return field;
-            if (field.type === 'object' && field.fields) {
-              const found = findFieldByKey(key, field.fields);
-              if (found) return found;
-            }
-          }
-          return null;
-        };
-        
-        // If defaultMapping exists, use it
-        if (defaultMapping && Object.keys(defaultMapping).length > 0) {
-          Object.entries(defaultMapping).forEach(([targetField, template]) => {
-          if (typeof template === 'string') {
-            const mappedValue = parseTemplate(template, sourceResultData);
-            if (mappedValue !== undefined && mappedValue !== null && mappedValue !== template) {
-              // Find the field in requirements
-              const field = findFieldByKey(targetField, fields);
-              if (field) {
-                // For array fields, convert single value to array if needed
-                if (field.type === 'array') {
-                  // If mappedValue is a string (like URL), wrap it in array
-                  if (typeof mappedValue === 'string') {
-                    initialData[targetField] = [mappedValue];
-                  } else if (Array.isArray(mappedValue)) {
-                    initialData[targetField] = mappedValue;
-                  } else {
-                    initialData[targetField] = [mappedValue];
-                  }
-                  autoFilled.add(targetField);
-                } else {
-                  // For non-array fields, auto-fill if in whitelist and required
-                  // OR if field is required (even if not in whitelist, we still want to fill it for backend)
-                  if (field.required) {
-                    initialData[targetField] = mappedValue;
-                    autoFilled.add(targetField);
-                  } else if (FIELD_WHITELIST.includes(field.key)) {
-                    // Also fill non-required fields if in whitelist
-                    initialData[targetField] = mappedValue;
-                    autoFilled.add(targetField);
-                  }
-                }
-              }
-            }
-          }
-        });
-        } else {
-          // If no defaultMapping, try to auto-fill common patterns
-          // Look for fields that might accept image URLs from resultData
-          // Check if resultData has a URL (image result)
-          if (sourceResultData?.url && typeof sourceResultData.url === 'string') {
-            fields.forEach(field => {
-              // Check if field name suggests it accepts images/URLs
-              const fieldNameLower = field.key.toLowerCase();
-              const isImageField = fieldNameLower.includes('img') || 
-                                   fieldNameLower.includes('image') || 
-                                   fieldNameLower.includes('url') ||
-                                   fieldNameLower === 'arrayimg';
-              
-              if (isImageField) {
-                // For array fields, add URL to array
-                if (field.type === 'array') {
-                  initialData[field.key] = [sourceResultData.url];
-                  autoFilled.add(field.key);
-                } else if (field.type === 'string' && fieldNameLower.includes('array')) {
-                  // Handle case where arrayImg might be defined as string type but should be array
-                  // This is a workaround for backend type definition issues
-                  initialData[field.key] = [sourceResultData.url];
-                  autoFilled.add(field.key);
-                }
-              }
-            });
-          }
-        }
-        
-        setAutoFilledFields(autoFilled);
-      }
-      
       setFormData(initialData);
     } catch (err: any) {
       // Silently handle error - requirements may not be available
+      console.debug('Could not load target workflow requirements:', err.message);
       setTargetRequirements(null);
     } finally {
       setLoadingRequirements(false);
@@ -444,7 +256,6 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
     const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
     const error = errors[fullKey];
     const hasError = !!error;
-    const isAutoFilled = autoFilledFields.has(field.key);
 
     switch (field.type) {
       case 'string':
@@ -466,18 +277,10 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
               className={`w-full px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
                 hasError
                   ? 'border-red-500 focus:ring-red-500/50'
-                  : isAutoFilled
-                  ? 'border-green-500/50 focus:border-green-500 focus:ring-green-500/50'
                   : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
               }`}
               placeholder={field.placeholder || field.hint || ''}
             />
-            {isAutoFilled && (
-              <p className="text-xs text-green-400 flex items-center gap-1">
-                <span>✓</span>
-                <span>Автоматично заповнено з попереднього workflow</span>
-              </p>
-            )}
             {hasError && <p className="text-xs text-red-400">{error}</p>}
           </div>
         );
@@ -640,7 +443,8 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
         const canRemove = field.minItems === undefined || arrayValue.length > field.minItems;
         
         // Check if array has enum itemType (array of enum values)
-        const isEnumArray = field.itemType === 'enum' || (field.options && field.options.length > 0 && field.itemType === 'string');
+        // itemType can't be 'enum', but if field has options and itemType is 'string', treat it as enum array
+        const isEnumArray = field.options && field.options.length > 0 && field.itemType === 'string';
         const enumOptions = isEnumArray ? (field.options || []) : [];
         
         const handleArrayItemAdd = () => {
@@ -810,8 +614,6 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
 
           const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
           const isInWhitelist = FIELD_WHITELIST.includes(field.key);
-          const isInDefaultMapping = defaultMapping && field.key in defaultMapping;
-          const isAutoFilled = autoFilledFields.has(field.key);
           
           if (field.type === 'object' && field.fields) {
             return;
@@ -820,79 +622,29 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
             let shouldInclude = false;
             let valueToSend: any = value;
             
-            // For fields in whitelist OR fields that are auto-filled from defaultMapping - use form data
-            if (isInWhitelist || isAutoFilled) {
+            // Only include fields in whitelist
+            if (isInWhitelist) {
               // For arrays, include if:
-              // 1. It has values (not empty array) - always include
-              // 2. It's required or has minItems - include even if empty (backend will validate)
+              // 1. It's required (even if empty, backend will validate)
+              // 2. It has values (not empty array)
+              // 3. It has minItems requirement (even if empty, backend will validate)
               if (field.type === 'array') {
-                if (Array.isArray(value) && value.length > 0) {
-                  // Include non-empty arrays
+                if (field.required || (field.minItems !== undefined && field.minItems > 0)) {
+                  // Always include required arrays or arrays with minItems
                   shouldInclude = true;
-                } else if (field.required || (field.minItems !== undefined && field.minItems > 0)) {
-                  // Include required arrays or arrays with minItems (even if empty)
+                } else if (Array.isArray(value) && value.length > 0) {
+                  // Include non-empty arrays
                   shouldInclude = true;
                 }
               } else if (value !== undefined && value !== null && value !== '') {
                 // For other types, include if not empty
                 shouldInclude = true;
               } else if (field.required) {
-                // Include required fields even if empty
+                // Include required fields even if empty (backend will validate)
                 shouldInclude = true;
-              }
-            } else {
-              // For fields NOT in whitelist - check if they were auto-filled from defaultMapping
-              const isInDefaultMapping = defaultMapping && field.key in defaultMapping;
-              
-              // If field was auto-filled from defaultMapping, include it in payload
-              if (isAutoFilled) {
-                shouldInclude = true;
-                // Use the auto-filled value
-                valueToSend = value;
-              } else if (field.required && !isInDefaultMapping) {
-                // For required fields not in defaultMapping, include with default value
-                shouldInclude = true;
-                
-                // Set default value based on field type
-                if (value === undefined || value === null || value === '') {
-                  if (field.defaultValue !== undefined && field.defaultValue !== null) {
-                    valueToSend = field.defaultValue;
-                  } else if (field.default !== undefined && field.default !== null) {
-                    valueToSend = field.default;
-                  } else {
-                    // Generate default value based on type
-                    switch (field.type) {
-                      case 'string':
-                      case 'email':
-                      case 'url':
-                        valueToSend = '';
-                        break;
-                      case 'number':
-                        valueToSend = 0;
-                        break;
-                      case 'boolean':
-                        valueToSend = false;
-                        break;
-                      case 'array':
-                        valueToSend = [];
-                        break;
-                      case 'enum':
-                        // Use first option if available
-                        if (field.options && field.options.length > 0) {
-                          valueToSend = field.options[0].value;
-                        } else if (field.enum && field.enum.length > 0) {
-                          valueToSend = field.enum[0];
-                        } else {
-                          valueToSend = '';
-                        }
-                        break;
-                      default:
-                        valueToSend = '';
-                    }
-                  }
-                }
               }
             }
+            // Skip all fields NOT in whitelist (even if required)
             
             if (shouldInclude) {
               // For enum fields with options, convert value to label if needed
@@ -920,8 +672,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
 
       const request: ChainExecutionRequest = {
         targetUserWorkflowId: selectedWorkflow,
-        // Use custom mapping if enabled, otherwise use default mapping (backend will apply it)
-        dataMapping: useCustomMapping ? customMapping : (Object.keys(defaultMapping).length > 0 ? defaultMapping : undefined),
+        dataMapping: useCustomMapping ? customMapping : undefined,
         additionalData: Object.keys(formPayload).length > 0 ? formPayload : undefined
       };
 
