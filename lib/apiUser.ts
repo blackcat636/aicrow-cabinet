@@ -134,18 +134,38 @@ export const userApi = {
           errorMessage = 'Unauthorized access';
         } else if (response.status === 403) {
           errorMessage = 'Access forbidden';
+        } else if (response.status === 503) {
+          errorMessage = 'Service temporarily unavailable';
         } else {
           try {
             const errorData = await response.json();
+            // Check for error message in different possible locations
             if (errorData.message) {
               errorMessage = errorData.message;
             } else if (errorData.error) {
               errorMessage = errorData.error;
+            } else if (errorData.data?.message) {
+              errorMessage = errorData.data.message;
+            } else if (errorData.data?.error) {
+              errorMessage = errorData.data.error;
+            } else if (Array.isArray(errorData.errors) && errorData.errors.length > 0) {
+              errorMessage = errorData.errors[0];
             }
           } catch (e) {
-            errorMessage = response.statusText || 'Failed to get social up access URL';
+            // If JSON parsing fails, use status text or status-specific message
+            if (response.status === 503) {
+              errorMessage = 'Service temporarily unavailable';
+            } else {
+              errorMessage = response.statusText || 'Failed to get social up access URL';
+            }
           }
         }
+
+        console.error('❌ updateSocialUp error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorMessage
+        });
 
         const error = new Error(errorMessage);
         (error as any).status = response.status;
@@ -155,10 +175,21 @@ export const userApi = {
       const result = await response.json();
       // Handle both response formats: { status: 200, data: {...} } or direct { access_url, success, duration }
       if (result.status === 200 && result.data) {
+        // Validate that access_url exists
+        if (!result.data.access_url) {
+          throw new Error('Access URL not found in response');
+        }
         return result.data;
       }
+      
+      // Validate direct response format
+      if (!result.access_url) {
+        throw new Error('Access URL not found in response');
+      }
+      
       return result;
-    } catch (error) {
+    } catch (error: any) {
+      // Re-throw error as-is - localization should be handled in UI components
       throw error;
     }
   }

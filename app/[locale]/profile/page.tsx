@@ -14,6 +14,9 @@ import { LanguageSwitcher } from '@/components/profile/LanguageSwitcher';
 import { getAvatarUrl } from '@/lib/avatars';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
+import { telegramApi } from '@/lib/apiTelegram';
+import { TelegramStatusResponse } from '@/types/telegram';
+import { useRouter } from '@/i18n/routing';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -30,6 +33,7 @@ const getInitials = (firstName: string, lastName: string, username: string) => {
 
 export default function ProfilePage() {
   const t = useTranslations('profile');
+  const router = useRouter();
   // Use profile ID + timestamp for unique ID to avoid duplicates in React Strict Mode
   const [dateOfBirthId, setDateOfBirthId] = useState<string>('');
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -46,9 +50,10 @@ export default function ProfilePage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showChangeEmailForm, setShowChangeEmailForm] = useState(false);
   const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
-  const [socialUpLoading, setSocialUpLoading] = useState(false);
   const [showAvatarManager, setShowAvatarManager] = useState(false);
   const [confirmAvatarClose, setConfirmAvatarClose] = useState(false);
+  const [telegramStatus, setTelegramStatus] = useState<TelegramStatusResponse['data'] | null>(null);
+  const [telegramLoading, setTelegramLoading] = useState(false);
 
   // Resolve avatar src: supports default names, dicebear ids and direct URLs
   const resolveAvatarSrc = (value?: string | null): string | undefined => getAvatarUrl(value);
@@ -70,7 +75,26 @@ export default function ProfilePage() {
 
   useEffect(() => {
     loadProfile();
+    loadTelegramStatus();
   }, []);
+
+  const loadTelegramStatus = async () => {
+    try {
+      setTelegramLoading(true);
+      const response = await telegramApi.getStatus();
+      setTelegramStatus(response.data);
+    } catch (err: any) {
+      // Handle 404 error gracefully - API endpoint might not exist yet
+      if (err.status === 404) {
+        setTelegramStatus({ isLinked: false, notificationsEnabled: false });
+      } else {
+        console.error('Error loading Telegram status:', err);
+        setTelegramStatus({ isLinked: false, notificationsEnabled: false });
+      }
+    } finally {
+      setTelegramLoading(false);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -176,24 +200,6 @@ export default function ProfilePage() {
   const handleEmailChangeSuccess = () => {
     // Reload page to refresh authentication context with new email
     loadProfile();
-  };
-
-  // Social Up handler
-  const handleSocialUp = async () => {
-    try {
-      setSocialUpLoading(true);
-      const result = await userApi.updateSocialUp();
-      
-      // Open URL in new window
-      if (result.access_url) {
-        window.open(result.access_url, '_blank', 'noopener,noreferrer');
-        toast.success('Connection link opened in new window. The link will be valid for 1 hour.');
-      }
-    } catch (error: any) {
-      toast.error(error.message || 'Failed to get social up access URL');
-    } finally {
-      setSocialUpLoading(false);
-    }
   };
 
   if (loading) {
@@ -438,38 +444,40 @@ export default function ProfilePage() {
             <LanguageSwitcher />
           </div>
 
-          {/* Social Up Section */}
+          {/* Integrations Section */}
           <div className="mt-6 p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-sm font-semibold text-gray-200 mb-1">
-                  {t('connectSocialMedia')}
-                </h3>
-                <p className="text-xs text-gray-400">
-                  {t('connectSocialMediaDescription')}
-                </p>
-              </div>
-              <Button
-                type="button"
-                onClick={handleSocialUp}
-                disabled={socialUpLoading}
-                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white disabled:opacity-50 shadow-lg shadow-purple-500/30 transition-all px-6"
-              >
-                {socialUpLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    {t('saving')}
+            <h3 className="text-sm font-semibold text-gray-200 mb-4">
+              {t('integrations')}
+            </h3>
+            
+            {/* Telegram Integration */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-blue-600 rounded">
+                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                    </svg>
                   </div>
-                ) : (
-                  t('connect')
-                )}
-              </Button>
-            </div>
-            <div className="mt-3 p-3 bg-yellow-900/20 border border-yellow-700/50 rounded-lg">
-              <p className="text-xs text-yellow-300 flex items-center gap-2">
-                <span>⚠️</span>
-                <span>{t('socialUpWarning')}</span>
-              </p>
+                  <div>
+                    <div className="text-sm font-medium text-gray-200">Telegram</div>
+                    {telegramLoading ? (
+                      <div className="text-xs text-gray-400">{t('integrationsLoading')}</div>
+                    ) : telegramStatus?.isLinked ? (
+                      <div className="text-xs text-green-400">{t('integrationsConnected')}</div>
+                    ) : (
+                      <div className="text-xs text-gray-400">{t('integrationsNotConnected')}</div>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => router.push('/integrations/telegram')}
+                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs px-4 py-2"
+                >
+                  {telegramStatus?.isLinked ? t('integrationsManage') : t('integrationsConnect')}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

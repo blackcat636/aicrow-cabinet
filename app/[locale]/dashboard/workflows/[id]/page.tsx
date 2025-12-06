@@ -20,7 +20,7 @@ import {
   PauseIcon,
   TrashIcon
 } from '@/components/icons';
-import { Search, Calendar, X } from 'lucide-react';
+import { Search, Calendar, X, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { WorkflowForm } from '@/components/workflow/WorkflowForm';
 import { WorkflowExecuteModal } from '@/components/workflow/WorkflowExecuteModal';
@@ -395,6 +395,7 @@ export default function WorkflowDetailPage() {
   const [isWorkflowInfoHovering, setIsWorkflowInfoHovering] = useState(false);
   const workflowInfoRef = useRef<HTMLDivElement>(null);
   const didInitialLoadRef = useRef(false);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   
   // Mouse tracking for Input Data Template card
   const [inputTemplateMousePosition, setInputTemplateMousePosition] = useState({ x: 0, y: 0 });
@@ -478,18 +479,38 @@ export default function WorkflowDetailPage() {
 
   // Auto-refresh executions every 5 seconds if there are running/pending executions
   useEffect(() => {
+    // Clear any existing interval
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
+
+    if (!workflow || !isAuthenticated) return;
+
+    // Check if there are running/pending executions
     const hasRunningExecutions = executions.items.some(
       e => e.status === '3' || e.status === 'running' || e.status === '0' || e.status === 'pending'
     );
 
-    if (hasRunningExecutions && workflow && isAuthenticated) {
-      const interval = setInterval(() => {
-        loadExecutions();
-      }, 5000); // Refresh every 5 seconds
+    if (!hasRunningExecutions) return;
 
-      return () => clearInterval(interval);
-    }
-  }, [executions.items, workflow, isAuthenticated]);
+    // Create new interval
+    refreshIntervalRef.current = setInterval(() => {
+      // Preserve completed executions, only update running/pending
+      loadExecutions(true);
+    }, 5000); // Refresh every 5 seconds
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
+    // Note: We intentionally don't include executions.items in dependencies
+    // to avoid recreating the interval on every execution update
+    // The interval will continue running until all executions are completed
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workflow?.id, isAuthenticated]); // Only depend on workflow ID and auth status
 
   const loadWorkflow = async () => {
     if (!workflowId) {
@@ -518,12 +539,13 @@ export default function WorkflowDetailPage() {
     }
   };
 
-  const loadExecutions = async () => {
+  const loadExecutions = async (preserveCompleted = false) => {
     if (!workflow) return;
     
     try {
       setExecutionsLoading(true);
       // Fetch all executions and filter by this workflow's userWorkflowId
+      // Don't use recentExecutions as it only contains 5 items
       const data = await workflowApi.getMyExecutions();
       // Filter executions for this specific user workflow
       // workflow.id is the userWorkflowId
@@ -532,8 +554,56 @@ export default function WorkflowDetailPage() {
         return (execution.workflowId === workflow.id) || (execution.userWorkflowId === workflow.id);
       });
       
+      let finalItems: WorkflowExecution[];
+      
+      if (preserveCompleted && executions.items.length > 0) {
+        // Merge strategy: keep completed executions, update/add running/pending/new ones
+        const completedStatuses = ['completed', '1', 'failed', '2'];
+        const existingCompleted = new Map<number, WorkflowExecution>();
+        const existingRunning = new Map<number, WorkflowExecution>();
+        
+        // Separate existing executions by status
+        executions.items.forEach(exec => {
+          if (completedStatuses.includes(exec.status)) {
+            existingCompleted.set(exec.id, exec);
+          } else {
+            existingRunning.set(exec.id, exec);
+          }
+        });
+        
+        // Create map of new executions
+        const newExecutionsMap = new Map<number, WorkflowExecution>();
+        filteredItems.forEach(exec => {
+          newExecutionsMap.set(exec.id, exec);
+        });
+        
+        // Merge: keep completed from existing, use new data for running/pending/new
+        const mergedItems: WorkflowExecution[] = [];
+        
+        // Add all completed executions from existing (preserve them)
+        existingCompleted.forEach(exec => {
+          mergedItems.push(exec);
+        });
+        
+        // Add/update running/pending executions from new data
+        filteredItems.forEach(newExec => {
+          if (!completedStatuses.includes(newExec.status)) {
+            // This is a running/pending execution - use new data
+            mergedItems.push(newExec);
+          } else if (!existingCompleted.has(newExec.id)) {
+            // This is a newly completed execution - add it
+            mergedItems.push(newExec);
+          }
+        });
+        
+        finalItems = mergedItems;
+      } else {
+        // Full refresh - use all new data
+        finalItems = filteredItems;
+      }
+      
       // Sort by startedAt descending (newest first)
-      const sortedItems = [...filteredItems].sort((a, b) => {
+      const sortedItems = [...finalItems].sort((a, b) => {
         const dateA = a.startedAt ? new Date(a.startedAt).getTime() : 0;
         const dateB = b.startedAt ? new Date(b.startedAt).getTime() : 0;
         return dateB - dateA; // Descending order (newest first)
@@ -1188,11 +1258,22 @@ export default function WorkflowDetailPage() {
               <div>
                 <div className="flex items-center justify-between mb-6 ml-6 mr-6">
                   <h2 className="text-xl font-semibold text-white">{t('executionHistory')}</h2>
-                  <div className="text-sm text-gray-400">
-                    {t('executionsCount', { count: filteredExecutions.length, total: executions.items.length })}
-                    {(dateFrom || dateTo || inputDataSearch) && (
-                      <span className="ml-2 text-purple-400">{t('filtered')}</span>
-                    )}
+                  <div className="flex items-center gap-4">
+                    <button
+                      onClick={() => loadExecutions(false)}
+                      disabled={executionsLoading}
+                      className="flex items-center gap-2 px-3 py-1.5 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={tCommon('refresh')}
+                    >
+                      <RefreshCw className={`w-4 h-4 ${executionsLoading ? 'animate-spin' : ''}`} />
+                      {tCommon('refresh')}
+                    </button>
+                    <div className="text-sm text-gray-400">
+                      {t('executionsCount', { count: filteredExecutions.length, total: executions.items.length })}
+                      {(dateFrom || dateTo || inputDataSearch) && (
+                        <span className="ml-2 text-purple-400">{t('filtered')}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
 

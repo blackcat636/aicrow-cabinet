@@ -159,12 +159,12 @@ export const workflowApi = {
 
       const result = await response.json();
       const userWorkflow = result.userWorkflow || result.data || result;
-      
+
       // Ensure id is present in the response
       if (!userWorkflow.id && id) {
         userWorkflow.id = id;
       }
-      
+
       return userWorkflow;
     } catch (error) {
       throw error;
@@ -397,10 +397,14 @@ export const workflowApi = {
   },
 
   // Chainable Workflows
-  getAvailableChains: async (executionId: number): Promise<AvailableChainsResponse> => {
+  getAvailableChains: async (
+    executionId: number
+  ): Promise<AvailableChainsResponse> => {
     try {
       const response = await fetchWithAuth(
-        buildApiUrl(`/automations/user/executions/${executionId}/available-chains`),
+        buildApiUrl(
+          `/automations/user/executions/${executionId}/available-chains`
+        ),
         {
           method: 'GET'
         }
