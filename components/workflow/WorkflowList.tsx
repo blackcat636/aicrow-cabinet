@@ -31,6 +31,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
   const { isAuthenticated } = useAuth();
   const t = useTranslations('dashboard');
   const tWorkflow = useTranslations('workflow');
+  const tCommon = useTranslations('common');
   const [workflows, setWorkflows] = useState<UserWorkflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -299,8 +300,8 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
         onConfirm={confirmDelete}
           title={tWorkflow('deleteConfirm')}
         message={deleteMessage}
-        confirmText="Delete"
-        cancelText="Cancel"
+        confirmText={tCommon('delete') || 'Delete'}
+        cancelText={tCommon('cancel') || 'Cancel'}
         type="danger"
       />
     </div>

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useTranslations } from 'next-intl';
 
 interface ResultData {
   type?: string;
@@ -19,6 +20,7 @@ interface ResultDisplayProps {
 }
 
 export const ResultDisplay: React.FC<ResultDisplayProps> = ({ resultData, className = '' }) => {
+  const t = useTranslations('resultDisplay');
   const [openImage, setOpenImage] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
 
@@ -71,7 +73,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ resultData, classN
               className="w-full rounded-lg"
               style={{ maxHeight: '600px' }}
             >
-              Your browser does not support the video tag.
+              {t('videoNotSupported') || 'Your browser does not support the video tag.'}
             </video>
           </div>
           {data.url && (
@@ -105,12 +107,12 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ resultData, classN
             >
               <img
                 src={data.url}
-                alt={data.title || 'Result image'}
+                alt={data.title || t('resultImage') || 'Result image'}
                 className="w-full max-h-48 object-contain transition-transform duration-200 group-hover:scale-[1.01]"
               />
               <div className="absolute inset-0 flex items-end justify-end p-2 opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-t from-black/60 to-transparent">
                 <span className="text-[11px] px-2 py-1 rounded bg-black/70 text-gray-200 border border-white/10">
-                  Click to enlarge
+                  {t('clickToEnlarge') || 'Click to enlarge'}
                 </span>
               </div>
             </button>
@@ -140,11 +142,11 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ resultData, classN
                   onClick={() => setOpenImage(null)}
                   className="absolute top-2 right-2 z-10 px-3 py-1 text-xs bg-black/70 text-white rounded border border-white/20 hover:bg-black/90"
                 >
-                  Close
+                  {t('close') || 'Close'}
                 </button>
                 <img
                   src={data.url}
-                  alt={data.title || 'Result image'}
+                  alt={data.title || t('resultImage') || 'Result image'}
                   className="block max-h-[90vh] max-w-[90vw] object-contain"
                 />
               </div>
@@ -164,7 +166,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ resultData, classN
           )}
           <div className="w-full max-w-2xl">
             <audio src={data.url} controls className="w-full">
-              Your browser does not support the audio tag.
+              {t('audioNotSupported') || 'Your browser does not support the audio tag.'}
             </audio>
           </div>
           {data.url && (
@@ -190,11 +192,11 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ resultData, classN
           )}
           <div className="space-y-2">
             <div className="text-xs text-gray-400">
-              <span className="font-medium">Type:</span> {type || 'unknown'}
+              <span className="font-medium">{t('type') || 'Type:'}</span> {type || t('unknown') || 'unknown'}
             </div>
             {data.kind && (
               <div className="text-xs text-gray-400">
-                <span className="font-medium">Kind:</span> {data.kind}
+                <span className="font-medium">{t('kind') || 'Kind:'}</span> {data.kind}
               </div>
             )}
             <a
@@ -208,7 +210,7 @@ export const ResultDisplay: React.FC<ResultDisplayProps> = ({ resultData, classN
             {data.meta && Object.keys(data.meta).length > 0 && (
               <details className="mt-2">
                 <summary className="text-xs text-gray-400 cursor-pointer hover:text-gray-300">
-                  Metadata
+                  {t('metadata') || 'Metadata'}
                 </summary>
                 <pre className="mt-2 text-xs text-gray-500 whitespace-pre-wrap break-words">
                   {JSON.stringify(data.meta, null, 2)}

@@ -3,9 +3,46 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { DashBoardIcon, FileTextIcon, ClockIcon } from '@/components/icons';
+import { useTranslations } from 'next-intl';
+
+// Disable static generation to avoid prerender issues with translations
+export const dynamic = 'force-dynamic';
+
+// Fallback translations for when next-intl is not available during SSR/prerender
+const fallbackTranslations: Record<string, string> = {
+  pageNotFound: 'Page Not Found',
+  title: 'Oops! Page Not Found',
+  description: "The page you're looking for doesn't exist or has been moved. You might have mistyped the URL, or the link you followed is outdated.",
+  titleMobile: '404 - Page Not Found',
+  descriptionMobile: "The page you're looking for doesn't exist or has been moved.",
+  goToDashboard: 'Go to Dashboard',
+  workflows: 'Workflows',
+  executions: 'Executions'
+};
 
 const NotFoundPage: React.FC = () => {
   const router = useRouter();
+  
+  // Use translations with fallback values
+  // If NextIntlClientProvider is not available (during prerender), useTranslations will throw
+  // We handle this by using fallback values
+  let t: (key: string) => string;
+  
+  try {
+    const translations = useTranslations('notFound');
+    t = (key: string) => {
+      try {
+        const translated = translations(key);
+        // If translation is missing or returns the key, use fallback
+        return translated && translated !== key ? translated : (fallbackTranslations[key] || key);
+      } catch {
+        return fallbackTranslations[key] || key;
+      }
+    };
+  } catch {
+    // If useTranslations fails (e.g., during prerender), use fallback
+    t = (key: string) => fallbackTranslations[key] || key;
+  }
 
   return (
     <div className="h-full bg-black flex items-center justify-center px-4">
@@ -18,7 +55,7 @@ const NotFoundPage: React.FC = () => {
               <FileTextIcon className="w-12 h-12 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-2">404</h2>
-            <p className="text-gray-400">Page Not Found</p>
+            <p className="text-gray-400">{t('pageNotFound')}</p>
           </div>
         </div>
 
@@ -27,13 +64,12 @@ const NotFoundPage: React.FC = () => {
           <div className="space-y-6">
             {/* Title */}
             <h1 className="text-4xl font-bold text-white mb-4">
-              Oops! Page Not Found
+              {t('title')}
             </h1>
             
             {/* Description */}
             <p className="text-lg text-gray-300 mb-8">
-              The page you're looking for doesn't exist or has been moved. 
-              You might have mistyped the URL, or the link you followed is outdated.
+              {t('description')}
             </p>
 
             {/* Quick navigation */}
@@ -43,7 +79,7 @@ const NotFoundPage: React.FC = () => {
                 className="w-full bg-purple-600 hover:bg-purple-700 text-white px-8 py-3 text-lg font-medium rounded-lg transition-colors shadow-lg shadow-purple-500/25 flex items-center justify-center gap-3"
               >
                 <DashBoardIcon className="w-5 h-5" />
-                Go to Dashboard
+                {t('goToDashboard')}
               </button>
               
               <div className="flex gap-4">
@@ -52,14 +88,14 @@ const NotFoundPage: React.FC = () => {
                   className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 px-6 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <FileTextIcon className="w-4 h-4" />
-                  Workflows
+                  {t('workflows')}
                 </button>
                 <button 
                   onClick={() => router.push('/executions')}
                   className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 px-6 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <ClockIcon className="w-4 h-4" />
-                  Executions
+                  {t('executions')}
                 </button>
               </div>
             </div>
@@ -77,12 +113,12 @@ const NotFoundPage: React.FC = () => {
           
           {/* Title */}
           <h1 className="text-2xl font-bold text-white">
-            404 - Page Not Found
+            {t('titleMobile')}
           </h1>
           
           {/* Description */}
           <p className="text-gray-300">
-            The page you're looking for doesn't exist or has been moved.
+            {t('descriptionMobile')}
           </p>
 
           {/* Call to Action Button */}
@@ -91,7 +127,7 @@ const NotFoundPage: React.FC = () => {
             className="w-full bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 text-lg font-medium rounded-lg transition-colors shadow-lg shadow-purple-500/25 flex items-center justify-center gap-2"
           >
             <DashBoardIcon className="w-5 h-5" />
-            Go to Dashboard
+            {t('goToDashboard')}
           </button>
         </div>
       </div>

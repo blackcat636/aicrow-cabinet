@@ -126,6 +126,7 @@
     "profile": "Profile",
     "logout": "Log out",
     "mainMenu": "Main Menu",
+    "closeMenu": "Close menu",
     "welcome": "Welcome,",
     "user": "User"
   },
@@ -244,6 +245,11 @@
     "deactivate": "Deactivate",
     "delete": "Delete",
     "edit": "Edit",
+    "activateToExecute": "Activate workflow to execute",
+    "activateWorkflow": "Activate workflow",
+    "deactivateWorkflow": "Deactivate workflow",
+    "editWorkflow": "Edit workflow",
+    "deleteWorkflow": "Delete workflow",
     "notFound": "Workflow Not Found",
     "notFoundDescription": "The requested workflow could not be found.",
     "backToDashboard": "Back to Dashboard",
@@ -445,7 +451,7 @@
       "defaultMapping": "Default Data Mapping:",
       "useCustomMapping": "Use Custom Mapping",
       "customMapping": "Custom Data Mapping",
-      "customMappingHint": "Define how to transform result data. Use template syntax: {{resultData.path.to.data}}",
+      "customMappingHint": "Define how to transform result data. Use template syntax with double curly braces to access result data.",
       "additionalData": "Additional Data (Optional)",
       "additionalDataHint": "Enter JSON object with additional data",
       "userText": "User Text / Prompt (Optional)",
@@ -459,8 +465,82 @@
       "cancel": "Cancel",
       "cancelTitle": "Cancel Chaining",
       "cancelMessage": "Are you sure you want to close the form? All unsaved changes will be lost.",
-      "keepEditing": "Keep Editing"
-    }
+      "keepEditing": "Keep Editing",
+      "prefilledData": "Data from Previous Step",
+      "allowEditPrefilled": "Allow editing",
+      "loadingFields": "Loading form fields...",
+      "mappingTargetFieldPlaceholder": "Target field name (e.g., prompt)",
+      "mappingDataPathPlaceholder": "Data path with double curly braces",
+      "removeMapping": "Remove mapping",
+      "addMapping": "Add mapping",
+      "preview": "Preview:",
+      "remove": "Remove",
+      "addItem": "Add Item",
+      "itemNumber": "Item {number}",
+      "items": "items",
+      "fieldRequiresAtLeast": "{field} requires at least {count} items",
+      "fieldMustHaveAtMost": "{field} must have at most {count} items",
+      "maxItemsAllowed": "Maximum {count} item(s) allowed",
+      "fillRequiredFields": "Please fill in all required fields"
+    },
+    "fieldRequired": "{field} is required"
+  },
+  "resultDisplay": {
+    "clickToEnlarge": "Click to enlarge",
+    "close": "Close",
+    "resultImage": "Result image",
+    "videoNotSupported": "Your browser does not support the video tag.",
+    "audioNotSupported": "Your browser does not support the audio tag.",
+    "type": "Type:",
+    "kind": "Kind:",
+    "unknown": "unknown",
+    "metadata": "Metadata"
+  },
+  "scheduleCard": {
+    "recurringCron": "Recurring (Cron)",
+    "oneTime": "One-time",
+    "manualOnly": "Manual Only",
+    "everyDay": "every day",
+    "day": "day {day}",
+    "everyMonth": "every month",
+    "month": "month {month}",
+    "notScheduled": "Not scheduled",
+    "scheduledFor": "Scheduled for:",
+    "active": "Active",
+    "inactive": "Inactive",
+    "nextExecution": "Next execution:",
+    "deactivate": "Deactivate",
+    "activate": "Activate",
+    "editSchedule": "Edit Schedule",
+    "deleteSchedule": "Delete Schedule",
+    "created": "Created:",
+    "updated": "Updated:"
+  },
+  "avatarManager": {
+    "style": "Style",
+    "seed": "Seed",
+    "typeUniqueSeed": "Type a unique seed",
+    "generatedByDiceBear": "Avatar is generated on-the-fly by DiceBear API.",
+    "randomize": "Randomize",
+    "quickPicks": "Quick picks",
+    "pickSeed": "Pick {seed}",
+    "saving": "Saving...",
+    "useGenerated": "Use generated",
+    "removeAvatar": "Remove avatar"
+  },
+  "notFound": {
+    "pageNotFound": "Page Not Found",
+    "title": "Oops! Page Not Found",
+    "description": "The page you're looking for doesn't exist or has been moved. You might have mistyped the URL, or the link you followed is outdated.",
+    "titleMobile": "404 - Page Not Found",
+    "descriptionMobile": "The page you're looking for doesn't exist or has been moved.",
+    "goToDashboard": "Go to Dashboard",
+    "workflows": "Workflows",
+    "executions": "Executions"
+  },
+  "error": {
+    "title": "Something went wrong!",
+    "tryAgain": "Try again"
   },
   "balance": {
     "title": "Your Balance",
@@ -556,4 +636,3 @@
     }
   }
 }
-

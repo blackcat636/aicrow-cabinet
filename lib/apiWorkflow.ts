@@ -363,10 +363,7 @@ export const workflowApi = {
       const result = await response.json();
       // API sometimes wraps execution in data / data.execution
       const execution =
-        result?.execution ||
-        result?.data?.execution ||
-        result?.data ||
-        result;
+        result?.execution || result?.data?.execution || result?.data || result;
 
       // Ensure the execution has an id for stable keying
       if (!execution?.id && id) {
@@ -385,6 +382,38 @@ export const workflowApi = {
     try {
       const response = await fetchWithAuth(
         buildApiUrl(`/automations/user/workflows/${workflowId}/requirements`),
+        {
+          method: 'GET'
+        }
+      );
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      return result.data || result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getChainFormFields: async (
+    executionId: number,
+    targetUserWorkflowId: number
+  ): Promise<WorkflowRequirements> => {
+    try {
+      const response = await fetchWithAuth(
+        buildApiUrl(
+          `/automations/user/executions/${executionId}/chain-form/${targetUserWorkflowId}`
+        ),
         {
           method: 'GET'
         }

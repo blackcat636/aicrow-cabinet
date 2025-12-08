@@ -201,7 +201,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
                 : 'hover:brightness-110 shadow-lg'
             }`}
             style={!isExecuting && workflow.isActive ? { background: 'linear-gradient(90deg, #A500E1 0%, #7B61FF 100%)', boxShadow: '0 10px 15px -3px rgba(165,0,225,0.25)' } : undefined}
-            title={!workflow.isActive ? 'Activate workflow to execute' : ''}
+            title={!workflow.isActive ? (t('activateToExecute') || 'Activate workflow to execute') : ''}
           >
             {isExecuting ? (
               <>
@@ -236,7 +236,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
             <button
               onClick={() => onToggle(workflow.id)}
               className="p-2 text-white transition-colors rounded-lg hover:bg-gray-700"
-              title={workflow.isActive ? 'Deactivate workflow' : 'Activate workflow'}
+              title={workflow.isActive ? (t('deactivateWorkflow') || 'Deactivate workflow') : (t('activateWorkflow') || 'Activate workflow')}
             >
               {workflow.isActive ? (
                 <PauseIcon className="w-4 h-4 text-white" />
@@ -248,7 +248,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
             <button
               onClick={() => onEdit(workflow)}
               className="p-2 text-white transition-colors rounded-lg hover:bg-gray-700"
-              title="Edit workflow"
+              title={t('editWorkflow') || 'Edit workflow'}
             >
               <SettingsIcon className="w-4 h-4" color="#ffffff" />
             </button>
@@ -256,7 +256,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
             <button
               onClick={() => onDelete(workflow.id, workflow.name || workflow.workflow.name)}
               className="p-2 text-white hover:text-red-400 transition-colors rounded-lg hover:bg-red-900/20"
-              title="Delete workflow"
+              title={t('deleteWorkflow') || 'Delete workflow'}
             >
               <TrashIcon className="w-4 h-4 text-white" />
             </button>

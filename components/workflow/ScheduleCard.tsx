@@ -11,6 +11,7 @@ import {
   PlayIcon,
   PauseIcon
 } from '@/components/icons';
+import { useTranslations } from 'next-intl';
 
 interface ScheduleCardProps {
   schedule: WorkflowSchedule;
@@ -25,11 +26,13 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
   onDelete,
   onToggle
 }) => {
+  const t = useTranslations('scheduleCard');
+  
   const getScheduleTypeLabel = (type: string) => {
     switch (type) {
-      case 'cron': return 'Recurring (Cron)';
-      case 'once': return 'One-time';
-      case 'manual': return 'Manual Only';
+      case 'cron': return t('recurringCron') || 'Recurring (Cron)';
+      case 'once': return t('oneTime') || 'One-time';
+      case 'manual': return t('manualOnly') || 'Manual Only';
       default: return type;
     }
   };
@@ -48,13 +51,15 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
     const parts = cron.split(' ');
     if (parts.length === 5) {
       const [minute, hour, day, month, weekday] = parts;
-      return `${hour}:${minute.padStart(2, '0')} ${day === '*' ? 'every day' : `day ${day}`} ${month === '*' ? 'every month' : `month ${month}`}`;
+      const dayText = day === '*' ? (t('everyDay') || 'every day') : (t('day', { day }) || `day ${day}`);
+      const monthText = month === '*' ? (t('everyMonth') || 'every month') : (t('month', { month }) || `month ${month}`);
+      return `${hour}:${minute.padStart(2, '0')} ${dayText} ${monthText}`;
     }
     return cron;
   };
 
   const formatNextExecution = (dateString?: string) => {
-    if (!dateString) return 'Not scheduled';
+    if (!dateString) return t('notScheduled') || 'Not scheduled';
     const date = new Date(dateString);
     return date.toLocaleString();
   };
@@ -85,7 +90,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
           
           {schedule.scheduleType === 'once' && schedule.scheduledAt && (
             <p className="text-sm text-gray-300">
-              Scheduled for: {new Date(schedule.scheduledAt).toLocaleString()}
+              {t('scheduledFor') || 'Scheduled for:'} {new Date(schedule.scheduledAt).toLocaleString()}
             </p>
           )}
         </div>
@@ -95,7 +100,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
             variant={schedule.isActive ? "default" : "secondary"}
             className={schedule.isActive ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"}
           >
-            {schedule.isActive ? 'Active' : 'Inactive'}
+            {schedule.isActive ? (t('active') || 'Active') : (t('inactive') || 'Inactive')}
           </Badge>
         </div>
       </div>
@@ -105,7 +110,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
         <div className="mb-3">
           <div className="flex items-center gap-2 text-sm text-gray-300">
             <ClockIcon className="w-4 h-4" />
-            <span>Next execution: {formatNextExecution(schedule.nextExecutionAt)}</span>
+            <span>{t('nextExecution') || 'Next execution:'} {formatNextExecution(schedule.nextExecutionAt)}</span>
           </div>
         </div>
       )}
@@ -116,7 +121,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
           <button
             onClick={() => onToggle(schedule.id)}
             className="p-2 text-gray-400 hover:text-white transition-colors"
-            title={schedule.isActive ? 'Deactivate' : 'Activate'}
+            title={schedule.isActive ? (t('deactivate') || 'Deactivate') : (t('activate') || 'Activate')}
           >
             {schedule.isActive ? (
               <PauseIcon className="w-4 h-4" />
@@ -128,7 +133,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
           <button
             onClick={() => onEdit(schedule)}
             className="p-2 text-gray-400 hover:text-white transition-colors"
-            title="Edit Schedule"
+            title={t('editSchedule') || 'Edit Schedule'}
           >
             <SettingsIcon className="w-4 h-4" />
           </button>
@@ -137,7 +142,7 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
         <button
           onClick={() => onDelete(schedule.id)}
           className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-          title="Delete Schedule"
+          title={t('deleteSchedule') || 'Delete Schedule'}
         >
           <TrashIcon className="w-4 h-4" />
         </button>
@@ -146,8 +151,8 @@ export const ScheduleCard: React.FC<ScheduleCardProps> = ({
       {/* Timestamps */}
       <div className="mt-3 pt-3 border-t border-gray-700">
         <div className="flex items-center justify-between text-xs text-gray-400">
-          <span>Created: {new Date(schedule.createdAt).toLocaleDateString()}</span>
-          <span>Updated: {new Date(schedule.updatedAt).toLocaleDateString()}</span>
+          <span>{t('created') || 'Created:'} {new Date(schedule.createdAt).toLocaleDateString()}</span>
+          <span>{t('updated') || 'Updated:'} {new Date(schedule.updatedAt).toLocaleDateString()}</span>
         </div>
       </div>
     </div>

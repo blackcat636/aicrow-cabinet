@@ -29,35 +29,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   const t = useTranslations('executions');
   const tCommon = useTranslations('common');
   const [selectedWorkflow, setSelectedWorkflow] = useState<number | null>(null);
-  const [customMapping, setCustomMapping] = useState<Record<string, string>>({});
-  const [useCustomMapping, setUseCustomMapping] = useState(false);
-  const [additionalData, setAdditionalData] = useState<string>('{}');
-
-  // Format JSON string nicely
-  const formatJson = (jsonString: string): string => {
-    try {
-      const parsed = JSON.parse(jsonString);
-      return JSON.stringify(parsed, null, 2);
-    } catch {
-      return jsonString;
-    }
-  };
-
-  // Handle additional data change with formatting
-  const handleAdditionalDataChange = (value: string) => {
-    setAdditionalData(value);
-    // Try to format on blur
-    try {
-      const formatted = formatJson(value);
-      if (formatted !== value) {
-        // Only update if formatting changed something (valid JSON)
-        setTimeout(() => setAdditionalData(formatted), 100);
-      }
-    } catch {
-      // Invalid JSON, keep as is
-    }
-  };
-  const [userText, setUserText] = useState('');
+  const [allowEditPrefilled, setAllowEditPrefilled] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -66,64 +38,108 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Whitelist of fields to show (currently only 'prompt')
-  const FIELD_WHITELIST = ['prompt'];
+  // Whitelist of fields to show - empty means show all non-hidden fields
+  const FIELD_WHITELIST: string[] = [];
 
   const selectedChain = availableChains.find(c => c.userWorkflowId === selectedWorkflow);
-  const defaultMapping = selectedChain?.defaultDataMapping || {};
 
   // Load requirements for target workflow when selected
   useEffect(() => {
-    if (selectedChain?.workflowId && isOpen) {
+    if (selectedChain?.userWorkflowId && isOpen) {
       loadTargetRequirements();
     } else {
       setTargetRequirements(null);
       setFormData({});
       setErrors({});
     }
-  }, [selectedChain?.workflowId, isOpen]);
+  }, [selectedChain?.userWorkflowId, isOpen]);
 
   const loadTargetRequirements = async () => {
-    if (!selectedChain?.workflowId) return;
+    if (!selectedChain?.userWorkflowId) return;
     
     try {
       setLoadingRequirements(true);
-      // Use workflowId from selectedChain, not userWorkflowId
-      const requirements = await workflowApi.getWorkflowRequirements(selectedChain.workflowId);
+      // Use chain-form endpoint with executionId and targetUserWorkflowId
+      const requirements = await workflowApi.getChainFormFields(
+        executionId,
+        selectedChain.userWorkflowId
+      );
       setTargetRequirements(requirements);
       
-      // Initialize form data with defaults
-      const fields = requirements?.fields || requirements?.userFields || [];
+      // Initialize form data with values from API (formFields contains fields with values)
+      const fields = requirements?.formFields || requirements?.fields || requirements?.userFields || [];
       const initialData: Record<string, any> = {};
       
       const setDefaults = (fieldList: UserField[], prefix = '') => {
         fieldList.forEach(field => {
-          // Skip hidden fields and fields not in whitelist
-          if (field.hidden === true || !FIELD_WHITELIST.includes(field.key)) {
+          // Skip hidden fields
+          if (field.hidden === true) {
+            return;
+          }
+          
+          // Skip fields not in whitelist (if whitelist is not empty)
+          if (FIELD_WHITELIST.length > 0 && !FIELD_WHITELIST.includes(field.key)) {
             return;
           }
           
           const fullKey = prefix ? `${prefix}.${field.key}` : field.key;
-          const defaultValue = field.defaultValue !== undefined ? field.defaultValue : field.default;
           
-          if (defaultValue !== undefined && defaultValue !== null && initialData[fullKey] === undefined) {
-            if (field.type === 'enum' && field.options && field.options.length > 0) {
-              const optionByValue = field.options.find(opt => String(opt.value) === String(defaultValue));
-              if (optionByValue) {
-                initialData[fullKey] = optionByValue.value;
+          // Use value from field if available (from chain-form API)
+          // This is the main source of data - value contains pre-filled data
+          const fieldValue = (field as any).value;
+          
+          // Set value if it exists (not null/undefined) and is not empty
+          // formFields values have priority over transformedData
+          if (fieldValue !== undefined && fieldValue !== null) {
+            // Check if value is not empty (for strings, arrays, etc.)
+            const isEmpty = 
+              (typeof fieldValue === 'string' && fieldValue === '') ||
+              (Array.isArray(fieldValue) && fieldValue.length === 0);
+            
+            if (!isEmpty) {
+              // Handle array values (even if type is string but value is array)
+              if (Array.isArray(fieldValue)) {
+                initialData[fullKey] = fieldValue;
+              } else if (field.type === 'enum' && field.options && field.options.length > 0) {
+                const optionByValue = field.options.find(opt => String(opt.value) === String(fieldValue));
+                if (optionByValue) {
+                  initialData[fullKey] = optionByValue.value;
+                } else {
+                  initialData[fullKey] = fieldValue;
+                }
+              } else {
+                initialData[fullKey] = fieldValue;
+              }
+            }
+          }
+          
+          // Fallback to transformedData if value was not set from formFields
+          if (initialData[fullKey] === undefined && requirements?.transformedData?.[field.key] !== undefined) {
+            initialData[fullKey] = requirements.transformedData[field.key];
+          }
+          
+          // Fallback to defaultValue/default if value was not set
+          if (initialData[fullKey] === undefined) {
+            const defaultValue = field.defaultValue !== undefined ? field.defaultValue : field.default;
+            if (defaultValue !== undefined && defaultValue !== null) {
+              if (field.type === 'enum' && field.options && field.options.length > 0) {
+                const optionByValue = field.options.find(opt => String(opt.value) === String(defaultValue));
+                if (optionByValue) {
+                  initialData[fullKey] = optionByValue.value;
+                } else {
+                  initialData[fullKey] = defaultValue;
+                }
               } else {
                 initialData[fullKey] = defaultValue;
               }
-            } else {
-              initialData[fullKey] = defaultValue;
+            } else if (field.type === 'enum' && field.required && field.options && field.options.length > 0) {
+              initialData[fullKey] = field.options[0].value;
+            } else if (field.type === 'array') {
+              initialData[fullKey] = [];
+            } else if (field.type === 'object' && field.fields) {
+              initialData[fullKey] = {};
+              setDefaults(field.fields, fullKey);
             }
-          } else if (field.type === 'enum' && field.required && field.options && field.options.length > 0 && initialData[fullKey] === undefined) {
-            initialData[fullKey] = field.options[0].value;
-          } else if (field.type === 'array' && initialData[fullKey] === undefined) {
-            initialData[fullKey] = [];
-          } else if (field.type === 'object' && field.fields && initialData[fullKey] === undefined) {
-            initialData[fullKey] = {};
-            setDefaults(field.fields, fullKey);
           }
         });
       };
@@ -132,7 +148,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       setFormData(initialData);
     } catch (err: any) {
       // Silently handle error - requirements may not be available
-      console.debug('Could not load target workflow requirements:', err.message);
+      console.debug('Could not load chain form fields:', err.message);
       setTargetRequirements(null);
     } finally {
       setLoadingRequirements(false);
@@ -172,7 +188,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   };
 
   const validateForm = (): boolean => {
-    const fields = targetRequirements?.fields || targetRequirements?.userFields || [];
+    const fields = targetRequirements?.formFields || targetRequirements?.fields || targetRequirements?.userFields || [];
     if (!targetRequirements || fields.length === 0) {
       return true;
     }
@@ -181,8 +197,13 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
 
     const validateFields = (fieldList: UserField[], prefix = '') => {
       fieldList.forEach(field => {
-        // Skip hidden fields and fields not in whitelist
-        if (field.hidden === true || !FIELD_WHITELIST.includes(field.key)) {
+        // Skip hidden fields
+        if (field.hidden === true) {
+          return;
+        }
+        
+        // Skip fields not in whitelist (if whitelist is not empty)
+        if (FIELD_WHITELIST.length > 0 && !FIELD_WHITELIST.includes(field.key)) {
           return;
         }
         const fullKey = prefix ? `${prefix}.${field.key}` : field.key;
@@ -210,14 +231,14 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
         }
 
         if (field.required && isEmpty) {
-          newErrors[fullKey] = `${field.label} is required`;
+          newErrors[fullKey] = t('fieldRequired', { field: field.label }) || `${field.label} is required`;
           return;
         }
 
         // Check minItems for arrays even if not required
         if (field.type === 'array' && field.minItems !== undefined && !isEmpty) {
           if (Array.isArray(value) && value.length < field.minItems) {
-            newErrors[fullKey] = `${field.label} requires at least ${field.minItems} items`;
+            newErrors[fullKey] = t('chainModal.fieldRequiresAtLeast', { field: field.label, count: field.minItems }) || `${field.label} requires at least ${field.minItems} items`;
             return;
           }
         }
@@ -225,7 +246,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
         // Check maxItems for arrays
         if (field.type === 'array' && field.maxItems !== undefined) {
           if (Array.isArray(value) && value.length > field.maxItems) {
-            newErrors[fullKey] = `${field.label} must have at most ${field.maxItems} items`;
+            newErrors[fullKey] = t('chainModal.fieldMustHaveAtMost', { field: field.label, count: field.maxItems }) || `${field.label} must have at most ${field.maxItems} items`;
             return;
           }
         }
@@ -241,14 +262,78 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
+  // Format field label to readable format
+  const formatFieldLabel = (label: string, key: string): string => {
+    // If label is the same as key or looks like a system name (contains underscores),
+    // format it to be more readable
+    if (label === key || label.includes('_')) {
+      return label
+        .split('_')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+    }
+    return label;
+  };
+
+  // Build data array from formFields with values for display
+  const buildFormFieldsData = (): Array<{ label: string; value: any }> => {
+    const fields = targetRequirements?.formFields || [];
+    const data: Array<{ label: string; value: any }> = [];
+    
+    fields.forEach(field => {
+      const fieldValue = (field as any).value;
+      if (fieldValue !== undefined && fieldValue !== null) {
+        const isEmpty = 
+          (typeof fieldValue === 'string' && fieldValue === '') ||
+          (Array.isArray(fieldValue) && fieldValue.length === 0);
+        
+        if (!isEmpty) {
+          // Format value for display
+          let displayValue: any = fieldValue;
+          if (field.type === 'enum' && field.options) {
+            const option = field.options.find(opt => String(opt.value) === String(fieldValue));
+            displayValue = option ? option.label : fieldValue;
+          }
+          
+          data.push({
+            label: formatFieldLabel(field.label || field.key, field.key),
+            value: displayValue
+          });
+        }
+      }
+    });
+    
+    return data;
+  };
+
   const renderField = (field: UserField, parentKey?: string) => {
     // Skip hidden fields
     if (field.hidden === true) {
       return null;
     }
 
-    // Only show fields in whitelist
-    if (!FIELD_WHITELIST.includes(field.key)) {
+    // Only show fields in whitelist (if whitelist is not empty)
+    if (FIELD_WHITELIST.length > 0 && !FIELD_WHITELIST.includes(field.key)) {
+      return null;
+    }
+    
+    // Check if field value is an array (even if type is string)
+    const fieldValue = (field as any).value;
+    const isArrayValue = Array.isArray(fieldValue);
+    
+    // Check if field should be treated as array based on defaultValue or type
+    const shouldBeArray = isArrayValue || 
+      (field.defaultValue !== undefined && Array.isArray(field.defaultValue)) ||
+      field.type === 'array';
+    
+    // Check if field has a value from formFields - skip rendering as editable field
+    const hasValueFromFormFields = fieldValue !== undefined && fieldValue !== null && 
+      !((typeof fieldValue === 'string' && fieldValue === '') || 
+        (Array.isArray(fieldValue) && fieldValue.length === 0));
+    
+    // Skip rendering fields with values from formFields if editing is not allowed
+    // (they will be shown in info block)
+    if (hasValueFromFormFields && !allowEditPrefilled) {
       return null;
     }
 
@@ -261,6 +346,64 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       case 'string':
       case 'email':
       case 'url':
+        // If value is an array or should be treated as array, render as array field
+        if (shouldBeArray || Array.isArray(value)) {
+          const arrayValue = Array.isArray(value) ? value : (isArrayValue ? fieldValue : []);
+          return (
+            <div key={field.key} className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                {field.label}
+                {field.required && <span className="text-red-400">*</span>}
+                {field.description && (
+                  <InfoIcon description={field.description} />
+                )}
+              </label>
+              <div className="space-y-2">
+                {arrayValue.map((item: any, index: number) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={item || ''}
+                      onChange={(e) => {
+                        const newArray = [...arrayValue];
+                        newArray[index] = e.target.value;
+                        handleFieldChange(field.key, newArray, parentKey);
+                      }}
+                      className={`flex-1 px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
+                        hasError
+                          ? 'border-red-500 focus:ring-red-500/50'
+                          : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
+                      }`}
+                      placeholder={t('chainModal.itemNumber', { number: index + 1 }) || `Item ${index + 1}`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newArray = arrayValue.filter((_: any, i: number) => i !== index);
+                        handleFieldChange(field.key, newArray, parentKey);
+                      }}
+                      className="px-4 py-2.5 bg-red-600/20 border border-red-600 text-red-400 rounded-lg hover:bg-red-600/30 transition-all"
+                    >
+                      {t('chainModal.remove') || 'Remove'}
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleFieldChange(field.key, [...arrayValue, ''], parentKey);
+                  }}
+                  className="px-4 py-2.5 bg-purple-600/20 border border-purple-600 text-purple-400 rounded-lg hover:bg-purple-600/30 transition-all text-sm"
+                >
+                  {t('chainModal.addItem') || 'Add Item'}
+                </button>
+              </div>
+              {hasError && <p className="text-xs text-red-400">{error}</p>}
+            </div>
+          );
+        }
+        
+        // Regular string input
         return (
           <div key={field.key} className="space-y-2">
             <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
@@ -475,7 +618,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
               {field.required && <span className="text-red-400">*</span>}
               {field.minItems !== undefined && field.maxItems !== undefined && (
                 <span className="text-gray-400 text-xs font-normal">
-                  ({field.minItems}-{field.maxItems} items)
+                  ({field.minItems}-{field.maxItems} {t('chainModal.items') || 'items'})
                 </span>
               )}
               {field.description && (
@@ -532,7 +675,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                           ? 'border-red-500 focus:ring-red-500/50'
                           : 'border-gray-600 focus:border-purple-500 focus:ring-purple-500/50'
                       }`}
-                      placeholder={`Item ${index + 1}`}
+                      placeholder={t('chainModal.itemNumber', { number: index + 1 }) || `Item ${index + 1}`}
                     />
                   )}
                   <button
@@ -551,12 +694,12 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                   onClick={handleArrayItemAdd}
                   className="px-4 py-2.5 bg-purple-600/20 border border-purple-600 text-purple-400 rounded-lg hover:bg-purple-600/30 transition-all text-sm"
                 >
-                  Add Item
+                  {t('chainModal.addItem') || 'Add Item'}
                 </button>
               )}
               {!canAddMore && field.maxItems !== undefined && (
                 <p className="text-xs text-gray-400">
-                  Maximum {field.maxItems} item(s) allowed
+                  {t('chainModal.maxItemsAllowed', { count: field.maxItems }) || `Maximum ${field.maxItems} item(s) allowed`}
                 </p>
               )}
             </div>
@@ -593,7 +736,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
 
     // Validate form if requirements are loaded
     if (targetRequirements && !validateForm()) {
-      setError('Please fill in all required fields');
+      setError(t('chainModal.fillRequiredFields') || 'Please fill in all required fields');
       return;
     }
 
@@ -602,7 +745,8 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
 
     try {
       // Build payload from form data
-      const fields = targetRequirements?.fields || targetRequirements?.userFields || [];
+      // Use formFields from chain-form endpoint, fallback to fields/userFields
+      const fields = targetRequirements?.formFields || targetRequirements?.fields || targetRequirements?.userFields || [];
       const formPayload: Record<string, any> = {};
       
       const buildPayload = (fieldList: UserField[], parentKey?: string) => {
@@ -613,7 +757,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           }
 
           const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
-          const isInWhitelist = FIELD_WHITELIST.includes(field.key);
+          const isInWhitelist = FIELD_WHITELIST.length === 0 || FIELD_WHITELIST.includes(field.key);
           
           if (field.type === 'object' && field.fields) {
             return;
@@ -622,13 +766,13 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
             let shouldInclude = false;
             let valueToSend: any = value;
             
-            // Only include fields in whitelist
+            // Include fields if whitelist is empty (show all) or field is in whitelist
             if (isInWhitelist) {
-              // For arrays, include if:
+              // For arrays (including string fields with array values), include if:
               // 1. It's required (even if empty, backend will validate)
               // 2. It has values (not empty array)
               // 3. It has minItems requirement (even if empty, backend will validate)
-              if (field.type === 'array') {
+              if (field.type === 'array' || Array.isArray(value)) {
                 if (field.required || (field.minItems !== undefined && field.minItems > 0)) {
                   // Always include required arrays or arrays with minItems
                   shouldInclude = true;
@@ -644,7 +788,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                 shouldInclude = true;
               }
             }
-            // Skip all fields NOT in whitelist (even if required)
+            // Skip all fields NOT in whitelist (if whitelist is not empty)
             
             if (shouldInclude) {
               // For enum fields with options, convert value to label if needed
@@ -672,7 +816,6 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
 
       const request: ChainExecutionRequest = {
         targetUserWorkflowId: selectedWorkflow,
-        dataMapping: useCustomMapping ? customMapping : undefined,
         additionalData: Object.keys(formPayload).length > 0 ? formPayload : undefined
       };
 
@@ -750,8 +893,6 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                       value={selectedWorkflow || ''}
                       onChange={(e) => {
                         setSelectedWorkflow(Number(e.target.value));
-                        setUseCustomMapping(false);
-                        setCustomMapping({});
                       }}
                       className="w-full pl-4 pr-12 py-2.5 border rounded-lg bg-gray-800/50 text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 transition-all border-gray-600 hover:border-gray-500 appearance-none"
                       style={{ paddingRight: '3.5rem' }}
@@ -773,51 +914,59 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                   </div>
                 </div>
 
-                {/* Default Mapping Preview */}
-                {selectedChain && defaultMapping && Object.keys(defaultMapping).length > 0 && (
-                  <div className="p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
-                    <h4 className="text-sm font-medium text-gray-300 mb-2">{t('chainModal.defaultMapping')}</h4>
-                    <pre className="text-xs text-gray-400 mb-3 overflow-x-auto">
-                      {JSON.stringify(defaultMapping, null, 2)}
-                    </pre>
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={useCustomMapping}
-                        onChange={(e) => setUseCustomMapping(e.target.checked)}
-                        className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
-                      />
-                      <span className="text-sm text-gray-300">{t('chainModal.useCustomMapping')}</span>
-                    </label>
-                  </div>
-                )}
-
-                {/* Custom Mapping Editor */}
-                {useCustomMapping && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-2">
-                      {t('chainModal.customMapping')}
-                    </label>
-                    <DataMappingEditor
-                      value={customMapping}
-                      onChange={setCustomMapping}
-                    />
-                    <p className="text-xs text-gray-400 mt-2">
-                      {t('chainModal.customMappingHint')}
-                    </p>
-                  </div>
-                )}
+                {/* Pre-filled Data from formFields */}
+                {(() => {
+                  const formFieldsData = buildFormFieldsData();
+                  return formFieldsData.length > 0 ? (
+                    <div className="p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-medium text-gray-300">{t('chainModal.prefilledData') || 'Pre-filled Data'}</h4>
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={allowEditPrefilled}
+                            onChange={(e) => setAllowEditPrefilled(e.target.checked)}
+                            className="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded focus:ring-purple-500"
+                          />
+                          <span className="text-xs text-gray-400">{t('chainModal.allowEditPrefilled') || 'Allow editing'}</span>
+                        </label>
+                      </div>
+                      {!allowEditPrefilled && (
+                        <div className="space-y-3">
+                          {formFieldsData.map((item, index) => (
+                            <div key={index} className="space-y-1">
+                              <div className="text-xs font-medium text-gray-400">{item.label}</div>
+                              {Array.isArray(item.value) ? (
+                                <div className="space-y-1">
+                                  {item.value.map((val: any, idx: number) => (
+                                    <div key={idx} className="text-sm text-gray-300 break-words whitespace-normal">
+                                      {String(val)}
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <div className="text-sm text-gray-300 break-words whitespace-normal">
+                                  {String(item.value)}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : null;
+                })()}
 
                 {/* Workflow Form Fields */}
                 {loadingRequirements ? (
                   <div className="flex items-center justify-center py-8">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600"></div>
-                    <span className="ml-3 text-gray-300 text-sm">Loading form fields...</span>
+                    <span className="ml-3 text-gray-300 text-sm">{t('chainModal.loadingFields') || 'Loading form fields...'}</span>
                   </div>
-                ) : targetRequirements && ((targetRequirements.fields && targetRequirements.fields.length > 0) || (targetRequirements.userFields && targetRequirements.userFields.length > 0)) ? (
+                ) : targetRequirements && ((targetRequirements.formFields && targetRequirements.formFields.length > 0) || (targetRequirements.fields && targetRequirements.fields.length > 0) || (targetRequirements.userFields && targetRequirements.userFields.length > 0)) ? (
                   <div className="space-y-4">
                     <h3 className="text-lg font-semibold text-white">{selectedChain?.workflowName}</h3>
-                    {(targetRequirements.fields || targetRequirements.userFields || []).map(field => renderField(field))}
+                    {(targetRequirements.formFields || targetRequirements.fields || targetRequirements.userFields || []).map(field => renderField(field))}
                   </div>
                 ) : null}
 

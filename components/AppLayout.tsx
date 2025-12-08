@@ -382,7 +382,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                   <div className='absolute top-4 right-4'>
                     <button
                       onClick={() => setIsMobileMenuOpen(false)}
-                      aria-label='Close menu'
+                      aria-label={t('closeMenu') || 'Close menu'}
                       className='p-2 text-gray-300 hover:text-white'
                     >
                       <XIcon className='w-7 h-7' />

@@ -122,6 +122,7 @@
     "executions": "Виконання",
     "balance": "Баланс",
     "integrations": "Інтеграції",
+    "closeMenu": "Закрити меню",
     "socialMedia": "Соціальні медіа",
     "profile": "Профіль",
     "logout": "Вийти",
@@ -244,6 +245,11 @@
     "deactivate": "Деактивувати",
     "delete": "Видалити",
     "edit": "Редагувати",
+    "activateToExecute": "Активуйте робочий процес для виконання",
+    "activateWorkflow": "Активувати робочий процес",
+    "deactivateWorkflow": "Деактивувати робочий процес",
+    "editWorkflow": "Редагувати робочий процес",
+    "deleteWorkflow": "Видалити робочий процес",
     "notFound": "Робочий процес не знайдено",
     "notFoundDescription": "Запитаний робочий процес не може бути знайдено.",
     "backToDashboard": "Повернутися до панелі",
@@ -445,7 +451,7 @@
       "defaultMapping": "Маппінг даних за замовчуванням:",
       "useCustomMapping": "Використати кастомний маппінг",
       "customMapping": "Кастомний маппінг даних",
-      "customMappingHint": "Визначте як трансформувати дані результатів. Використовуйте синтаксис шаблонів: {{resultData.path.to.data}}",
+      "customMappingHint": "Визначте як трансформувати дані результатів. Використовуйте синтаксис шаблонів з подвійними фігурними дужками для доступу до даних результатів.",
       "additionalData": "Додаткові дані (Опціонально)",
       "additionalDataHint": "Введіть JSON об'єкт з додатковими даними",
       "userText": "Текст / Промпт користувача (Опціонально)",
@@ -459,8 +465,82 @@
       "cancel": "Скасувати",
       "cancelTitle": "Скасувати передачу",
       "cancelMessage": "Ви впевнені що хочете закрити форму? Всі незбережені зміни будуть втрачені.",
-      "keepEditing": "Продовжити редагування"
-    }
+      "keepEditing": "Продовжити редагування",
+      "prefilledData": "Дані з попереднього кроку",
+      "allowEditPrefilled": "Дозволити редагування",
+      "loadingFields": "Завантаження полів форми...",
+      "mappingTargetFieldPlaceholder": "Назва поля target (напр., prompt)",
+      "mappingDataPathPlaceholder": "Шлях до даних з подвійними фігурними дужками",
+      "removeMapping": "Видалити маппінг",
+      "addMapping": "Додати маппінг",
+      "preview": "Прев'ю:",
+      "remove": "Видалити",
+      "addItem": "Додати елемент",
+      "itemNumber": "Елемент {number}",
+      "items": "елементів",
+      "fieldRequiresAtLeast": "{field} потребує принаймні {count} елементів",
+      "fieldMustHaveAtMost": "{field} має містити не більше {count} елементів",
+      "maxItemsAllowed": "Максимум {count} елемент(ів) дозволено",
+      "fillRequiredFields": "Будь ласка, заповніть всі обов'язкові поля"
+    },
+    "fieldRequired": "{field} є обов'язковим полем"
+  },
+  "resultDisplay": {
+    "clickToEnlarge": "Натисніть для збільшення",
+    "close": "Закрити",
+    "resultImage": "Зображення результату",
+    "videoNotSupported": "Ваш браузер не підтримує відео тег.",
+    "audioNotSupported": "Ваш браузер не підтримує аудіо тег.",
+    "type": "Тип:",
+    "kind": "Вид:",
+    "unknown": "невідомо",
+    "metadata": "Метадані"
+  },
+  "scheduleCard": {
+    "recurringCron": "Повторюване (Cron)",
+    "oneTime": "Одноразове",
+    "manualOnly": "Тільки вручну",
+    "everyDay": "кожен день",
+    "day": "день {day}",
+    "everyMonth": "кожен місяць",
+    "month": "місяць {month}",
+    "notScheduled": "Не заплановано",
+    "scheduledFor": "Заплановано на:",
+    "active": "Активний",
+    "inactive": "Неактивний",
+    "nextExecution": "Наступне виконання:",
+    "deactivate": "Деактивувати",
+    "activate": "Активувати",
+    "editSchedule": "Редагувати розклад",
+    "deleteSchedule": "Видалити розклад",
+    "created": "Створено:",
+    "updated": "Оновлено:"
+  },
+  "avatarManager": {
+    "style": "Стиль",
+    "seed": "Сид",
+    "typeUniqueSeed": "Введіть унікальний сид",
+    "generatedByDiceBear": "Аватар генерується на льоту через DiceBear API.",
+    "randomize": "Випадково",
+    "quickPicks": "Швидкий вибір",
+    "pickSeed": "Вибрати {seed}",
+    "saving": "Збереження...",
+    "useGenerated": "Використати згенерований",
+    "removeAvatar": "Видалити аватар"
+  },
+  "notFound": {
+    "pageNotFound": "Сторінку не знайдено",
+    "title": "Ой! Сторінку не знайдено",
+    "description": "Сторінка, яку ви шукаєте, не існує або була переміщена. Можливо, ви неправильно ввели URL або посилання, за яким ви перейшли, застаріло.",
+    "titleMobile": "404 - Сторінку не знайдено",
+    "descriptionMobile": "Сторінка, яку ви шукаєте, не існує або була переміщена.",
+    "goToDashboard": "Перейти до панелі",
+    "workflows": "Робочі процеси",
+    "executions": "Виконання"
+  },
+  "error": {
+    "title": "Щось пішло не так!",
+    "tryAgain": "Спробувати знову"
   },
   "balance": {
     "title": "Ваш баланс",
@@ -556,4 +636,3 @@
     }
   }
 }
-

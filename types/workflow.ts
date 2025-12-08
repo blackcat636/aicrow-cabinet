@@ -104,7 +104,15 @@ export interface EnumOption {
 export interface UserField {
   key: string;
   label: string;
-  type: 'string' | 'number' | 'boolean' | 'email' | 'url' | 'array' | 'object' | 'enum';
+  type:
+    | 'string'
+    | 'number'
+    | 'boolean'
+    | 'email'
+    | 'url'
+    | 'array'
+    | 'object'
+    | 'enum';
   required?: boolean;
   description?: string;
   hint?: string;
@@ -125,10 +133,20 @@ export interface WorkflowRequirements {
   workflowName?: string;
   userFields?: UserField[];
   fields?: UserField[]; // Alternative field name from API
+  formFields?: UserField[]; // Form fields from chain-form endpoint (with values)
   schema?: any;
   existingValues?: Record<string, any>;
   sampleTemplate?: string;
   version?: number;
+  defaultDataMapping?: Record<string, string>; // Default data mapping from chain-form endpoint
+  transformedData?: Record<string, any>; // Pre-filled transformed data from chain-form endpoint
+  sourceExecutionId?: number; // Source execution ID from chain-form endpoint
+  targetUserWorkflowId?: number; // Target user workflow ID from chain-form endpoint
+  targetWorkflow?: {
+    id: number;
+    name: string;
+    description?: string;
+  };
 }
 
 export interface ExecutionsResponse {

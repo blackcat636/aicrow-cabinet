@@ -126,6 +126,7 @@
     "profile": "Profil",
     "logout": "Déconnexion",
     "mainMenu": "Menu principal",
+    "closeMenu": "Fermer le menu",
     "welcome": "Bienvenue,",
     "user": "Utilisateur"
   },
@@ -244,6 +245,11 @@
     "deactivate": "Désactiver",
     "delete": "Supprimer",
     "edit": "Modifier",
+    "activateToExecute": "Activer le flux de travail pour exécuter",
+    "activateWorkflow": "Activer le flux de travail",
+    "deactivateWorkflow": "Désactiver le flux de travail",
+    "editWorkflow": "Modifier le flux de travail",
+    "deleteWorkflow": "Supprimer le flux de travail",
     "notFound": "Flux de travail introuvable",
     "notFoundDescription": "Le flux de travail demandé est introuvable.",
     "backToDashboard": "Retour au tableau de bord",
@@ -445,7 +451,7 @@
       "defaultMapping": "Mappage de données par défaut :",
       "useCustomMapping": "Utiliser un mappage personnalisé",
       "customMapping": "Mappage de données personnalisé",
-      "customMappingHint": "Définissez comment transformer les données de résultat. Utilisez la syntaxe de modèle : {{resultData.path.to.data}}",
+      "customMappingHint": "Définissez comment transformer les données de résultat. Utilisez la syntaxe de modèle avec des accolades doubles pour accéder aux données de résultat.",
       "additionalData": "Données supplémentaires (optionnel)",
       "additionalDataHint": "Entrez un objet JSON avec des données supplémentaires",
       "userText": "Texte / Invite utilisateur (optionnel)",
@@ -459,8 +465,82 @@
       "cancel": "Annuler",
       "cancelTitle": "Annuler l'enchaînement",
       "cancelMessage": "Êtes-vous sûr de vouloir fermer le formulaire ? Toutes les modifications non enregistrées seront perdues.",
-      "keepEditing": "Continuer l'édition"
-    }
+      "keepEditing": "Continuer l'édition",
+      "prefilledData": "Données de l'étape précédente",
+      "allowEditPrefilled": "Autoriser l'édition",
+      "loadingFields": "Chargement des champs du formulaire...",
+      "mappingTargetFieldPlaceholder": "Nom du champ cible (ex. prompt)",
+      "mappingDataPathPlaceholder": "Chemin des données avec des accolades doubles",
+      "removeMapping": "Supprimer le mappage",
+      "addMapping": "Ajouter un mappage",
+      "preview": "Aperçu :",
+      "remove": "Supprimer",
+      "addItem": "Ajouter un élément",
+      "itemNumber": "Élément {number}",
+      "items": "éléments",
+      "fieldRequiresAtLeast": "{field} nécessite au moins {count} éléments",
+      "fieldMustHaveAtMost": "{field} doit contenir au plus {count} éléments",
+      "maxItemsAllowed": "Maximum {count} élément(s) autorisé(s)",
+      "fillRequiredFields": "Veuillez remplir tous les champs obligatoires"
+    },
+    "fieldRequired": "{field} est requis"
+  },
+  "resultDisplay": {
+    "clickToEnlarge": "Cliquer pour agrandir",
+    "close": "Fermer",
+    "resultImage": "Image du résultat",
+    "videoNotSupported": "Votre navigateur ne prend pas en charge la balise vidéo.",
+    "audioNotSupported": "Votre navigateur ne prend pas en charge la balise audio.",
+    "type": "Type :",
+    "kind": "Genre :",
+    "unknown": "inconnu",
+    "metadata": "Métadonnées"
+  },
+  "scheduleCard": {
+    "recurringCron": "Récurrent (Cron)",
+    "oneTime": "Unique",
+    "manualOnly": "Manuel uniquement",
+    "everyDay": "chaque jour",
+    "day": "jour {day}",
+    "everyMonth": "chaque mois",
+    "month": "mois {month}",
+    "notScheduled": "Non planifié",
+    "scheduledFor": "Planifié pour :",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "nextExecution": "Prochaine exécution :",
+    "deactivate": "Désactiver",
+    "activate": "Activer",
+    "editSchedule": "Modifier le planning",
+    "deleteSchedule": "Supprimer le planning",
+    "created": "Créé :",
+    "updated": "Mis à jour :"
+  },
+  "avatarManager": {
+    "style": "Style",
+    "seed": "Graine",
+    "typeUniqueSeed": "Tapez une graine unique",
+    "generatedByDiceBear": "L'avatar est généré à la volée par l'API DiceBear.",
+    "randomize": "Aléatoire",
+    "quickPicks": "Choix rapides",
+    "pickSeed": "Choisir {seed}",
+    "saving": "Enregistrement...",
+    "useGenerated": "Utiliser généré",
+    "removeAvatar": "Supprimer l'avatar"
+  },
+  "notFound": {
+    "pageNotFound": "Page non trouvée",
+    "title": "Oups ! Page non trouvée",
+    "description": "La page que vous recherchez n'existe pas ou a été déplacée. Vous avez peut-être mal tapé l'URL, ou le lien que vous avez suivi est obsolète.",
+    "titleMobile": "404 - Page non trouvée",
+    "descriptionMobile": "La page que vous recherchez n'existe pas ou a été déplacée.",
+    "goToDashboard": "Aller au tableau de bord",
+    "workflows": "Flux de travail",
+    "executions": "Exécutions"
+  },
+  "error": {
+    "title": "Quelque chose s'est mal passé !",
+    "tryAgain": "Réessayer"
   },
   "balance": {
     "title": "Votre solde",
@@ -556,4 +636,3 @@
     }
   }
 }
-
