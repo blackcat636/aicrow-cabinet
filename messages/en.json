@@ -351,7 +351,9 @@
       "fieldDescriptions": {
         "prompt": "Main instruction for workflow",
         "publishingChannels": "List of social networks to publish to"
-      }
+      },
+      "selectSocialNetwork": "Select Social Network",
+      "selectSocialNetworkRequired": "Please select a social network"
     }
   },
   "workflowForm": {
@@ -422,6 +424,25 @@
     "of": "of",
     "previous": "Previous",
     "next": "Next",
+    "filters": {
+      "title": "Filters",
+      "resetFilters": "Reset Filters",
+      "workflow": "Workflow",
+      "allWorkflows": "All workflows",
+      "status": "Status",
+      "allStatuses": "All statuses",
+      "triggerType": "Trigger Type",
+      "allTriggerTypes": "All types",
+      "itemsPerPage": "Items per page",
+      "pageOf": "Page {page} of {total}"
+    },
+    "pagination": {
+      "showing": "Showing {from} to {to} of {total}",
+      "page": "Page",
+      "of": "of",
+      "previous": "Previous",
+      "next": "Next"
+    },
     "actions": "Actions",
     "restart": "Restart",
     "restarting": "Restarting...",

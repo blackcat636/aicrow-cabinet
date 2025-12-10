@@ -351,7 +351,9 @@
       "fieldDescriptions": {
         "prompt": "Instruction principale pour le flux de travail",
         "publishingChannels": "Liste des réseaux sociaux où publier"
-      }
+      },
+      "selectSocialNetwork": "Sélectionner un réseau social",
+      "selectSocialNetworkRequired": "Veuillez sélectionner un réseau social"
     }
   },
   "workflowForm": {
@@ -422,6 +424,25 @@
     "of": "sur",
     "previous": "Précédent",
     "next": "Suivant",
+    "filters": {
+      "title": "Filtres",
+      "resetFilters": "Réinitialiser les filtres",
+      "workflow": "Flux de travail",
+      "allWorkflows": "Tous les flux de travail",
+      "status": "Statut",
+      "allStatuses": "Tous les statuts",
+      "triggerType": "Type de déclencheur",
+      "allTriggerTypes": "Tous les types",
+      "itemsPerPage": "Éléments par page",
+      "pageOf": "Page {page} sur {total}"
+    },
+    "pagination": {
+      "showing": "Affichage de {from} à {to} sur {total}",
+      "page": "Page",
+      "of": "sur",
+      "previous": "Précédent",
+      "next": "Suivant"
+    },
     "actions": "Actions",
     "restart": "Redémarrer",
     "restarting": "Redémarrage...",

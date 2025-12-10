@@ -112,7 +112,8 @@ export interface UserField {
     | 'url'
     | 'array'
     | 'object'
-    | 'enum';
+    | 'enum'
+    | 'radio';
   required?: boolean;
   description?: string;
   hint?: string;
@@ -147,6 +148,7 @@ export interface WorkflowRequirements {
     name: string;
     description?: string;
   };
+  availableSocialAccounts?: AvailableSocialAccounts | null; // Connected social accounts from Upload-Post
 }
 
 export interface ExecutionsResponse {
@@ -155,6 +157,14 @@ export interface ExecutionsResponse {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface GetExecutionsParams {
+  userWorkflowId?: number;
+  status?: string;
+  triggerType?: string;
+  page?: number;
+  limit?: number;
 }
 
 export interface TelegramCommand {
@@ -210,4 +220,22 @@ export interface ChainHistoryData {
   execution: WorkflowExecution;
   parent: WorkflowExecution | null;
   children: WorkflowExecution[];
+}
+
+// Social Networks Types
+export interface SocialNetwork {
+  value: string;
+  label: string;
+}
+
+export interface SocialAccount {
+  username: string;
+  display_name: string;
+  social_images: string | null;
+  handle?: string; // Social media handle (e.g., @username)
+  reauth_required?: boolean; // Whether re-authentication is required
+}
+
+export interface AvailableSocialAccounts {
+  [key: string]: SocialAccount; // e.g., "instagram", "facebook"
 }

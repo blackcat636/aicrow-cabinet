@@ -351,7 +351,9 @@
       "fieldDescriptions": {
         "prompt": "Основна інструкція для workflow",
         "publishingChannels": "Перелік соцмереж, куди публікувати"
-      }
+      },
+      "selectSocialNetwork": "Виберіть соціальну мережу",
+      "selectSocialNetworkRequired": "Будь ласка, виберіть соціальну мережу"
     }
   },
   "workflowForm": {
@@ -422,6 +424,25 @@
     "of": "з",
     "previous": "Попередня",
     "next": "Наступна",
+    "filters": {
+      "title": "Фільтри",
+      "resetFilters": "Скинути фільтри",
+      "workflow": "Workflow",
+      "allWorkflows": "Всі workflows",
+      "status": "Статус",
+      "allStatuses": "Всі статуси",
+      "triggerType": "Тип тригера",
+      "allTriggerTypes": "Всі типи",
+      "itemsPerPage": "На сторінці",
+      "pageOf": "Сторінка {page} з {total}"
+    },
+    "pagination": {
+      "showing": "Показано {from} до {to} з {total}",
+      "page": "Сторінка",
+      "of": "з",
+      "previous": "Попередня",
+      "next": "Наступна"
+    },
     "actions": "Дії",
     "restart": "Перезапустити",
     "restarting": "Перезапускається...",

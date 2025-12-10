@@ -4,6 +4,7 @@ import {
   WorkflowSchedule,
   WorkflowExecution,
   ExecutionsResponse,
+  GetExecutionsParams,
   AttachWorkflowRequest,
   CreateScheduleRequest,
   ExecuteWorkflowRequest,
@@ -11,7 +12,9 @@ import {
   AvailableChainsResponse,
   ChainExecutionRequest,
   ChainExecutionResponse,
-  ChainHistoryData
+  ChainHistoryData,
+  SocialNetwork,
+  AvailableSocialAccounts
 } from '@/types/workflow';
 import { buildApiUrl, API_CONFIG } from '@/config/api';
 import { fetchWithAuth } from './auth';
@@ -313,9 +316,37 @@ export const workflowApi = {
     }
   },
 
-  getMyExecutions: async (userId?: number): Promise<ExecutionsResponse> => {
+  getMyExecutions: async (
+    params?: GetExecutionsParams
+  ): Promise<ExecutionsResponse> => {
     try {
-      const url = buildApiUrl('/automations/user/executions');
+      let url = buildApiUrl('/automations/user/executions');
+
+      // Build query parameters
+      if (params) {
+        const queryParams = new URLSearchParams();
+
+        if (params.userWorkflowId !== undefined) {
+          queryParams.append('userWorkflowId', params.userWorkflowId.toString());
+        }
+        if (params.status) {
+          queryParams.append('status', params.status);
+        }
+        if (params.triggerType) {
+          queryParams.append('triggerType', params.triggerType);
+        }
+        if (params.page !== undefined) {
+          queryParams.append('page', params.page.toString());
+        }
+        if (params.limit !== undefined) {
+          queryParams.append('limit', params.limit.toString());
+        }
+
+        const queryString = queryParams.toString();
+        if (queryString) {
+          url += `?${queryString}`;
+        }
+      }
 
       const response = await fetchWithAuth(url, {
         method: 'GET'
@@ -325,8 +356,8 @@ export const workflowApi = {
         return {
           items: [],
           total: 0,
-          page: 1,
-          limit: 20,
+          page: params?.page || 1,
+          limit: params?.limit || 20,
           totalPages: 0
         };
       }
@@ -341,8 +372,8 @@ export const workflowApi = {
         return {
           items: [],
           total: 0,
-          page: 1,
-          limit: 20,
+          page: params?.page || 1,
+          limit: params?.limit || 20,
           totalPages: 0
         };
       }
@@ -380,12 +411,10 @@ export const workflowApi = {
     workflowId: number
   ): Promise<WorkflowRequirements> => {
     try {
-      const response = await fetchWithAuth(
-        buildApiUrl(`/automations/user/workflows/${workflowId}/requirements`),
-        {
-          method: 'GET'
-        }
-      );
+      const url = buildApiUrl(`/automations/user/workflows/${workflowId}/requirements`);
+      const response = await fetchWithAuth(url, {
+        method: 'GET'
+      });
 
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
@@ -410,14 +439,12 @@ export const workflowApi = {
     targetUserWorkflowId: number
   ): Promise<WorkflowRequirements> => {
     try {
-      const response = await fetchWithAuth(
-        buildApiUrl(
-          `/automations/user/executions/${executionId}/chain-form/${targetUserWorkflowId}`
-        ),
-        {
-          method: 'GET'
-        }
+      const url = buildApiUrl(
+        `/automations/user/executions/${executionId}/chain-form/${targetUserWorkflowId}`
       );
+      const response = await fetchWithAuth(url, {
+        method: 'GET'
+      });
 
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
@@ -549,6 +576,75 @@ export const workflowApi = {
 
       const result = await response.json();
       return result.data || result;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  // Social Networks
+  getSocialNetworks: async (): Promise<SocialNetwork[]> => {
+    try {
+      const url = buildApiUrl('/automations/user/social-networks');
+      const response = await fetchWithAuth(url, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      // Handle different response formats
+      if (Array.isArray(result)) {
+        return result;
+      } else if (result.data && Array.isArray(result.data)) {
+        return result.data;
+      } else if (result.socialNetworks && Array.isArray(result.socialNetworks)) {
+        return result.socialNetworks;
+      } else {
+        return [];
+      }
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getSocialAccounts: async (): Promise<AvailableSocialAccounts | null> => {
+    try {
+      const url = buildApiUrl('/automations/user/social-accounts');
+      const response = await fetchWithAuth(url, {
+        method: 'GET'
+      });
+
+      if (!response.ok) {
+        let errorMessage = `HTTP error! status: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          errorMessage = response.statusText || errorMessage;
+        }
+        throw new Error(errorMessage);
+      }
+
+      const result = await response.json();
+      // Handle different response formats
+      if (result.data !== undefined) {
+        return result.data;
+      } else if (result.socialAccounts !== undefined) {
+        return result.socialAccounts;
+      } else if (result !== null && typeof result === 'object') {
+        return result;
+      } else {
+        return null;
+      }
     } catch (error) {
       throw error;
     }

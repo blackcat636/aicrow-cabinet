@@ -100,7 +100,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
               // Handle array values (even if type is string but value is array)
               if (Array.isArray(fieldValue)) {
                 initialData[fullKey] = fieldValue;
-              } else if (field.type === 'enum' && field.options && field.options.length > 0) {
+              } else if ((field.type === 'enum' || field.type === 'radio') && field.options && field.options.length > 0) {
                 const optionByValue = field.options.find(opt => String(opt.value) === String(fieldValue));
                 if (optionByValue) {
                   initialData[fullKey] = optionByValue.value;
@@ -122,7 +122,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           if (initialData[fullKey] === undefined) {
             const defaultValue = field.defaultValue !== undefined ? field.defaultValue : field.default;
             if (defaultValue !== undefined && defaultValue !== null) {
-              if (field.type === 'enum' && field.options && field.options.length > 0) {
+              if ((field.type === 'enum' || field.type === 'radio') && field.options && field.options.length > 0) {
                 const optionByValue = field.options.find(opt => String(opt.value) === String(defaultValue));
                 if (optionByValue) {
                   initialData[fullKey] = optionByValue.value;
@@ -132,7 +132,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
               } else {
                 initialData[fullKey] = defaultValue;
               }
-            } else if (field.type === 'enum' && field.required && field.options && field.options.length > 0) {
+            } else if ((field.type === 'enum' || field.type === 'radio') && field.required && field.options && field.options.length > 0) {
               initialData[fullKey] = field.options[0].value;
             } else if (field.type === 'array') {
               initialData[fullKey] = [];
@@ -290,7 +290,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
         if (!isEmpty) {
           // Format value for display
           let displayValue: any = fieldValue;
-          if (field.type === 'enum' && field.options) {
+          if ((field.type === 'enum' || field.type === 'radio') && field.options) {
             const option = field.options.find(opt => String(opt.value) === String(fieldValue));
             displayValue = option ? option.label : fieldValue;
           }
@@ -473,6 +473,48 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           </div>
         );
 
+      case 'radio': {
+        // Radio buttons - single choice
+        const enumOptions = field.options || (field.enum ? field.enum.map(v => ({ label: String(v), value: v })) : []);
+        const currentValue = value !== undefined && value !== null ? String(value) : '';
+        
+        return (
+          <div key={field.key} className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+              {field.label}
+              {field.required && <span className="text-red-400">*</span>}
+              {field.description && (
+                <InfoIcon description={field.description} />
+              )}
+            </label>
+            <div className="space-y-2">
+              {enumOptions.map((option) => {
+                const optionValueStr = String(option.value);
+                const isChecked = currentValue === optionValueStr;
+                
+                return (
+                  <label
+                    key={String(option.value)}
+                    className="flex items-center gap-3 p-3 bg-[#1a1b1f] border border-gray-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer"
+                  >
+                    <input
+                      type="radio"
+                      name={fullKey}
+                      value={String(option.value)}
+                      checked={isChecked}
+                      onChange={() => handleFieldChange(field.key, option.value, parentKey)}
+                      className="w-4 h-4 text-purple-600 bg-[#1a1b1f] border-gray-500 focus:ring-purple-500 focus:ring-2"
+                    />
+                    <span className="text-white text-sm">{option.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+            {hasError && <p className="text-xs text-red-400">{error}</p>}
+          </div>
+        );
+      }
+
       case 'enum':
         const enumOptions = field.options || (field.enum ? field.enum.map(v => ({ label: String(v), value: v })) : []);
         return (
@@ -523,6 +565,65 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       case 'array': {
         const isSimpleArrayDropdown =
           field.options && field.options.length > 0 && field.itemType === 'string';
+        
+        // Special case: array with options - multiple choice checkboxes
+        const isRadioArray = field.type === 'array' && field.options && field.options.length > 0;
+        
+        if (isRadioArray) {
+          const arrayValue = Array.isArray(value) ? value : [];
+          const enumOptions = field.options!;
+          
+          const handleCheckboxChange = (optionValue: string | number, checked: boolean) => {
+            const valueStr = String(optionValue);
+            let newArray: (string | number)[] = [...arrayValue];
+            
+            if (checked) {
+              // Add value if not already present
+              if (!newArray.some(v => String(v) === valueStr)) {
+                newArray.push(optionValue);
+              }
+            } else {
+              // Remove value
+              newArray = newArray.filter(v => String(v) !== valueStr);
+            }
+            
+            handleFieldChange(field.key, newArray, parentKey);
+          };
+          
+          return (
+            <div key={field.key} className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+                {field.label}
+                {field.required && <span className="text-red-400">*</span>}
+                {field.description && (
+                  <InfoIcon description={field.description} />
+                )}
+              </label>
+              <div className="space-y-2">
+                {enumOptions.map((option) => {
+                  const optionValueStr = String(option.value);
+                  const isChecked = arrayValue.some(v => String(v) === optionValueStr);
+                  
+                  return (
+                    <label
+                      key={String(option.value)}
+                      className="flex items-center gap-3 p-3 bg-[#1a1b1f] border border-gray-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => handleCheckboxChange(option.value, e.target.checked)}
+                        className="w-4 h-4 border-2 border-gray-500 rounded-full focus:ring-purple-500 focus:ring-2 appearance-none bg-transparent transition-all checked:bg-purple-600 checked:border-purple-600 relative checked:before:content-[''] checked:before:absolute checked:before:top-1/2 checked:before:left-1/2 checked:before:-translate-x-1/2 checked:before:-translate-y-1/2 checked:before:w-2 checked:before:h-2 checked:before:bg-white checked:before:rounded-full"
+                      />
+                      <span className="text-white text-sm">{option.label}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              {hasError && <p className="text-xs text-red-400">{error}</p>}
+            </div>
+          );
+        }
 
         // Special case: backend sends "array" with options as a simple dropdown
         if (isSimpleArrayDropdown) {
@@ -791,12 +892,18 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
             // Skip all fields NOT in whitelist (if whitelist is not empty)
             
             if (shouldInclude) {
-              // For enum fields with options, convert value to label if needed
-              if (field.type === 'enum' && field.options && field.options.length > 0 && isInWhitelist) {
+              // For enum and radio fields with options, convert value to label if needed
+              if ((field.type === 'enum' || field.type === 'radio') && field.options && field.options.length > 0 && isInWhitelist) {
                 const selectedOption = field.options.find(opt => String(opt.value) === String(valueToSend));
                 if (selectedOption) {
                   valueToSend = selectedOption.label;
                 }
+              }
+              
+              // For array fields with options (radio checkboxes), send array of selected values
+              if (field.type === 'array' && field.options && field.options.length > 0 && Array.isArray(value)) {
+                // Keep array as is - it's already an array of selected values
+                valueToSend = value;
               }
               
               if (parentKey) {
@@ -812,6 +919,12 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       
       if (fields.length > 0) {
         buildPayload(fields);
+      }
+
+      // Automatically include availableSocialAccounts if present in requirements
+      // This allows backend to know which social networks are available for posting
+      if (targetRequirements?.availableSocialAccounts) {
+        formPayload.availableSocialAccounts = targetRequirements.availableSocialAccounts;
       }
 
       const request: ChainExecutionRequest = {
