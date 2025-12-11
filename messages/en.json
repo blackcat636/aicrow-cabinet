@@ -502,7 +502,9 @@
       "fieldRequiresAtLeast": "{field} requires at least {count} items",
       "fieldMustHaveAtMost": "{field} must have at most {count} items",
       "maxItemsAllowed": "Maximum {count} item(s) allowed",
-      "fillRequiredFields": "Please fill in all required fields"
+      "fillRequiredFields": "Please fill in all required fields",
+      "noSocialAccounts": "Cannot post until social networks are connected.",
+      "connectSocialAccounts": "Connect Social Networks"
     },
     "fieldRequired": "{field} is required"
   },

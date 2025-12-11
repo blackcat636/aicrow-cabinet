@@ -502,7 +502,9 @@
       "fieldRequiresAtLeast": "{field} потребує принаймні {count} елементів",
       "fieldMustHaveAtMost": "{field} має містити не більше {count} елементів",
       "maxItemsAllowed": "Максимум {count} елемент(ів) дозволено",
-      "fillRequiredFields": "Будь ласка, заповніть всі обов'язкові поля"
+      "fillRequiredFields": "Будь ласка, заповніть всі обов'язкові поля",
+      "noSocialAccounts": "Неможливо запостити поки не підключені соціальні мережі.",
+      "connectSocialAccounts": "Підключити соціальні мережі"
     },
     "fieldRequired": "{field} є обов'язковим полем"
   },

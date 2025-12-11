@@ -502,7 +502,9 @@
       "fieldRequiresAtLeast": "{field} nécessite au moins {count} éléments",
       "fieldMustHaveAtMost": "{field} doit contenir au plus {count} éléments",
       "maxItemsAllowed": "Maximum {count} élément(s) autorisé(s)",
-      "fillRequiredFields": "Veuillez remplir tous les champs obligatoires"
+      "fillRequiredFields": "Veuillez remplir tous les champs obligatoires",
+      "noSocialAccounts": "Impossible de publier tant que les réseaux sociaux ne sont pas connectés.",
+      "connectSocialAccounts": "Connecter les réseaux sociaux"
     },
     "fieldRequired": "{field} est requis"
   },

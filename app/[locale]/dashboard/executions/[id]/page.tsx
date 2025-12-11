@@ -12,6 +12,7 @@ import { ChainToWorkflowModal } from '@/components/workflow/ChainToWorkflowModal
 import { ChainHistory } from '@/components/workflow/ChainHistory';
 import { ResultDisplay } from '@/components/workflow/ResultDisplay';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Spinner } from '@/components/ui/spinner';
 import { XIcon, CheckIcon, ClockIcon } from '@/components/icons';
 import { toast } from 'sonner';
 
@@ -239,6 +240,7 @@ export default function ExecutionDetailsPage() {
   }
 
   const isCompleted = execution.status === 'completed' || execution.status === '1';
+  const isRunning = execution.status === 'running' || execution.status === '3' || execution.status === 'pending' || execution.status === '0';
   const canChain = isCompleted && availableChains && availableChains.availableChains.length > 0;
 
   return (
@@ -249,9 +251,24 @@ export default function ExecutionDetailsPage() {
           <div className="p-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-2xl font-bold text-white">{t('executionDetailsTitle', { id: execution.id })}</h2>
-              <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${getStatusColor(execution.status)}`}>
-                {getStatusIcon(execution.status)}
-                <span className="font-medium">{getStatusLabel(execution.status)}</span>
+              <div className="flex flex-col items-end gap-2">
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-lg border ${getStatusColor(execution.status)}`}>
+                  {getStatusIcon(execution.status)}
+                  <span className="font-medium">{getStatusLabel(execution.status)}</span>
+                </div>
+                {isRunning && (
+                  <div className="flex items-center gap-2 text-sm text-blue-200">
+                    <Spinner
+                      size="md"
+                      gradient
+                      gradientFrom="#A500E1"
+                      gradientTo="#7B61FF"
+                      label="Running spinner"
+                      speed="slow"
+                    />
+                    <span className="font-medium">{`${getStatusLabel(execution.status)}...`}</span>
+                  </div>
+                )}
               </div>
             </div>
 

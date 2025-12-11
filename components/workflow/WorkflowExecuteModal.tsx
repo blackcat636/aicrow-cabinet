@@ -44,7 +44,6 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
       // Call getSocialNetworks and store in state
       workflowApi.getSocialNetworks()
         .then(networks => {
-          console.log('Available social networks:', networks);
           setSocialNetworks(networks);
         })
         .catch(error => {
@@ -55,7 +54,6 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
       // Call getSocialAccounts and store in state
       workflowApi.getSocialAccounts()
         .then(socialAccounts => {
-          console.log('Connected social accounts:', socialAccounts);
           setAvailableSocialAccounts(socialAccounts);
         })
         .catch(error => {

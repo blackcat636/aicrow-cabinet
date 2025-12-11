@@ -500,11 +500,8 @@ export default function WorkflowDetailPage() {
     );
 
     if (runningExecutions.length === 0) {
-      console.log('[refreshRunningExecutions] no running/pending executions, skip');
       return;
     }
-
-    console.log('[refreshRunningExecutions] refreshing ids', runningExecutions.map(r => r.id));
 
     try {
       const updates = await Promise.all(
@@ -520,7 +517,6 @@ export default function WorkflowDetailPage() {
 
       const validUpdates = updates.filter(Boolean) as WorkflowExecution[];
       if (validUpdates.length === 0) {
-        console.log('[refreshRunningExecutions] no valid updates');
         return;
       }
 
@@ -537,18 +533,10 @@ export default function WorkflowDetailPage() {
           if (statusChanged || completionChanged) {
             updatedMap.set(mapKey, exec);
             hasChanges = true;
-            console.log('[refreshRunningExecutions] updated', {
-              id: exec.id,
-              statusFrom: prevExec?.status,
-              statusTo: exec.status,
-              completedFrom: prevExec?.completedAt,
-              completedTo: exec.completedAt
-            });
           }
         });
 
         if (!hasChanges) {
-          console.log('[refreshRunningExecutions] no changes detected, keeping previous state');
           return prev;
         }
 
@@ -566,7 +554,6 @@ export default function WorkflowDetailPage() {
         if (!stillRunning && refreshIntervalRef.current) {
           clearInterval(refreshIntervalRef.current);
           refreshIntervalRef.current = null;
-          console.log('[refreshRunningExecutions] all executions finished, interval cleared');
         }
 
         return nextState;

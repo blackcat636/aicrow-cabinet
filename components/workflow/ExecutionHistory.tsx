@@ -17,6 +17,7 @@ import {
   ChevronRightIcon
 } from '@/components/icons';
 import { useTranslations } from 'next-intl';
+import { Spinner } from '@/components/ui/spinner';
 
 // Move helper functions outside component to prevent recreation
 const getStatusColor = (status: string) => {
@@ -611,6 +612,11 @@ const ExecutionCard: React.FC<{
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
+  const isRunning =
+    execution.status === 'running' ||
+    execution.status === 'pending' ||
+    execution.status === '3' ||
+    execution.status === '0';
 
   // Mouse tracking for interactive background on card
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -661,9 +667,18 @@ const ExecutionCard: React.FC<{
                 variant="secondary" 
                 className={getStatusColor(execution.status)}
               >
-                <div className="flex items-center gap-1">
-                  {getStatusIcon(execution.status)}
-                  <span>{getStatusLabel(execution.status)}</span>
+                <div className="flex items-center gap-2">
+                  {isRunning ? (
+                    <>
+                      <Spinner size="md" className="text-chart-2" label="Running spinner" speed="slow" />
+                      <span>{tWorkflow('status.running')}</span>
+                    </>
+                  ) : (
+                    <>
+                      {getStatusIcon(execution.status)}
+                      <span>{getStatusLabel(execution.status)}</span>
+                    </>
+                  )}
                 </div>
               </Badge>
               <Badge variant="outline" className="text-xs">
@@ -764,6 +779,22 @@ const ExecutionCard: React.FC<{
             </div>
           </div>
         </div>
+
+        {isRunning && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-4 px-6 py-6 rounded-lg border border-purple-500/40 bg-[#141519]/80 shadow-lg shadow-purple-500/30">
+              <Spinner
+                size="2xl"
+                gradient
+                gradientFrom="#A500E1"
+                gradientTo="#7B61FF"
+                label="Running spinner"
+                speed="slow"
+              />
+              <div className="text-base font-medium text-purple-100">{tWorkflow('status.running')}...</div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

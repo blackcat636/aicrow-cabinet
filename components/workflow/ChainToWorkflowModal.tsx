@@ -10,6 +10,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { InfoIcon } from '@/components/ui/InfoIcon';
 import { Switch } from '@/components/ui/switch';
 import { useTranslations } from 'next-intl';
+import { useRouter } from '@/i18n/routing';
+import { useLocale } from 'next-intl';
 
 interface ChainToWorkflowModalProps {
   isOpen: boolean;
@@ -28,6 +30,8 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
 }) => {
   const t = useTranslations('executions');
   const tCommon = useTranslations('common');
+  const router = useRouter();
+  const locale = useLocale();
   const [selectedWorkflow, setSelectedWorkflow] = useState<number | null>(null);
   const [allowEditPrefilled, setAllowEditPrefilled] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -38,10 +42,17 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   const [formData, setFormData] = useState<Record<string, any>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Whitelist of fields to show - empty means show all non-hidden fields
-  const FIELD_WHITELIST: string[] = [];
+  // Whitelist of fields to show.
+  // Set to specific keys to limit visible fields. Example: ['prompt']
+  const FIELD_WHITELIST: string[] = ['prompt'];
 
   const selectedChain = availableChains.find(c => c.userWorkflowId === selectedWorkflow);
+
+  // Whitelist check - if whitelist is not empty and editing is not allowed, only show fields in whitelist
+  // When allowEditPrefilled is true, show all fields with values + whitelist fields
+  const whitelistEnabled = FIELD_WHITELIST.length > 0 && !allowEditPrefilled;
+  const isAllowedField = (key: string) =>
+    !whitelistEnabled || FIELD_WHITELIST.includes(key);
 
   // Load requirements for target workflow when selected
   useEffect(() => {
@@ -77,8 +88,9 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
             return;
           }
           
-          // Skip fields not in whitelist (if whitelist is not empty)
-          if (FIELD_WHITELIST.length > 0 && !FIELD_WHITELIST.includes(field.key)) {
+          // Skip fields not in whitelist (if whitelist is enabled)
+          // Always allow socials field (it has special handling)
+          if (field.key !== 'socials' && !isAllowedField(field.key)) {
             return;
           }
           
@@ -148,7 +160,6 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       setFormData(initialData);
     } catch (err: any) {
       // Silently handle error - requirements may not be available
-      console.debug('Could not load chain form fields:', err.message);
       setTargetRequirements(null);
     } finally {
       setLoadingRequirements(false);
@@ -202,8 +213,9 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           return;
         }
         
-        // Skip fields not in whitelist (if whitelist is not empty)
-        if (FIELD_WHITELIST.length > 0 && !FIELD_WHITELIST.includes(field.key)) {
+        // Skip fields not in whitelist (if whitelist is enabled)
+        // Always allow socials field (it has special handling)
+        if (field.key !== 'socials' && !isAllowedField(field.key)) {
           return;
         }
         const fullKey = prefix ? `${prefix}.${field.key}` : field.key;
@@ -275,10 +287,10 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
     return label;
   };
 
-  // Build data array from formFields with values for display
-  const buildFormFieldsData = (): Array<{ label: string; value: any }> => {
+  // Build data array from formFields with non-empty values for display
+  const buildFormFieldsData = (): Array<{ label: string; value: any; key: string }> => {
     const fields = targetRequirements?.formFields || [];
-    const data: Array<{ label: string; value: any }> = [];
+    const data: Array<{ label: string; value: any; key: string }> = [];
     
     fields.forEach(field => {
       const fieldValue = (field as any).value;
@@ -296,6 +308,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           }
           
           data.push({
+            key: field.key,
             label: formatFieldLabel(field.label || field.key, field.key),
             value: displayValue
           });
@@ -312,13 +325,24 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       return null;
     }
 
-    // Only show fields in whitelist (if whitelist is not empty)
-    if (FIELD_WHITELIST.length > 0 && !FIELD_WHITELIST.includes(field.key)) {
+    // Always show socials field (it has special handling with availableSocialAccounts)
+    // For other fields, check whitelist if enabled
+    if (field.key !== 'socials' && !isAllowedField(field.key)) {
       return null;
     }
     
     // Check if field value is an array (even if type is string)
     const fieldValue = (field as any).value;
+    const isPrefilled = (field as any).prefilled === true;
+    const hasValue = fieldValue !== undefined && fieldValue !== null && 
+      !((typeof fieldValue === 'string' && fieldValue === '') || 
+        (Array.isArray(fieldValue) && fieldValue.length === 0));
+    
+    // If field is prefilled and editing is not allowed, don't show it as editable field
+    // (it will be shown in the info block)
+    if (isPrefilled && hasValue && !allowEditPrefilled) {
+      return null;
+    }
     const isArrayValue = Array.isArray(fieldValue);
     
     // Check if field should be treated as array based on defaultValue or type
@@ -326,21 +350,87 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       (field.defaultValue !== undefined && Array.isArray(field.defaultValue)) ||
       field.type === 'array';
     
-    // Check if field has a value from formFields - skip rendering as editable field
-    const hasValueFromFormFields = fieldValue !== undefined && fieldValue !== null && 
-      !((typeof fieldValue === 'string' && fieldValue === '') || 
-        (Array.isArray(fieldValue) && fieldValue.length === 0));
-    
-    // Skip rendering fields with values from formFields if editing is not allowed
-    // (they will be shown in info block)
-    if (hasValueFromFormFields && !allowEditPrefilled) {
-      return null;
-    }
 
     const fullKey = parentKey ? `${parentKey}.${field.key}` : field.key;
     const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
     const error = errors[fullKey];
     const hasError = !!error;
+
+    // Special handling for socials field - show radio buttons from availableSocialAccounts
+    if (field.key === 'socials' && targetRequirements?.availableSocialAccounts) {
+      const socialAccounts = targetRequirements.availableSocialAccounts;
+      const socialKeys = Object.keys(socialAccounts);
+      
+      if (socialKeys.length === 0) {
+        // No social accounts connected - show message and disable submit
+        return (
+          <div key={field.key} className="space-y-2">
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+              {field.label}
+              {field.required && <span className="text-red-400">*</span>}
+            </label>
+            <div className="p-4 bg-yellow-900/20 border border-yellow-500/50 rounded-lg">
+              <p className="text-yellow-300 text-sm mb-3">
+                {t('chainModal.noSocialAccounts') || 'Неможливо запостити поки не підключені соціальні мережі.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  router.push('/integrations/telegram', { locale });
+                  onClose();
+                }}
+                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-500 hover:to-purple-600 transition-all font-medium text-sm"
+              >
+                {t('chainModal.connectSocialAccounts') || 'Підключити соціальні мережі'}
+              </button>
+            </div>
+          </div>
+        );
+      }
+      
+      // Show radio buttons with available social accounts
+      const currentValue = Array.isArray(value) && value.length > 0 ? value[0] : (value || '');
+      
+      return (
+        <div key={field.key} className="space-y-2">
+          <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+            {field.label}
+            {field.required && <span className="text-red-400">*</span>}
+            {field.description && (
+              <InfoIcon description={field.description} />
+            )}
+          </label>
+          <div className="space-y-2">
+            {socialKeys.map((socialKey) => {
+              const isChecked = currentValue === socialKey;
+              // Format social network name: "instagram" -> "Instagram", "facebook" -> "Facebook"
+              const socialName = socialKey.charAt(0).toUpperCase() + socialKey.slice(1);
+              
+              return (
+                <label
+                  key={socialKey}
+                  className="flex items-center gap-3 p-3 bg-[#1a1b1f] border border-gray-600 rounded-lg hover:border-purple-500/50 transition-all cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name={fullKey}
+                    value={socialKey}
+                    checked={isChecked}
+                    onChange={() => {
+                      // Store as array with single value for compatibility
+                      handleFieldChange(field.key, [socialKey], parentKey);
+                    }}
+                    className="w-4 h-4 text-purple-600 bg-[#1a1b1f] border-gray-500 focus:ring-purple-500 focus:ring-2"
+                  />
+                  <span className="text-white text-sm">{socialName}</span>
+                </label>
+              );
+            })}
+          </div>
+          {hasError && <p className="text-xs text-red-400">{error}</p>}
+        </div>
+      );
+    }
 
     switch (field.type) {
       case 'string':
@@ -857,15 +947,26 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
             return;
           }
 
+          // If field is prefilled and editing is not allowed, use value from formFields
+          // Otherwise use value from formData (user input)
+          const fieldValue = (field as any).value;
+          const isPrefilled = (field as any).prefilled === true;
+          const hasPrefilledValue = fieldValue !== undefined && fieldValue !== null && 
+            !((typeof fieldValue === 'string' && fieldValue === '') || 
+              (Array.isArray(fieldValue) && fieldValue.length === 0));
+          
           const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
-          const isInWhitelist = FIELD_WHITELIST.length === 0 || FIELD_WHITELIST.includes(field.key);
+          const valueToUse = (!allowEditPrefilled && isPrefilled && hasPrefilledValue) ? fieldValue : value;
+          
+          // Always allow socials field (it has special handling)
+          const isInWhitelist = field.key === 'socials' || isAllowedField(field.key);
           
           if (field.type === 'object' && field.fields) {
             return;
           } else {
             // Determine if field should be included in payload
             let shouldInclude = false;
-            let valueToSend: any = value;
+            let valueToSend: any = valueToUse;
             
             // Include fields if whitelist is empty (show all) or field is in whitelist
             if (isInWhitelist) {
@@ -1033,7 +1134,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                   return formFieldsData.length > 0 ? (
                     <div className="p-4 bg-gray-800/30 rounded-lg border border-gray-700/50">
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="text-sm font-medium text-gray-300">{t('chainModal.prefilledData') || 'Pre-filled Data'}</h4>
+                        <h4 className="text-sm font-medium text-gray-300">{t('chainModal.prefilledData') || 'Data from Previous Step'}</h4>
                         <label className="flex items-center gap-2 cursor-pointer">
                           <input
                             type="checkbox"
@@ -1046,8 +1147,8 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                       </div>
                       {!allowEditPrefilled && (
                         <div className="space-y-3">
-                          {formFieldsData.map((item, index) => (
-                            <div key={index} className="space-y-1">
+                          {formFieldsData.map((item) => (
+                            <div key={item.key} className="space-y-1">
                               <div className="text-xs font-medium text-gray-400">{item.label}</div>
                               {Array.isArray(item.value) ? (
                                 <div className="space-y-1">
@@ -1101,21 +1202,33 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                 >
                   {tCommon('cancel')}
                 </button>
-                <button
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={loading || !selectedWorkflow}
-                  className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-500 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02] active:scale-[0.98]"
-                >
-                  {loading ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                      {t('chainModal.chaining')}
-                    </>
-                  ) : (
-                    t('chainModal.chain')
-                  )}
-                </button>
+                {(() => {
+                  // Check if socials field is required and no social accounts available
+                  const fields = targetRequirements?.formFields || targetRequirements?.fields || targetRequirements?.userFields || [];
+                  const socialsField = fields.find((f: UserField) => f.key === 'socials');
+                  const hasSocialAccounts = targetRequirements?.availableSocialAccounts && 
+                    Object.keys(targetRequirements.availableSocialAccounts).length > 0;
+                  const isSocialsRequired = socialsField?.required === true;
+                  const shouldDisableSubmit = isSocialsRequired && !hasSocialAccounts;
+                  
+                  return (
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      disabled={loading || !selectedWorkflow || shouldDisableSubmit}
+                      className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-500 hover:to-purple-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all font-medium shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      {loading ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          {t('chainModal.chaining')}
+                        </>
+                      ) : (
+                        t('chainModal.chain')
+                      )}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           </div>

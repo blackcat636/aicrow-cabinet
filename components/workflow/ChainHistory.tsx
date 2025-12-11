@@ -114,7 +114,6 @@ export const ChainHistory: React.FC<ChainHistoryProps> = ({ executionId, isChain
       setChainData(data);
     } catch (err: any) {
       // Silently handle errors - execution might not have chain history
-      console.debug('Could not load chain history:', err.message);
       setChainData(null);
     } finally {
       setLoading(false);
