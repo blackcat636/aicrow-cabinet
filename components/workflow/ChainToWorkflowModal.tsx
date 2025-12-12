@@ -65,6 +65,47 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
     }
   }, [selectedChain?.userWorkflowId, isOpen]);
 
+  // When allowEditPrefilled is enabled, fill all fields with values from formFields
+  useEffect(() => {
+    if (allowEditPrefilled && targetRequirements?.formFields) {
+      const fields = targetRequirements.formFields;
+      
+      setFormData(prevFormData => {
+        const newFormData: Record<string, any> = { ...prevFormData };
+        
+        fields.forEach(field => {
+          // Skip hidden fields
+          if (field.hidden === true) {
+            return;
+          }
+          
+          const fieldValue = (field as any).value;
+          
+          // Fill field with value if it exists and is not empty
+          if (fieldValue !== undefined && fieldValue !== null) {
+            const isEmpty = 
+              (typeof fieldValue === 'string' && fieldValue === '') ||
+              (Array.isArray(fieldValue) && fieldValue.length === 0);
+            
+            if (!isEmpty) {
+              // Handle array values
+              if (Array.isArray(fieldValue)) {
+                newFormData[field.key] = fieldValue;
+              } else if ((field.type === 'enum' || field.type === 'radio') && field.options && field.options.length > 0) {
+                const optionByValue = field.options.find(opt => String(opt.value) === String(fieldValue));
+                newFormData[field.key] = optionByValue ? optionByValue.value : fieldValue;
+              } else {
+                newFormData[field.key] = fieldValue;
+              }
+            }
+          }
+        });
+        
+        return newFormData;
+      });
+    }
+  }, [allowEditPrefilled, targetRequirements?.formFields]);
+
   const loadTargetRequirements = async () => {
     if (!selectedChain?.userWorkflowId) return;
     
