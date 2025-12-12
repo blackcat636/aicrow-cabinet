@@ -784,7 +784,7 @@ const ExecutionCard: React.FC<{
           <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 backdrop-blur-sm">
             <div className="flex flex-col items-center gap-4 px-6 py-6 rounded-lg border border-purple-500/40 bg-[#141519]/80 shadow-lg shadow-purple-500/30">
               <Spinner
-                size="2xl"
+                size="4xl"
                 gradient
                 gradientFrom="#A500E1"
                 gradientTo="#7B61FF"

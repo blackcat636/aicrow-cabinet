@@ -218,6 +218,15 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
         if (field.key !== 'socials' && !isAllowedField(field.key)) {
           return;
         }
+        
+        // Skip socials field validation if no availableSocialAccounts
+        if (field.key === 'socials') {
+          const socialAccounts = targetRequirements?.availableSocialAccounts;
+          if (!socialAccounts || Object.keys(socialAccounts).length === 0) {
+            return;
+          }
+        }
+        
         const fullKey = prefix ? `${prefix}.${field.key}` : field.key;
         const value = prefix ? (formData[prefix]?.[field.key]) : formData[field.key];
 
@@ -357,35 +366,18 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
     const hasError = !!error;
 
     // Special handling for socials field - show radio buttons from availableSocialAccounts
-    if (field.key === 'socials' && targetRequirements?.availableSocialAccounts) {
+    if (field.key === 'socials') {
+      // If no availableSocialAccounts or empty, don't show the field at all
+      if (!targetRequirements?.availableSocialAccounts) {
+        return null;
+      }
+      
       const socialAccounts = targetRequirements.availableSocialAccounts;
       const socialKeys = Object.keys(socialAccounts);
       
+      // If no social accounts connected, don't show the field
       if (socialKeys.length === 0) {
-        // No social accounts connected - show message and disable submit
-        return (
-          <div key={field.key} className="space-y-2">
-            <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
-              {field.label}
-              {field.required && <span className="text-red-400">*</span>}
-            </label>
-            <div className="p-4 bg-yellow-900/20 border border-yellow-500/50 rounded-lg">
-              <p className="text-yellow-300 text-sm mb-3">
-                {t('chainModal.noSocialAccounts') || 'Неможливо запостити поки не підключені соціальні мережі.'}
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  router.push('/integrations/telegram', { locale });
-                  onClose();
-                }}
-                className="px-4 py-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white rounded-lg hover:from-purple-500 hover:to-purple-600 transition-all font-medium text-sm"
-              >
-                {t('chainModal.connectSocialAccounts') || 'Підключити соціальні мережі'}
-              </button>
-            </div>
-          </div>
-        );
+        return null;
       }
       
       // Show radio buttons with available social accounts
@@ -957,6 +949,14 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           
           const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
           const valueToUse = (!allowEditPrefilled && isPrefilled && hasPrefilledValue) ? fieldValue : value;
+          
+          // Skip socials field if no availableSocialAccounts
+          if (field.key === 'socials') {
+            const socialAccounts = targetRequirements?.availableSocialAccounts;
+            if (!socialAccounts || Object.keys(socialAccounts).length === 0) {
+              return;
+            }
+          }
           
           // Always allow socials field (it has special handling)
           const isInWhitelist = field.key === 'socials' || isAllowedField(field.key);

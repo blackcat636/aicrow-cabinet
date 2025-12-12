@@ -12,6 +12,8 @@ const spinnerVariants = cva("animate-spin text-current", {
       lg: "h-6 w-6",
       xl: "h-8 w-8",
       "2xl": "h-12 w-12",
+      "3xl": "h-16 w-16",
+      "4xl": "h-20 w-20",
     },
   },
   defaultVariants: {
@@ -47,7 +49,7 @@ export const Spinner = React.forwardRef<SVGSVGElement, SpinnerProps>(
 
     const strokeValue = gradient ? `url(#${gradientId})` : "currentColor"
     const animationDuration =
-      speed === "slow" ? "1.6s" : speed === "fast" ? "0.7s" : undefined
+      speed === "slow" ? "1.2s" : speed === "fast" ? "0.5s" : "0.8s"
 
     return (
       <svg
@@ -75,7 +77,7 @@ export const Spinner = React.forwardRef<SVGSVGElement, SpinnerProps>(
         <path
           className="opacity-75"
           fill={strokeValue}
-          d="M22 12c0-5.52-4.48-10-10-10v4c3.31 0 6 2.69 6 6z"
+          d="M18.5 12c0-3.57-2.93-6.5-6.5-6.5v2.2c2.37 0 4.3 1.93 4.3 4.3z"
         />
       </svg>
     )
