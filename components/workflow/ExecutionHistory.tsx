@@ -19,6 +19,8 @@ import {
 import { useTranslations } from 'next-intl';
 import { Spinner } from '@/components/ui/spinner';
 
+const RUNNING_STATUSES = ['3', 'running', '0', 'pending'];
+
 // Move helper functions outside component to prevent recreation
 const getStatusColor = (status: string) => {
   switch (status) {
@@ -148,6 +150,8 @@ export const ExecutionHistory: React.FC = () => {
   });
 
   const isMountedRef = React.useRef(false);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const executionsRef = useRef<WorkflowExecution[]>([]);
 
   const loadUserWorkflows = React.useCallback(async () => {
     try {
@@ -205,6 +209,114 @@ export const ExecutionHistory: React.FC = () => {
       loadExecutions();
     }
   }, [filters, loadExecutions]);
+
+  // Store executions in ref for refresh function
+  useEffect(() => {
+    executionsRef.current = executionsData.items;
+  }, [executionsData.items]);
+
+  // Helper function to get execution map key
+  const getExecutionMapKey = useCallback((execution: WorkflowExecution) => {
+    return String(
+      execution.id ??
+      execution.n8nExecutionId ??
+      `${execution.workflowId ?? execution.userWorkflowId ?? 'wf'}-${execution.startedAt ?? execution.createdAt ?? 'na'}`
+    );
+  }, []);
+
+  // Refresh running executions
+  const refreshRunningExecutions = useCallback(async () => {
+    const runningExecutions = executionsRef.current.filter(exec =>
+      RUNNING_STATUSES.includes(exec.status)
+    );
+
+    if (runningExecutions.length === 0) {
+      return;
+    }
+
+    try {
+      const updates = await Promise.all(
+        runningExecutions.map(exec =>
+          workflowApi
+            .getExecutionDetails(exec.id)
+            .catch(err => {
+              console.error(`Error refreshing execution ${exec.id}:`, err);
+              return null;
+            })
+        )
+      );
+
+      const validUpdates = updates.filter(Boolean) as WorkflowExecution[];
+      if (validUpdates.length === 0) {
+        return;
+      }
+
+      setExecutionsData(prev => {
+        const updatedMap = new Map(prev.items.map(exec => [getExecutionMapKey(exec), exec]));
+        let hasChanges = false;
+
+        validUpdates.forEach(exec => {
+          const mapKey = getExecutionMapKey(exec);
+          const prevExec = updatedMap.get(mapKey);
+          const statusChanged = !prevExec || prevExec.status !== exec.status;
+          const completionChanged = prevExec?.completedAt !== exec.completedAt;
+
+          if (statusChanged || completionChanged) {
+            updatedMap.set(mapKey, exec);
+            hasChanges = true;
+          }
+        });
+
+        if (!hasChanges) {
+          return prev;
+        }
+
+        const items = Array.from(updatedMap.values());
+        // Preserve pagination info
+        const nextState = {
+          ...prev,
+          items,
+        };
+
+        const stillRunning = items.some(item => RUNNING_STATUSES.includes(item.status));
+        if (!stillRunning && refreshIntervalRef.current) {
+          clearInterval(refreshIntervalRef.current);
+          refreshIntervalRef.current = null;
+        }
+
+        return nextState;
+      });
+    } catch (err) {
+      console.error('Error refreshing running executions:', err);
+    }
+  }, [getExecutionMapKey]);
+
+  // Auto-refresh only running/pending executions every 30 seconds
+  useEffect(() => {
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
+
+    if (!isMountedRef.current) return;
+
+    const hasRunningExecutions = executionsData.items.some(exec =>
+      RUNNING_STATUSES.includes(exec.status)
+    );
+
+    if (!hasRunningExecutions) return;
+
+    refreshIntervalRef.current = setInterval(() => {
+      refreshRunningExecutions();
+    }, 30000);
+
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
+  }, [executionsData.items, refreshRunningExecutions]);
 
   // Memoize stats calculations to prevent recalculation on every render
   const stats = useMemo(() => {

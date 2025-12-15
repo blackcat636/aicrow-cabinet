@@ -28,6 +28,7 @@ import { ResultDisplay } from '@/components/workflow/ResultDisplay';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ChainToWorkflowModal } from '@/components/workflow/ChainToWorkflowModal';
 import { AvailableChainsResponse } from '@/types/workflow';
+import { Spinner } from '@/components/ui/spinner';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -119,6 +120,7 @@ const ExecutionCard: React.FC<{
   }, []);
 
   const isCompleted = execution.status === 'completed' || execution.status === '1';
+  const isRunning = RUNNING_STATUSES.includes(execution.status);
 
   // Load available chains when execution is completed
   useEffect(() => {
@@ -177,9 +179,18 @@ const ExecutionCard: React.FC<{
                 variant="secondary" 
                 className={getStatusColor(execution.status)}
               >
-                <div className="flex items-center gap-1">
-                  {getStatusIcon(execution.status)}
-                  <span>{getStatusLabel(execution.status)}</span>
+                <div className="flex items-center gap-2">
+                  {isRunning ? (
+                    <>
+                      <Spinner size="md" className="text-chart-2" label="Running spinner" speed="slow" />
+                      <span>{getStatusLabel(execution.status)}</span>
+                    </>
+                  ) : (
+                    <>
+                      {getStatusIcon(execution.status)}
+                      <span>{getStatusLabel(execution.status)}</span>
+                    </>
+                  )}
                 </div>
               </Badge>
               <Badge variant="outline" className="text-xs">
@@ -328,6 +339,23 @@ const ExecutionCard: React.FC<{
             </div>
           </div>
         </div>
+
+        {/* Running overlay with spinner */}
+        {isRunning && (
+          <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+            <div className="flex flex-col items-center gap-4 px-6 py-6 rounded-lg border border-purple-500/40 bg-[#141519]/80 shadow-lg shadow-purple-500/30">
+              <Spinner
+                size="4xl"
+                gradient
+                gradientFrom="#A500E1"
+                gradientTo="#7B61FF"
+                label="Running spinner"
+                speed="slow"
+              />
+              <div className="text-base font-medium text-purple-100">{getStatusLabel(execution.status)}...</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Modals */}
@@ -377,7 +405,7 @@ export default function WorkflowDetailPage() {
     totalPages: 0
   });
   const [loading, setLoading] = useState(true);
-  const [executionsLoading, setExecutionsLoading] = useState(true);
+  const [executionsLoading, setExecutionsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [executing, setExecuting] = useState(false);
   const [showEditForm, setShowEditForm] = useState(false);
@@ -476,6 +504,7 @@ export default function WorkflowDetailPage() {
   // Load executions when workflow is loaded
   useEffect(() => {
     if (workflow && isAuthenticated) {
+      setExecutionsLoading(true);
       loadExecutions();
     }
   }, [workflow, isAuthenticated]);
@@ -990,39 +1019,6 @@ export default function WorkflowDetailPage() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="h-full bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-300">{tCommon('loading')}</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !workflow) {
-    return (
-      <AppLayout>
-        <div className="h-full bg-gray-900">
-          <div className="max-w-4xl mx-auto p-6">
-            <div className="text-center py-12">
-              <h1 className="text-2xl font-bold text-white mb-4">{t('notFound')}</h1>
-              <p className="text-gray-300 mb-6">{error ?? t('notFoundDescription')}</p>
-              <button
-                onClick={() => router.push('/dashboard', { locale })}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors mx-auto"
-              >
-                <ChevronLeftIcon className="w-4 h-4" />
-                {t('backToDashboard')}
-              </button>
-            </div>
-          </div>
-        </div>
-      </AppLayout>
-    );
-  }
-
   // Skeleton loader for workflow detail page
   const DetailSkeleton = () => (
     <div className="h-full">
@@ -1058,16 +1054,54 @@ export default function WorkflowDetailPage() {
                 </div>
               ))}
             </div>
+            {/* Executions skeleton */}
+            <div className="mt-8">
+              <div className="h-6 w-48 bg-gray-700 rounded mb-4 animate-pulse"></div>
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
+                    <div className="bg-black rounded-lg p-6 h-32 animate-pulse">
+                      <div className="h-4 w-32 bg-gray-700 rounded mb-2"></div>
+                      <div className="h-4 w-48 bg-gray-700 rounded"></div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
   );
 
-  if (loading) {
+  // Show loading state for auth or initial workflow loading
+  if (isLoading || loading) {
     return (
       <AppLayout>
         <DetailSkeleton />
+      </AppLayout>
+    );
+  }
+
+  // Show error state only if not loading and workflow is not found
+  if (error || !workflow) {
+    return (
+      <AppLayout>
+        <div className="h-full bg-gray-900">
+          <div className="max-w-4xl mx-auto p-6">
+            <div className="text-center py-12">
+              <h1 className="text-2xl font-bold text-white mb-4">{t('notFound')}</h1>
+              <p className="text-gray-300 mb-6">{error ?? t('notFoundDescription')}</p>
+              <button
+                onClick={() => router.push('/dashboard', { locale })}
+                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors mx-auto"
+              >
+                <ChevronLeftIcon className="w-4 h-4" />
+                {t('backToDashboard')}
+              </button>
+            </div>
+          </div>
+        </div>
       </AppLayout>
     );
   }
@@ -1459,8 +1493,9 @@ export default function WorkflowDetailPage() {
                 </div>
 
                 {executionsLoading ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mb-4"></div>
+                    <p className="text-gray-400 text-sm">{tCommon('loading')}</p>
                   </div>
                 ) : executions.items.length === 0 ? (
                   <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30">
