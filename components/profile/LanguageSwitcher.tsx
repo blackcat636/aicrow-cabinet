@@ -4,12 +4,13 @@ import React, { useState, useRef, useEffect, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale, useTranslations } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/routing';
-import { USFlagIcon, UkraineFlagIcon, FranceFlagIcon } from '@/components/icons';
+import { USFlagIcon, UkraineFlagIcon, FranceFlagIcon, SpainFlagIcon } from '@/components/icons';
 
 const languages = [
   { code: 'en', name: 'English', FlagIcon: USFlagIcon },
   { code: 'uk', name: 'Українська', FlagIcon: UkraineFlagIcon },
-  { code: 'fr', name: 'Français', FlagIcon: FranceFlagIcon }
+  { code: 'fr', name: 'Français', FlagIcon: FranceFlagIcon },
+  { code: 'es', name: 'Español', FlagIcon: SpainFlagIcon }
 ];
 
 export function LanguageSwitcher() {

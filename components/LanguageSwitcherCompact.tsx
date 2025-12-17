@@ -4,12 +4,13 @@ import React, { useState, useRef, useEffect, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/routing';
-import { USFlagIcon, UkraineFlagIcon, FranceFlagIcon } from '@/components/icons';
+import { USFlagIcon, UkraineFlagIcon, FranceFlagIcon, SpainFlagIcon } from '@/components/icons';
 
 const languages = [
   { code: 'en', name: 'English', FlagIcon: USFlagIcon },
   { code: 'uk', name: 'Українська', FlagIcon: UkraineFlagIcon },
-  { code: 'fr', name: 'Français', FlagIcon: FranceFlagIcon }
+  { code: 'fr', name: 'Français', FlagIcon: FranceFlagIcon },
+  { code: 'es', name: 'Español', FlagIcon: SpainFlagIcon }
 ];
 
 export function LanguageSwitcherCompact() {
@@ -20,7 +21,7 @@ export function LanguageSwitcherCompact() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
   const dropdownMenuRef = useRef<HTMLDivElement>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, right: 0, width: 0 });
 
   const currentLanguage = languages.find(lang => lang.code === locale) || languages[0];
 
@@ -28,10 +29,11 @@ export function LanguageSwitcherCompact() {
   useEffect(() => {
     if (isOpen && buttonRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
+      const dropdownWidth = 180;
       setDropdownPosition({
         top: rect.bottom + window.scrollY + 8,
-        left: rect.left + window.scrollX,
-        width: rect.width
+        right: window.innerWidth - (rect.right + window.scrollX), // Distance from right edge
+        width: dropdownWidth
       });
     }
   }, [isOpen]);
@@ -133,7 +135,7 @@ export function LanguageSwitcherCompact() {
             className="fixed z-[99999] bg-gray-800 border border-gray-700 rounded-lg shadow-xl overflow-hidden min-w-[180px]"
             style={{
               top: `${dropdownPosition.top}px`,
-              left: `${dropdownPosition.left}px`,
+              right: `${dropdownPosition.right}px`,
               width: `${Math.max(dropdownPosition.width, 180)}px`
             }}
             onClick={(e) => {
