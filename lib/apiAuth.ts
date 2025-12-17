@@ -7,7 +7,8 @@ import {
   VerifyEmailRequest,
   ResendVerificationRequest,
   ChangeEmailRequest,
-  ConfirmEmailChangeRequest
+  ConfirmEmailChangeRequest,
+  ImpersonateResponse
 } from '@/types/auth';
 import { API_CONFIG } from '@/config/api';
 
@@ -195,6 +196,67 @@ export const authApi = {
     } catch (error) {
       throw error;
     }
+  },
+
+  // Impersonate user (admin only)
+  impersonateUser: async (userId: number): Promise<ImpersonateResponse> => {
+    const response = await fetch(`/api/auth/admin/users/${userId}/impersonate`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-cache'
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || errorData.message || 'Impersonation failed';
+      const error = new Error(errorMessage);
+      (error as any).status = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as ImpersonateResponse;
+  },
+
+  // Stop impersonation and restore admin session
+  stopImpersonation: async (): Promise<void> => {
+    const response = await fetch('/api/auth/admin/stop-impersonate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-cache'
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || errorData.message || 'Failed to stop impersonation';
+      const error = new Error(errorMessage);
+      (error as any).status = response.status;
+      throw error;
+    }
+  },
+
+  // Admin users list
+  getUsersList: async (): Promise<any> => {
+    const response = await fetch('/api/admin/users', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-cache'
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      const errorMessage = errorData.error || errorData.message || 'Failed to load users';
+      const error = new Error(errorMessage);
+      (error as any).status = response.status;
+      throw error;
+    }
+
+    return await response.json();
   },
 
   // Logout

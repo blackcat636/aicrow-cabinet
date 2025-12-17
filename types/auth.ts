@@ -30,6 +30,7 @@ export interface LoginResponse {
       balance: string;
       frozenBalance: string;
     };
+    impersonation?: ImpersonationInfo;
   };
 }
 
@@ -38,6 +39,33 @@ export interface RefreshTokenResponse {
   data: {
     accessToken: string;
     refreshToken: string;
+  };
+}
+
+export interface ImpersonatedBy {
+  id: string;
+  email: string;
+  username: string;
+}
+
+export interface ImpersonationInfo {
+  isImpersonated: boolean;
+  impersonatedBy: ImpersonatedBy | null;
+  impersonatedUser?: {
+    id: string;
+    email: string;
+    username: string;
+  };
+}
+
+export interface ImpersonateResponse {
+  status: number;
+  data: {
+    accessToken: string;
+    refreshToken: string;
+    deviceId: string;
+    user: User;
+    impersonation: ImpersonationInfo;
   };
 }
 

@@ -1,8 +1,8 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback, useRef } from 'react';
-import { User, LoginRequest, RegisterRequest } from '@/types/auth';
-import { removeTokens, getAccessToken, getRefreshToken } from '@/lib/auth';
+import { User, LoginRequest, RegisterRequest, ImpersonationInfo } from '@/types/auth';
+import { removeTokens, getAccessToken, getRefreshToken, getImpersonationMeta, clearImpersonationMeta, setImpersonationMeta } from '@/lib/auth';
 import { authApi } from '@/lib/apiAuth';
 import { userApi } from '@/lib/apiUser';
 
@@ -15,6 +15,9 @@ interface AuthContextType {
   register: (userData: RegisterRequest) => Promise<any>;
   logout: () => Promise<void>;
   clearError: () => void;
+  impersonationInfo: ImpersonationInfo | null;
+  impersonateUser: (userId: number | string) => Promise<void>;
+  stopImpersonation: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -38,6 +41,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
   const [pathname, setPathname] = useState<string>('/');
   const isLoggingOutRef = useRef(false);
+  const [impersonationInfo, setImpersonationInfo] = useState<ImpersonationInfo | null>(null);
 
   // Get pathname from window.location (client-side only) to avoid static export issues
   useEffect(() => {
@@ -80,6 +84,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (!at && !rt) {
           setIsAuthenticated(false);
           setUser(null);
+          setImpersonationInfo(null);
           return;
         }
 
@@ -100,6 +105,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             balance: '0',
             frozenBalance: '0'
           });
+          setImpersonationInfo(getImpersonationMeta());
         } else if (res.status === 401) {
           // Attempt refresh and retry
           const refreshRes = await fetch('/api/auth/refresh', { method: 'POST', cache: 'no-cache' });
@@ -120,24 +126,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
                 balance: '0',
                 frozenBalance: '0'
               });
+              setImpersonationInfo(getImpersonationMeta());
             } else {
               removeTokens();
               setIsAuthenticated(false);
               setUser(null);
+              setImpersonationInfo(null);
             }
           } else {
             removeTokens();
             setIsAuthenticated(false);
             setUser(null);
+            setImpersonationInfo(null);
           }
         } else {
           setIsAuthenticated(false);
           setUser(null);
+          setImpersonationInfo(null);
         }
       } catch (error) {
         removeTokens();
         setIsAuthenticated(false);
         setUser(null);
+        setImpersonationInfo(null);
       } finally {
         setIsLoading(false);
       }
@@ -164,13 +175,78 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
     } finally {
       // Always clear local state
+      clearImpersonationMeta();
       removeTokens();
       setIsAuthenticated(false);
       setUser(null);
+      setImpersonationInfo(null);
       setIsLoading(false);
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }
+    }
+  }, []);
+
+  const impersonateUser = useCallback(async (userId: number | string): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const result = await authApi.impersonateUser(Number(userId));
+      if (result?.data?.user) {
+        setUser(result.data.user);
+        setIsAuthenticated(true);
+        const meta = result.data.impersonation || getImpersonationMeta() || null;
+        if (meta) {
+          setImpersonationMeta(meta);
+        }
+        setImpersonationInfo(meta);
+      } else {
+        throw new Error('Impersonation failed');
+      }
+    } catch (error: any) {
+      setError(error.message || 'Impersonation failed');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Sync impersonation meta from cookies whenever user changes
+  useEffect(() => {
+    const meta = getImpersonationMeta();
+    setImpersonationInfo(meta);
+  }, [user?.id]);
+
+  const stopImpersonation = useCallback(async (): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      await authApi.stopImpersonation();
+      clearImpersonationMeta();
+      const profile = await userApi.getProfile();
+      setUser({
+        id: profile.id.toString(),
+        email: profile.email,
+        username: profile.username,
+        firstName: profile.firstName || '',
+        lastName: profile.lastName || '',
+        phone: profile.phone,
+        photo: profile.photo,
+        role: profile.role,
+        balance: '0',
+        frozenBalance: '0'
+      });
+      setIsAuthenticated(true);
+      setImpersonationInfo(null);
+    } catch (error: any) {
+      removeTokens();
+      setIsAuthenticated(false);
+      setUser(null);
+      setImpersonationInfo(null);
+      setError(error.message || 'Failed to stop impersonation');
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -302,8 +378,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
-    clearError
-  }), [user, isAuthenticated, isLoading, error, login, register, logout, clearError]);
+    clearError,
+    impersonationInfo,
+    impersonateUser,
+    stopImpersonation
+  }), [user, isAuthenticated, isLoading, error, login, register, logout, clearError, impersonationInfo, impersonateUser, stopImpersonation]);
 
   return (
     <AuthContext.Provider value={value}>

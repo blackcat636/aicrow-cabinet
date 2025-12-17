@@ -18,6 +18,10 @@ import {
   BalanceIcon,
   SettingsNewIcon
 } from '@/components/icons';
+import { UserImpersonationModal } from '@/components/admin/UserImpersonationModal';
+import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
+import { toast } from 'sonner';
+import { getImpersonationMeta } from '@/lib/auth';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -136,12 +140,16 @@ const TopNavItem: React.FC<{
 TopNavItem.displayName = 'TopNavItem';
 
 export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout } = useAuth();
+  const { user, logout, impersonationInfo, impersonateUser, stopImpersonation } = useAuth();
   const t = useTranslations('nav');
   const tProfile = useTranslations('profile');
+  const tImpersonation = useTranslations('impersonation');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const [showImpersonationModal, setShowImpersonationModal] = useState(false);
+  const [_isImpersonating, setIsImpersonating] = useState(false);
+  const [isStoppingImpersonation, setIsStoppingImpersonation] = useState(false);
   
   // Ensure pathname is only used on client side
   // usePathname from next-intl may fail during static export, so we use window.location
@@ -195,6 +203,13 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
     [user?.firstName, user?.lastName, user?.username]
   );
 
+  const isAdmin = (() => {
+    const role = (user?.role || '').toLowerCase();
+    return role === 'admin' || role === 'administrator';
+  })();
+  const bannerInfo = useMemo(() => impersonationInfo || getImpersonationMeta(), [impersonationInfo]);
+  const isImpersonated = bannerInfo?.isImpersonated;
+
   // Memoize logout handler
   const handleLogout = useCallback(async () => {
     try {
@@ -203,6 +218,43 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
       console.error('Logout error:', error);
     }
   }, [logout]);
+
+  const handleOpenImpersonation = useCallback(() => {
+    setIsUserMenuOpen(false);
+    setShowImpersonationModal(true);
+  }, []);
+
+  const handleImpersonate = useCallback(
+    async (userId: number | string, targetUser: { username?: string; email?: string }) => {
+      setIsImpersonating(true);
+      try {
+        await impersonateUser(Number(userId));
+        toast.success(
+          tImpersonation('impersonateSuccess', {
+            user: targetUser?.username || targetUser?.email || 'user'
+          })
+        );
+      } catch (error: any) {
+        toast.error(error?.message || tImpersonation('impersonateError'));
+      } finally {
+        setIsImpersonating(false);
+      }
+    },
+    [impersonateUser, tImpersonation]
+  );
+
+  const handleStopImpersonation = useCallback(async () => {
+    setIsStoppingImpersonation(true);
+    try {
+      await stopImpersonation();
+      toast.success(tImpersonation('stopSuccess'));
+    } catch (error: any) {
+      toast.error(error?.message || tImpersonation('stopError'));
+    } finally {
+      setIsStoppingImpersonation(false);
+      setIsUserMenuOpen(false);
+    }
+  }, [stopImpersonation, tImpersonation]);
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -233,6 +285,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   }, [isUserMenuOpen]);
 
   return (
+    <>
     <div className='h-screen bg-black overflow-hidden'>
       {/* Global Top Navbar */}
       <nav className='w-full px-4 lg:px-8 py-4 bg-[#141519] shadow-2xl shadow-purple-500/10 relative overflow-visible z-50'>
@@ -332,7 +385,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
 
               {/* Dropdown */}
               <div
-                className={`absolute right-0 mt-2 w-44 bg-[#141519] border border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden transition-all duration-200 ease-out ${isUserMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}
+                className={`absolute right-0 top-full mt-2 w-44 bg-[#141519] border border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden transition-all duration-200 ease-out ${isUserMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}
                 role='menu'
                 aria-hidden={!isUserMenuOpen}
                 {...(!isUserMenuOpen && { tabIndex: -1, 'aria-disabled': true })}
@@ -344,6 +397,23 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 >
                   {t('profile')}
                 </I18nLink>
+                {isAdmin && !isImpersonated && (
+                  <button
+                    onClick={handleOpenImpersonation}
+                    className='w-full text-left px-4 py-2 text-sm text-purple-400 hover:text-purple-300 hover:bg-white/10'
+                  >
+                    {tImpersonation('loginMenu')}
+                  </button>
+                )}
+                {isImpersonated && (
+                  <button
+                    onClick={handleStopImpersonation}
+                    className='w-full text-left px-4 py-2 text-sm text-amber-300 hover:text-amber-200 hover:bg-white/10 disabled:opacity-60'
+                    disabled={isStoppingImpersonation}
+                  >
+                    {isStoppingImpersonation ? tImpersonation('exiting') : tImpersonation('exit')}
+                  </button>
+                )}
                 <div className='my-1 h-px bg-white/10' role='separator' />
                 <button
                   onClick={() => { setIsUserMenuOpen(false); handleLogout(); }}
@@ -446,6 +516,13 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
           </div>
         </div>
       </nav>
+      <div className="sticky top-[88px] z-[45]">
+        <ImpersonationBanner
+          info={bannerInfo || null}
+          onExit={handleStopImpersonation}
+          loading={isStoppingImpersonation}
+        />
+      </div>
       {/* Desktop Layout */}
       <div className='hidden md:flex h-[calc(100vh-88px)] overflow-hidden'>
         {/* Main Content with gradient background */}
@@ -605,5 +682,11 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </div>
     </div>
+    <UserImpersonationModal
+      isOpen={showImpersonationModal}
+      onClose={() => setShowImpersonationModal(false)}
+      onImpersonate={handleImpersonate}
+    />
+    </>
   );
 };

@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { User } from '@/types/auth';
 import { ensureValidToken, refreshAccessToken } from './auth-utils';
 import { decodeToken } from './auth-utils';
+import { ImpersonationInfo } from '@/types/auth';
 
 // Types
 export interface AuthTokens {
@@ -143,6 +144,27 @@ export const removeTokens = () => {
   document.cookie = `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
   document.cookie = `refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
   document.cookie = `device_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
+};
+
+// Impersonation helpers
+export const setImpersonationMeta = (meta: ImpersonationInfo) => {
+  if (typeof document === 'undefined') return;
+  setCookieValue('impersonation_meta', JSON.stringify(meta), 24 * 60 * 60);
+};
+
+export const clearImpersonationMeta = () => {
+  if (typeof document === 'undefined') return;
+  document.cookie = `impersonation_meta=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=strict`;
+};
+
+export const getImpersonationMeta = (): ImpersonationInfo | null => {
+  try {
+    const raw = getCookieValue('impersonation_meta');
+    if (!raw) return null;
+    return JSON.parse(raw) as ImpersonationInfo;
+  } catch (error) {
+    return null;
+  }
 };
 
 // Get auth headers for API requests
