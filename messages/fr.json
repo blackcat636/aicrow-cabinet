@@ -238,21 +238,7 @@
     "resettingPassword": "Réinitialisation du mot de passe...",
     "passwordResetSuccess": "Mot de passe réinitialisé avec succès !",
     "failedToSendResetCode": "Échec de l'envoi du code de réinitialisation",
-    "failedToResetPassword": "Échec de la réinitialisation du mot de passe",
-    "continueWithFacebook": "Continuer avec Facebook",
-    "facebookDisabled": "La connexion Facebook n'est pas disponible pour le moment",
-    "oauth": {
-      "processing": "Finalisation de la connexion...",
-      "processingMessage": "Nous vérifions votre autorisation Facebook.",
-      "successTitle": "C'est fait !",
-      "successMessage": "Redirection dans un instant.",
-      "errorTitle": "Erreur d'autorisation",
-      "genericError": "Impossible de terminer l'autorisation. Réessayez.",
-      "missingCode": "Code d'autorisation manquant.",
-      "loginSuccess": "Connexion via Facebook réussie",
-      "linkSuccess": "Compte Facebook lié avec succès",
-      "providerDisabled": "L'autorisation Facebook est désactivée dans cet environnement"
-    }
+    "failedToResetPassword": "Échec de la réinitialisation du mot de passe"
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -693,23 +679,6 @@
       "errorUnlinking": "Erreur lors de la déconnexion du compte",
       "notAvailable": "L'intégration Telegram n'est pas encore disponible. Veuillez contacter le support.",
       "cancel": "Annuler"
-    },
-    "facebook": {
-      "title": "Intégration Facebook",
-      "description": "Liez votre compte Facebook pour la connexion et l'association du profil",
-      "connectionStatus": "Statut de connexion",
-      "accountConnected": "Compte Facebook connecté",
-      "accountNotConnected": "Compte Facebook non connecté",
-      "connectAccount": "Connecter le compte Facebook",
-      "disconnectAccount": "Déconnecter le compte Facebook",
-      "refreshStatus": "Actualiser le statut",
-      "name": "Nom",
-      "email": "Email",
-      "connected": "Connecté",
-      "unlinkedSuccessfully": "Compte Facebook dissocié avec succès",
-      "disabled": "L'autorisation Facebook est désactivée ou non configurée. Contactez le support.",
-      "notAvailable": "L'intégration Facebook n'est pas encore disponible.",
-      "errorUnlinking": "Erreur lors de la dissociation du compte"
     }
   }
 }

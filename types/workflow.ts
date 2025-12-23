@@ -237,5 +237,5 @@ export interface SocialAccount {
 }
 
 export interface AvailableSocialAccounts {
-  [key: string]: SocialAccount; // e.g., "instagram", "facebook"
+  [key: string]: SocialAccount; // e.g., "instagram", "tiktok"
 }

@@ -194,8 +194,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
     executions: pathname === '/executions',
     balance: pathname === '/balance',
     integrations: pathname.startsWith('/integrations'),
-    telegram: pathname === '/integrations/telegram',
-    facebook: pathname === '/integrations/facebook'
+    telegram: pathname === '/integrations/telegram'
   }), [pathname]);
 
   // Memoize user initials to prevent recalculation
@@ -508,17 +507,6 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         }`}
                       >
                         Telegram
-                      </I18nLink>
-                      <I18nLink
-                        href='/integrations/facebook'
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`text-2xl md:text-3xl transition-all ${
-                          activeStates.facebook
-                            ? 'font-bold bg-gradient-to-r from-[#1877F2] to-[#3b5998] bg-clip-text text-transparent'
-                            : 'font-medium text-gray-300 hover:text-white'
-                        }`}
-                      >
-                        Facebook
                       </I18nLink>
                     </div>
                   </nav>

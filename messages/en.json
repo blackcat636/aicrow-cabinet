@@ -238,21 +238,7 @@
     "resettingPassword": "Resetting Password...",
     "passwordResetSuccess": "Password reset successfully!",
     "failedToSendResetCode": "Failed to send reset code",
-    "failedToResetPassword": "Failed to reset password",
-    "continueWithFacebook": "Continue with Facebook",
-    "facebookDisabled": "Facebook login is currently unavailable",
-    "oauth": {
-      "processing": "Completing sign in...",
-      "processingMessage": "Please wait while we verify your Facebook authorization.",
-      "successTitle": "All set!",
-      "successMessage": "You will be redirected shortly.",
-      "errorTitle": "Authorization error",
-      "genericError": "Could not complete authorization. Please try again.",
-      "missingCode": "Authorization code was not provided.",
-      "loginSuccess": "Signed in via Facebook",
-      "linkSuccess": "Facebook account linked successfully",
-      "providerDisabled": "Facebook authorization is disabled for this environment"
-    }
+    "failedToResetPassword": "Failed to reset password"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -693,23 +679,6 @@
       "errorUnlinking": "Error unlinking account",
       "notAvailable": "Telegram integration is not available yet. Please contact support.",
       "cancel": "Cancel"
-    },
-    "facebook": {
-      "title": "Facebook Integration",
-      "description": "Link your Facebook account for seamless sign-in and profile connections",
-      "connectionStatus": "Connection Status",
-      "accountConnected": "Facebook account connected",
-      "accountNotConnected": "Facebook account not connected",
-      "connectAccount": "Connect Facebook Account",
-      "disconnectAccount": "Disconnect Facebook Account",
-      "refreshStatus": "Refresh Status",
-      "name": "Name",
-      "email": "Email",
-      "connected": "Connected",
-      "unlinkedSuccessfully": "Facebook account unlinked successfully",
-      "disabled": "Facebook authorization is disabled or not configured. Contact support.",
-      "notAvailable": "Facebook integration is not available yet.",
-      "errorUnlinking": "Error unlinking account"
     }
   }
 }

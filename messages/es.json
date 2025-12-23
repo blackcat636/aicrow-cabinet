@@ -238,21 +238,7 @@
     "resettingPassword": "Restableciendo contraseña...",
     "passwordResetSuccess": "¡Contraseña restablecida exitosamente!",
     "failedToSendResetCode": "Error al enviar el código de restablecimiento",
-    "failedToResetPassword": "Error al restablecer la contraseña",
-    "continueWithFacebook": "Continuar con Facebook",
-    "facebookDisabled": "El inicio de sesión con Facebook no está disponible",
-    "oauth": {
-      "processing": "Completando inicio de sesión...",
-      "processingMessage": "Estamos verificando tu autorización de Facebook.",
-      "successTitle": "Listo",
-      "successMessage": "Te redirigiremos en un momento.",
-      "errorTitle": "Error de autorización",
-      "genericError": "No pudimos completar la autorización. Intenta de nuevo.",
-      "missingCode": "Falta el código de autorización.",
-      "loginSuccess": "Sesión iniciada con Facebook",
-      "linkSuccess": "Cuenta de Facebook vinculada correctamente",
-      "providerDisabled": "La autorización de Facebook está deshabilitada en este entorno"
-    }
+    "failedToResetPassword": "Error al restablecer la contraseña"
   },
   "dashboard": {
     "title": "Panel de control",
@@ -693,23 +679,6 @@
       "errorUnlinking": "Error al desvincular la cuenta",
       "notAvailable": "La integración de Telegram aún no está disponible. Por favor contacta con soporte.",
       "cancel": "Cancelar"
-    },
-    "facebook": {
-      "title": "Integración con Facebook",
-      "description": "Vincula tu cuenta de Facebook para iniciar sesión y conectar el perfil",
-      "connectionStatus": "Estado de la conexión",
-      "accountConnected": "Cuenta de Facebook conectada",
-      "accountNotConnected": "Cuenta de Facebook no conectada",
-      "connectAccount": "Conectar cuenta de Facebook",
-      "disconnectAccount": "Desconectar cuenta de Facebook",
-      "refreshStatus": "Actualizar estado",
-      "name": "Nombre",
-      "email": "Correo electrónico",
-      "connected": "Conectado",
-      "unlinkedSuccessfully": "Cuenta de Facebook desvinculada correctamente",
-      "disabled": "La autorización de Facebook está deshabilitada o no está configurada. Contacta al soporte.",
-      "notAvailable": "La integración con Facebook aún no está disponible.",
-      "errorUnlinking": "Error al desvincular la cuenta"
     }
   }
 }

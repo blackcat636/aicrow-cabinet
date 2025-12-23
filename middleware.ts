@@ -14,7 +14,7 @@ const protectedRoutes = [
   '/balance',
   '/integrations'
 ];
-const authRoutes = ['/login', '/signup', '/auth/callback']; // Public auth routes
+const authRoutes = ['/login', '/signup']; // Public auth routes
 
 // Create next-intl middleware with locale detection disabled
 // This ensures we always use default locale unless explicitly set via cookie or URL

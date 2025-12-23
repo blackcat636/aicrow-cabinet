@@ -436,7 +436,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           <div className="space-y-2">
             {socialKeys.map((socialKey) => {
               const isChecked = currentValue === socialKey;
-              // Format social network name: "instagram" -> "Instagram", "facebook" -> "Facebook"
+              // Format social network name: "instagram" -> "Instagram", "tiktok" -> "Tiktok"
               const socialName = socialKey.charAt(0).toUpperCase() + socialKey.slice(1);
               
               return (

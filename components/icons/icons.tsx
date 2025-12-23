@@ -337,28 +337,6 @@ export const StarIcon: React.FC<IconSvgProps> = ({ size = 24, ...props }) => (
   </svg>
 );
 
-export const FacebookIcon: React.FC<IconSvgProps> = ({
-  size = 20,
-  ...props
-}) => (
-  <svg
-    width={size}
-    height={size}
-    viewBox='0 0 20 20'
-    fill='none'
-    xmlns='http://www.w3.org/2000/svg'
-    {...props}
-  >
-    <path
-      d='M13.3333 1.66699H11.3333C10.4493 1.66699 9.60143 2.10598 8.97631 2.88738C8.35119 3.66878 8 4.72859 8 5.83366V8.33366H6V11.667H8V18.3337H10.6667V11.667H12.6667L13.3333 8.33366H10.6667V5.83366C10.6667 5.61265 10.7369 5.40068 10.8619 5.2444C10.987 5.08812 11.1565 5.00033 11.3333 5.00033H13.3333V1.66699Z'
-      stroke='currentColor'
-      strokeWidth='1.5'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-    />
-  </svg>
-);
-
 export const InstagramIcon: React.FC<IconSvgProps> = ({
   size = 20,
   ...props
