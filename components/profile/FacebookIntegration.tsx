@@ -1,11 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { facebookApi } from '@/lib/apiFacebook';
-import { FacebookStatusResponse } from '@/types/auth';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -27,29 +26,9 @@ const FacebookIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ className }) => {
   const t = useTranslations('profile');
-  const [status, setStatus] = useState<FacebookStatusResponse | null>(null);
+  const [isLinked, setIsLinked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [confirmUnlink, setConfirmUnlink] = useState(false);
-
-  const loadStatus = async () => {
-    try {
-      setLoading(true);
-      console.log('[FacebookIntegration] getStatus start');
-      const response = await facebookApi.getStatus();
-      console.log('[FacebookIntegration] getStatus success', response);
-      setStatus(response);
-    } catch (error: any) {
-      // If provider disabled or not linked yet, fall back to default state
-      console.error('[FacebookIntegration] getStatus error', error);
-      setStatus({ isLinked: false });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadStatus();
-  }, []);
 
   const handleConnect = () => {
     try {
@@ -69,7 +48,7 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
       console.log('[FacebookIntegration] unlink start');
       await facebookApi.unlink();
       toast.success(t('facebookUnlinked'));
-      setStatus({ isLinked: false });
+      setIsLinked(false);
     } catch (error: any) {
       console.error('[FacebookIntegration] unlink error', error);
       toast.error(error?.message || t('facebookLinkError'));
@@ -78,8 +57,6 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
       setConfirmUnlink(false);
     }
   };
-
-  const isLinked = status?.isLinked;
 
   return (
     <>
@@ -102,9 +79,6 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
             ) : isLinked ? (
               <div className="text-xs text-green-400 flex flex-col gap-0.5">
                 <span>{t('facebookConnected')}</span>
-                {status?.email && (
-                  <span className="text-[11px] text-gray-300">{status.email}</span>
-                )}
               </div>
             ) : (
               <div className="text-xs text-gray-400">{t('facebookNotConnected')}</div>
