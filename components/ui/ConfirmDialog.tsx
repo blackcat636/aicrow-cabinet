@@ -12,6 +12,7 @@ interface ConfirmDialogProps {
   confirmText?: string;
   cancelText?: string;
   type?: 'danger' | 'warning' | 'info';
+  loading?: boolean;
 }
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
@@ -22,11 +23,13 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   message,
   confirmText = 'OK',
   cancelText = 'Cancel',
-  type = 'danger'
+  type = 'danger',
+  loading = false
 }) => {
   if (!isOpen) return null;
 
   const handleConfirm = () => {
+    if (loading) return;
     onConfirm();
     onClose();
   };
@@ -97,22 +100,27 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
             {/* Actions */}
             <div className="flex gap-3 justify-end">
               <button
-                onClick={onClose}
-                className="px-6 py-2.5 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-800/50 hover:border-gray-500 transition-all font-medium"
+                onClick={() => {
+                  if (loading) return;
+                  onClose();
+                }}
+                disabled={loading}
+                className="px-6 py-2.5 text-gray-300 border border-gray-600 rounded-lg hover:bg-gray-800/50 hover:border-gray-500 transition-all font-medium disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {cancelText}
               </button>
               <button
                 onClick={handleConfirm}
+                disabled={loading}
                 className={`px-6 py-2.5 rounded-lg transition-all font-medium shadow-lg ${
                   type === 'danger'
                     ? 'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-500 hover:to-red-600 text-white shadow-red-500/25 hover:shadow-red-500/40'
                     : type === 'warning'
                     ? 'bg-gradient-to-r from-yellow-600 to-yellow-700 hover:from-yellow-500 hover:to-yellow-600 text-white shadow-yellow-500/25 hover:shadow-yellow-500/40'
                     : 'bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white shadow-blue-500/25 hover:shadow-blue-500/40'
-                } hover:scale-[1.02] active:scale-[0.98]`}
+                } hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed`}
               >
-                {confirmText}
+                {loading ? '...' : confirmText}
               </button>
             </div>
           </div>

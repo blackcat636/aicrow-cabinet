@@ -8,6 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { RegisterRequest } from "@/types/auth";
 import { XIcon, EyeIcon, EyeOffIcon } from "@/components/icons";
 import { useTranslations } from 'next-intl';
+import { FacebookLoginButton } from "./FacebookLoginButton";
 
 interface RegisterFormProps {
   variant?: "modal" | "embedded";
@@ -314,6 +315,18 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   </p>
                 )}
               </div>
+
+              {/* Social login separator */}
+              <div className="flex items-center gap-3 pt-2">
+                <div className="h-px bg-white/10 flex-1" />
+                <span className="text-xs text-gray-400 uppercase tracking-wide">
+                  {t('or')}
+                </span>
+                <div className="h-px bg-white/10 flex-1" />
+              </div>
+
+              {/* Facebook Register/Login */}
+              <FacebookLoginButton />
 
               {/* Actions */}
               <div className="pt-4 flex justify-center">

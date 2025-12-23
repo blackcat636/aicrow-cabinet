@@ -17,6 +17,7 @@ import { useTranslations } from 'next-intl';
 import { telegramApi } from '@/lib/apiTelegram';
 import { TelegramStatusResponse } from '@/types/telegram';
 import { useRouter } from '@/i18n/routing';
+import { FacebookIntegration } from '@/components/profile/FacebookIntegration';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -478,6 +479,9 @@ export default function ProfilePage() {
                   {telegramStatus?.isLinked ? t('integrationsManage') : t('integrationsConnect')}
                 </Button>
               </div>
+
+              {/* Facebook Integration */}
+              <FacebookIntegration />
             </div>
 
           </div>

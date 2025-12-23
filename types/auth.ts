@@ -126,3 +126,20 @@ export interface AuthContextType extends AuthState {
   refreshAccessToken: () => Promise<void>;
   clearError: () => void;
 }
+
+// Facebook OAuth Types
+export interface FacebookAuthResponse {
+  status: number;
+  data: {
+    accessToken: string;
+    refreshToken: string;
+    deviceId?: string;
+    user: User;
+  };
+}
+
+export interface FacebookStatusResponse {
+  isLinked: boolean;
+  email?: string;
+  name?: string;
+}

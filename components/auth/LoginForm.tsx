@@ -7,6 +7,7 @@ import { getDeviceId } from '@/lib/auth';
 import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
 import { ResetPasswordForm } from './ResetPasswordForm';
 import { useTranslations } from 'next-intl';
+import { FacebookLoginButton } from './FacebookLoginButton';
 
 interface LoginFormProps {
   // When variant is 'modal', uses isOpen/onClose overlay; when 'embedded', always renders inline
@@ -149,6 +150,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               <p className="mt-1 text-sm text-red-400">{errors.password}</p>
             )}
           </div>
+
+          {/* Social login separator */}
+          <div className="flex items-center gap-3 pt-2">
+            <div className="h-px bg-white/10 flex-1" />
+            <span className="text-xs text-gray-400 uppercase tracking-wide">
+              {t('or')}
+            </span>
+            <div className="h-px bg-white/10 flex-1" />
+          </div>
+
+          {/* Facebook Login */}
+          <FacebookLoginButton />
 
           {/* Actions */}
           <div className="pt-4 flex justify-center">

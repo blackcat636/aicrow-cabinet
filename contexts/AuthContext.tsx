@@ -1,10 +1,11 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback, useRef } from 'react';
-import { User, LoginRequest, RegisterRequest, ImpersonationInfo } from '@/types/auth';
-import { removeTokens, getAccessToken, getRefreshToken, getImpersonationMeta, clearImpersonationMeta, setImpersonationMeta } from '@/lib/auth';
+import { User, LoginRequest, RegisterRequest, ImpersonationInfo, FacebookAuthResponse } from '@/types/auth';
+import { removeTokens, getAccessToken, getRefreshToken, getImpersonationMeta, clearImpersonationMeta, setImpersonationMeta, setTokens, getDeviceId } from '@/lib/auth';
 import { authApi } from '@/lib/apiAuth';
 import { userApi } from '@/lib/apiUser';
+import { facebookApi } from '@/lib/apiFacebook';
 
 interface AuthContextType {
   user: User | null;
@@ -18,6 +19,8 @@ interface AuthContextType {
   impersonationInfo: ImpersonationInfo | null;
   impersonateUser: (userId: number | string) => Promise<void>;
   stopImpersonation: () => Promise<void>;
+  loginWithFacebook: (code: string) => Promise<void>;
+  linkFacebook: (code: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +45,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [pathname, setPathname] = useState<string>('/');
   const isLoggingOutRef = useRef(false);
   const [impersonationInfo, setImpersonationInfo] = useState<ImpersonationInfo | null>(null);
+
+  const mapProfileToUser = useCallback((profile: any): User => {
+    return {
+      id: profile.id?.toString() || '',
+      email: profile.email,
+      username: profile.username,
+      firstName: profile.firstName || '',
+      lastName: profile.lastName || '',
+      phone: profile.phone,
+      photo: profile.photo,
+      role: profile.role,
+      balance: '0',
+      frozenBalance: '0'
+    };
+  }, []);
 
   // Get pathname from window.location (client-side only) to avoid static export issues
   useEffect(() => {
@@ -93,18 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (res.ok) {
           const profile = await res.json();
           setIsAuthenticated(true);
-          setUser({
-            id: profile.id.toString(),
-            email: profile.email,
-            username: profile.username,
-            firstName: profile.firstName || '',
-            lastName: profile.lastName || '',
-            phone: profile.phone,
-            photo: profile.photo,
-            role: profile.role,
-            balance: '0',
-            frozenBalance: '0'
-          });
+          setUser(mapProfileToUser(profile));
           setImpersonationInfo(getImpersonationMeta());
         } else if (res.status === 401) {
           // Attempt refresh and retry
@@ -114,18 +121,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
             if (profileRes.ok) {
               const profile = await profileRes.json();
               setIsAuthenticated(true);
-              setUser({
-                id: profile.id.toString(),
-                email: profile.email,
-                username: profile.username,
-                firstName: profile.firstName || '',
-                lastName: profile.lastName || '',
-                phone: profile.phone,
-                photo: profile.photo,
-                role: profile.role,
-                balance: '0',
-                frozenBalance: '0'
-              });
+              setUser(mapProfileToUser(profile));
               setImpersonationInfo(getImpersonationMeta());
             } else {
               removeTokens();
@@ -155,7 +151,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
 
     initializeAuth();
-  }, [pathname]);
+  }, [pathname, mapProfileToUser]);
 
   // Memoize logout function
   const logout = useCallback(async (): Promise<void> => {
@@ -224,18 +220,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await authApi.stopImpersonation();
       clearImpersonationMeta();
       const profile = await userApi.getProfile();
-      setUser({
-        id: profile.id.toString(),
-        email: profile.email,
-        username: profile.username,
-        firstName: profile.firstName || '',
-        lastName: profile.lastName || '',
-        phone: profile.phone,
-        photo: profile.photo,
-        role: profile.role,
-        balance: '0',
-        frozenBalance: '0'
-      });
+      setUser(mapProfileToUser(profile));
       setIsAuthenticated(true);
       setImpersonationInfo(null);
     } catch (error: any) {
@@ -283,7 +268,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      
+      console.log('[AuthContext.login] start');
       // Call our Next.js API route instead of external API directly
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -295,6 +280,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (!response.ok) {
+        console.error('[AuthContext.login] response not ok', { status: response.status });
         const errorData = await response.json();
         throw new Error(errorData.error || 'Login failed');
       }
@@ -305,32 +291,87 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(true);
         // Load full user profile to get photo and other details
         try {
+          console.log('[AuthContext.login] fetch profile after login');
           const profile = await userApi.getProfile();
-          setUser({
-            id: profile.id.toString(),
-            email: profile.email,
-            username: profile.username,
-            firstName: profile.firstName || '',
-            lastName: profile.lastName || '',
-            phone: profile.phone,
-            photo: profile.photo,
-            role: profile.role,
-            balance: data.user.balance || '0',
-            frozenBalance: data.user.frozenBalance || '0'
-          });
+          setUser(mapProfileToUser(profile));
         } catch (error) {
+          console.error('[AuthContext.login] profile fetch failed, fallback', error);
           setUser(data.user);
         }
       } else {
         throw new Error('Login failed');
       }
     } catch (error: any) {
+      console.error('[AuthContext.login] error', error);
       setError(error.message || 'Login failed');
       throw error;
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  // Facebook OAuth login
+  const loginWithFacebook = useCallback(async (code: string): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log('[AuthContext.loginWithFacebook] start', { codeExists: !!code });
+      const result = (await facebookApi.verify(code, false)) as FacebookAuthResponse;
+      const data = result?.data;
+
+      if (!data?.accessToken || !data?.refreshToken) {
+        console.error('[AuthContext.loginWithFacebook] missing tokens');
+        throw new Error('Invalid credentials');
+      }
+
+      const deviceId = data.deviceId || getDeviceId();
+
+      console.log('[AuthContext.loginWithFacebook] set tokens', { hasDeviceId: !!deviceId });
+      setTokens({
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        deviceId
+      });
+
+      console.log('[AuthContext.loginWithFacebook] fetch profile');
+      const profile = await userApi.getProfile();
+      setUser(mapProfileToUser(profile));
+      setIsAuthenticated(true);
+      setImpersonationInfo(getImpersonationMeta());
+    } catch (error: any) {
+      console.error('[AuthContext.loginWithFacebook] error', error);
+      removeTokens();
+      setIsAuthenticated(false);
+      setUser(null);
+      setImpersonationInfo(null);
+      setError(error?.message || 'Invalid credentials');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [mapProfileToUser]);
+
+  // Facebook account linking
+  const linkFacebook = useCallback(async (code: string): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      console.log('[AuthContext.linkFacebook] start', { codeExists: !!code });
+      await facebookApi.verify(code, true);
+      console.log('[AuthContext.linkFacebook] fetch profile after link');
+      const profile = await userApi.getProfile();
+      setUser(mapProfileToUser(profile));
+      setIsAuthenticated(true);
+    } catch (error: any) {
+      console.error('[AuthContext.linkFacebook] error', error);
+      setError(error?.message || 'Facebook link failed');
+      throw error;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [mapProfileToUser]);
 
   // Memoize register function
   const register = useCallback(async (userData: RegisterRequest): Promise<any> => {
@@ -376,13 +417,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     isLoading,
     error,
     login,
+    loginWithFacebook,
+    linkFacebook,
     register,
     logout,
     clearError,
     impersonationInfo,
     impersonateUser,
     stopImpersonation
-  }), [user, isAuthenticated, isLoading, error, login, register, logout, clearError, impersonationInfo, impersonateUser, stopImpersonation]);
+  }), [user, isAuthenticated, isLoading, error, login, loginWithFacebook, linkFacebook, register, logout, clearError, impersonationInfo, impersonateUser, stopImpersonation]);
 
   return (
     <AuthContext.Provider value={value}>
