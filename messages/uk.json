@@ -145,6 +145,7 @@
     "workflows": "Робочі процеси",
     "executions": "Виконання",
     "balance": "Баланс",
+    "balanceLabel": "Баланс",
     "integrations": "Інтеграції",
     "closeMenu": "Закрити меню",
     "socialMedia": "Соціальні медіа",
@@ -194,7 +195,6 @@
     "emailAddress": "Електронна пошта",
     "enterYourEmail": "Введіть вашу електронну пошту",
     "enterYourPassword": "Введіть ваш пароль",
-    "forgotPassword": "Забули пароль?",
     "createAccount": "Створити обліковий запис",
     "createAPassword": "Створіть пароль",
     "confirmYourPassword": "Підтвердіть ваш пароль",
@@ -239,7 +239,21 @@
     "resettingPassword": "Скидання пароля...",
     "passwordResetSuccess": "Пароль успішно скинуто!",
     "failedToSendResetCode": "Не вдалося відправити код скидання",
-    "failedToResetPassword": "Не вдалося скинути пароль"
+    "failedToResetPassword": "Не вдалося скинути пароль",
+    "continueWithFacebook": "Увійти через Facebook",
+    "facebookDisabled": "Facebook авторизація недоступна",
+    "oauth": {
+      "processing": "Завершуємо авторизацію...",
+      "processingMessage": "Будь ласка, зачекайте, ми перевіряємо ваш Facebook-код.",
+      "successTitle": "Готово!",
+      "successMessage": "Зараз перенаправимо вас.",
+      "errorTitle": "Помилка авторизації",
+      "genericError": "Не вдалося завершити авторизацію. Спробуйте ще раз.",
+      "missingCode": "Не отримано код авторизації.",
+      "loginSuccess": "Увійшли через Facebook",
+      "linkSuccess": "Facebook акаунт успішно прив'язано",
+      "providerDisabled": "Facebook авторизація вимкнена для цього середовища"
+    }
   },
   "dashboard": {
     "title": "Панель керування",
@@ -260,7 +274,7 @@
   "workflow": {
     "title": "Робочий процес",
     "name": "Назва",
-    "description": "Опис",
+    "transactionDescriptionLabel": "Опис",
     "active": "Активний",
     "inactive": "Неактивний",
     "execute": "Виконати",
@@ -607,7 +621,7 @@
     "amount": "Сума",
     "date": "Дата",
     "status": "Статус",
-    "description": "Опис",
+    "transactionDescriptionLabel": "Опис",
     "token": "Токен",
     "transactionHistory": "Історія транзакцій",
     "viewAllTransactions": "Переглянути всі ваші транзакції балансу",
@@ -680,6 +694,23 @@
       "errorUnlinking": "Помилка відключення облікового запису",
       "notAvailable": "Інтеграція Telegram поки недоступна. Будь ласка, зверніться до підтримки.",
       "cancel": "Скасувати"
+    },
+    "facebook": {
+      "title": "Інтеграція з Facebook",
+      "description": "Прив'яжіть Facebook акаунт для швидкого входу та зв'язку профілю",
+      "connectionStatus": "Статус підключення",
+      "accountConnected": "Facebook акаунт підключено",
+      "accountNotConnected": "Facebook акаунт не підключено",
+      "connectAccount": "Підключити Facebook акаунт",
+      "disconnectAccount": "Відключити Facebook акаунт",
+      "refreshStatus": "Оновити статус",
+      "name": "Ім'я",
+      "email": "Електронна пошта",
+      "connected": "Підключено",
+      "unlinkedSuccessfully": "Facebook акаунт успішно відв'язано",
+      "disabled": "Facebook авторизація вимкнена або не налаштована. Зверніться в підтримку.",
+      "notAvailable": "Інтеграція з Facebook поки недоступна.",
+      "errorUnlinking": "Помилка при відв'язуванні акаунта"
     }
   }
 }

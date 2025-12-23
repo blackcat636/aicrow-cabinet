@@ -16,6 +16,8 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
 import { telegramApi } from '@/lib/apiTelegram';
 import { TelegramStatusResponse } from '@/types/telegram';
+import { facebookApi } from '@/lib/apiFacebook';
+import { FacebookStatusResponse } from '@/types/facebook';
 import { useRouter } from '@/i18n/routing';
 
 export const dynamic = 'force-dynamic';
@@ -54,6 +56,8 @@ export default function ProfilePage() {
   const [confirmAvatarClose, setConfirmAvatarClose] = useState(false);
   const [telegramStatus, setTelegramStatus] = useState<TelegramStatusResponse['data'] | null>(null);
   const [telegramLoading, setTelegramLoading] = useState(false);
+  const [facebookStatus, setFacebookStatus] = useState<FacebookStatusResponse['data'] | null>(null);
+  const [facebookLoading, setFacebookLoading] = useState(false);
 
   // Resolve avatar src: supports default names, dicebear ids and direct URLs
   const resolveAvatarSrc = (value?: string | null): string | undefined => getAvatarUrl(value);
@@ -76,6 +80,7 @@ export default function ProfilePage() {
   useEffect(() => {
     loadProfile();
     loadTelegramStatus();
+    loadFacebookStatus();
   }, []);
 
   const loadTelegramStatus = async () => {
@@ -93,6 +98,23 @@ export default function ProfilePage() {
       }
     } finally {
       setTelegramLoading(false);
+    }
+  };
+
+  const loadFacebookStatus = async () => {
+    try {
+      setFacebookLoading(true);
+      const response = await facebookApi.getStatus();
+      setFacebookStatus(response.data);
+    } catch (err: any) {
+      if (err.status === 404) {
+        setFacebookStatus({ isLinked: false });
+      } else {
+        console.error('Error loading Facebook status:', err);
+        setFacebookStatus({ isLinked: false });
+      }
+    } finally {
+      setFacebookLoading(false);
     }
   };
 
@@ -476,6 +498,36 @@ export default function ProfilePage() {
                   className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs px-4 py-2"
                 >
                   {telegramStatus?.isLinked ? t('integrationsManage') : t('integrationsConnect')}
+                </Button>
+              </div>
+            </div>
+
+            {/* Facebook Integration */}
+            <div className="space-y-3 mt-4">
+              <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
+                <div className="flex items-center gap-3">
+                  <div className="p-1.5 bg-blue-700 rounded">
+                    <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M22 12.07C22 6.48 17.52 2 11.93 2 6.35 2 1.87 6.48 1.87 12.07c0 5.02 3.66 9.18 8.44 9.93v-7.03H7.9v-2.9h2.41V9.79c0-2.38 1.42-3.69 3.6-3.69 1.04 0 2.13.19 2.13.19v2.33h-1.2c-1.18 0-1.55.73-1.55 1.49v1.78h2.63l-.42 2.9h-2.21v7.03c4.78-.75 8.44-4.91 8.44-9.93Z" />
+                    </svg>
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-gray-200">Facebook</div>
+                    {facebookLoading ? (
+                      <div className="text-xs text-gray-400">{t('integrationsLoading')}</div>
+                    ) : facebookStatus?.isLinked ? (
+                      <div className="text-xs text-green-400">{t('integrationsConnected')}</div>
+                    ) : (
+                      <div className="text-xs text-gray-400">{t('integrationsNotConnected')}</div>
+                    )}
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  onClick={() => router.push('/integrations/facebook')}
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-xs px-4 py-2"
+                >
+                  {facebookStatus?.isLinked ? t('integrationsManage') : t('integrationsConnect')}
                 </Button>
               </div>
             </div>

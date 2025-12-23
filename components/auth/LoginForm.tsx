@@ -7,6 +7,7 @@ import { getDeviceId } from '@/lib/auth';
 import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
 import { ResetPasswordForm } from './ResetPasswordForm';
 import { useTranslations } from 'next-intl';
+import { toast } from 'sonner';
 
 interface LoginFormProps {
   // When variant is 'modal', uses isOpen/onClose overlay; when 'embedded', always renders inline
@@ -33,6 +34,38 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showResetPassword, setShowResetPassword] = useState(false);
+  const facebookAppId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
+  const facebookCallback = process.env.NEXT_PUBLIC_FACEBOOK_CALLBACK_URL;
+  const facebookEnabled =
+    process.env.NEXT_PUBLIC_FACEBOOK_ENABLED !== 'false' &&
+    Boolean(facebookAppId);
+
+  const buildFacebookRedirectUri = () => {
+    if (facebookCallback) return facebookCallback;
+    if (typeof window !== 'undefined') {
+      return `${window.location.origin}/auth/callback`;
+    }
+    return '/auth/callback';
+  };
+
+  const startFacebookLogin = () => {
+    if (!facebookEnabled || !facebookAppId) {
+      toast.error(t('facebookDisabled'));
+      return;
+    }
+
+    const redirectUri = buildFacebookRedirectUri();
+    const state = encodeURIComponent(
+      JSON.stringify({
+        action: 'login',
+        returnTo: '/dashboard'
+      })
+    );
+    const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?client_id=${facebookAppId}&redirect_uri=${encodeURIComponent(
+      redirectUri
+    )}&scope=email,public_profile&response_type=code&state=${state}`;
+    window.location.href = authUrl;
+  };
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -147,6 +180,21 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </div>
             {errors.password && (
               <p className="mt-1 text-sm text-red-400">{errors.password}</p>
+            )}
+          </div>
+
+          {/* Social login */}
+          <div className="pt-2">
+            <button
+              type="button"
+              onClick={startFacebookLogin}
+              disabled={isLoading || !facebookEnabled}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
+            >
+              {t('continueWithFacebook')}
+            </button>
+            {!facebookEnabled && (
+              <p className="text-xs text-gray-400 mt-2">{t('facebookDisabled')}</p>
             )}
           </div>
 
