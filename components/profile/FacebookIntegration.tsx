@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -74,9 +74,7 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
             <div className="text-sm font-medium text-gray-200">
               {t('facebookIntegration')}
             </div>
-            {loading ? (
-              <div className="text-xs text-gray-400">{t('integrationsLoading')}</div>
-            ) : isLinked ? (
+            {isLinked ? (
               <div className="text-xs text-green-400 flex flex-col gap-0.5">
                 <span>{t('facebookConnected')}</span>
               </div>
