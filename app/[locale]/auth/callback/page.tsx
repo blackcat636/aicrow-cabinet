@@ -18,7 +18,7 @@ export default function AuthCallbackPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const t = useTranslations('auth');
-  const { loginWithFacebook, linkFacebook } = useAuth();
+  const { loginWithFacebook, linkFacebook, isAuthenticated } = useAuth();
 
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState<string>('');
@@ -54,7 +54,10 @@ export default function AuthCallbackPage() {
       try {
         setStatus('loading');
         if (isLinkMode) {
-          console.log('[AuthCallback] link flow');
+          console.log('[AuthCallback] link flow', { isAuthenticated });
+          if (!isAuthenticated) {
+            throw new Error('You must be logged in to link your Facebook account');
+          }
           await linkFacebook(code);
           toast.success(t('profile.facebookLinked'));
           setStatus('success');
@@ -74,7 +77,7 @@ export default function AuthCallbackPage() {
     };
 
     processAuth();
-  }, [code, isLinkMode, linkFacebook, loginWithFacebook, providerError, router, t]);
+  }, [code, isLinkMode, linkFacebook, loginWithFacebook, providerError, router, t, isAuthenticated]);
 
   const handleBackToLogin = () => {
     router.replace('/login');
