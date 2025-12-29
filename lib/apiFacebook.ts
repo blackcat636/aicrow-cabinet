@@ -65,6 +65,9 @@ export const facebookApi = {
       process.env.NEXT_PUBLIC_FRONTEND_URL ||
       (typeof window !== 'undefined' ? window.location.origin : '');
     const redirectUri = frontendUrl ? `${frontendUrl}/auth/callback` : '';
+    if (!redirectUri) {
+      console.warn('[facebookApi.verify] redirectUri empty', { frontendUrl });
+    }
 
     const requestInit: RequestInit = {
       method: 'POST',
@@ -73,12 +76,27 @@ export const facebookApi = {
       cache: 'no-cache'
     };
 
+    console.log('[facebookApi.verify] request', {
+      url,
+      link,
+      hasCode: !!code,
+      redirectUri,
+      hasAuthHeader: !!headers.Authorization,
+      hasDeviceId: !!(headers as any)['x-device-id']
+    });
+
     const response = link
       ? await fetchWithAuth(url, requestInit)
       : await fetch(url, requestInit);
 
     if (!response.ok) {
-      console.error('[facebookApi.verify] response not ok', { status: response.status });
+      let errorText = '';
+      try {
+        errorText = await response.clone().text();
+      } catch (e) {
+        errorText = '[failed to read body]';
+      }
+      console.error('[facebookApi.verify] response not ok', { status: response.status, errorText });
       throw await buildError(response, 'Facebook verification failed');
     }
 
