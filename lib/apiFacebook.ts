@@ -61,10 +61,15 @@ export const facebookApi = {
       headers['x-device-id'] = deviceId;
     }
 
+    const frontendUrl =
+      process.env.NEXT_PUBLIC_FRONTEND_URL ||
+      (typeof window !== 'undefined' ? window.location.origin : '');
+    const redirectUri = frontendUrl ? `${frontendUrl}/auth/callback` : '';
+
     const requestInit: RequestInit = {
       method: 'POST',
       headers,
-      body: JSON.stringify({ code, link }),
+      body: JSON.stringify({ code, link, redirectUri }),
       cache: 'no-cache'
     };
 
