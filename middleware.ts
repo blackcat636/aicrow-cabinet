@@ -394,7 +394,7 @@ export async function middleware(request: NextRequest) {
         isAccessTokenValid = decoded.exp > now;
       }
     } catch (error) {
-      console.error(`❌ Middleware: Error decoding access token:`, error);
+      // Token decoding failed
     }
   }
 
@@ -478,7 +478,6 @@ export async function middleware(request: NextRequest) {
         return redirectResponse;
       }
     } catch (error) {
-      console.error(`❌ Middleware: Error refreshing token:`, error);
       // On exception, clear cookies and redirect to /login
       const redirectResponse = NextResponse.redirect(
         createLocalizedUrl('/login', currentLocale, request)

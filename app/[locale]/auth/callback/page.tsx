@@ -36,16 +36,13 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     const processAuth = async () => {
-      console.log('[AuthCallback] start', { code, isLinkMode, providerError });
       if (providerError) {
-        console.error('[AuthCallback] providerError', providerError);
         setStatus('error');
         setMessage(providerError);
         return;
       }
 
       if (!code) {
-        console.error('[AuthCallback] missing code');
         setStatus('error');
         setMessage(t('socialLoginError'));
         return;
@@ -54,7 +51,6 @@ export default function AuthCallbackPage() {
       try {
         setStatus('loading');
         if (isLinkMode) {
-          console.log('[AuthCallback] link flow', { isAuthenticated });
           if (!isAuthenticated) {
             throw new Error('You must be logged in to link your Facebook account');
           }
@@ -63,14 +59,12 @@ export default function AuthCallbackPage() {
           setStatus('success');
           router.replace('/profile');
         } else {
-          console.log('[AuthCallback] login flow');
           await loginWithFacebook(code);
           toast.success(t('loginSuccess'));
           setStatus('success');
           router.replace('/dashboard');
         }
       } catch (err: any) {
-        console.error('[AuthCallback] error', err);
         setStatus('error');
         setMessage(err?.message || t('socialLoginError'));
       }

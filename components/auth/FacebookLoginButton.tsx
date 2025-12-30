@@ -36,9 +36,7 @@ export const FacebookLoginButton: React.FC<FacebookLoginButtonProps> = ({
   const handleClick = () => {
     try {
       setLoading(true);
-      console.log('[FacebookLoginButton] click', { variant });
       const url = facebookApi.getAuthUrl(variant === 'link');
-      console.log('[FacebookLoginButton] redirect', url);
       window.location.href = url;
     } catch (error: any) {
       setLoading(false);

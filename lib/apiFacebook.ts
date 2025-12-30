@@ -26,10 +26,7 @@ export const facebookApi = {
       process.env.NEXT_PUBLIC_FRONTEND_URL ||
       (typeof window !== 'undefined' ? window.location.origin : '');
 
-    console.log('[facebookApi.getAuthUrl] start', { appIdExists: !!appId, frontendUrl, link });
-
     if (!appId || !frontendUrl) {
-      console.error('[facebookApi.getAuthUrl] missing config', { hasAppId: !!appId, frontendUrl });
       throw new Error('Facebook auth is disabled');
     }
 
@@ -41,7 +38,6 @@ export const facebookApi = {
       redirectUri
     )}&scope=${scope}&response_type=code&state=${state}`;
 
-    console.log('[facebookApi.getAuthUrl] built url', { url, redirectUri, state });
     return url;
   },
 
@@ -50,7 +46,6 @@ export const facebookApi = {
     code: string,
     link = false
   ): Promise<FacebookAuthResponse | { status: number }> => {
-    console.log('[facebookApi.verify] start', { codeExists: !!code, link });
     const url = `${API_BASE_URL}/auth/facebook/verify`;
     const headers: HeadersInit = {
       'Content-Type': 'application/json'
@@ -65,9 +60,6 @@ export const facebookApi = {
       process.env.NEXT_PUBLIC_FRONTEND_URL ||
       (typeof window !== 'undefined' ? window.location.origin : '');
     const redirectUri = frontendUrl ? `${frontendUrl}/auth/callback` : '';
-    if (!redirectUri) {
-      console.warn('[facebookApi.verify] redirectUri empty', { frontendUrl });
-    }
 
     const requestInit: RequestInit = {
       method: 'POST',
@@ -76,44 +68,25 @@ export const facebookApi = {
       cache: 'no-cache'
     };
 
-    console.log('[facebookApi.verify] request', {
-      url,
-      link,
-      hasCode: !!code,
-      redirectUri,
-      hasAuthHeader: !!headers.Authorization,
-      hasDeviceId: !!(headers as any)['x-device-id']
-    });
-
     const response = link
       ? await fetchWithAuth(url, requestInit)
       : await fetch(url, requestInit);
 
     if (!response.ok) {
-      let errorText = '';
-      try {
-        errorText = await response.clone().text();
-      } catch (e) {
-        errorText = '[failed to read body]';
-      }
-      console.error('[facebookApi.verify] response not ok', { status: response.status, errorText });
       throw await buildError(response, 'Facebook verification failed');
     }
 
     // Link flow may return 204/200 without tokens
     if (response.status === 204) {
-      console.log('[facebookApi.verify] 204 no content (link flow)');
       return { status: 204 };
     }
 
     const data = (await response.json()) as FacebookAuthResponse;
-    console.log('[facebookApi.verify] success', { status: response.status, hasTokens: !!data?.data?.accessToken });
     return data;
   },
 
   // Get Facebook linking status for current user
   getStatus: async (): Promise<FacebookStatusResponse> => {
-    console.log('[facebookApi.getStatus] start');
     const response = await fetchWithAuth(
       `${API_BASE_URL}/auth/facebook/status`,
       {
@@ -124,18 +97,15 @@ export const facebookApi = {
     );
 
     if (!response.ok) {
-      console.error('[facebookApi.getStatus] response not ok', { status: response.status });
       throw await buildError(response, 'Failed to fetch Facebook status');
     }
 
     const data = (await response.json()) as FacebookStatusResponse;
-    console.log('[facebookApi.getStatus] success', { data });
     return data;
   },
 
   // Unlink Facebook account for current user
   unlink: async (): Promise<void> => {
-    console.log('[facebookApi.unlink] start');
     const response = await fetchWithAuth(
       `${API_BASE_URL}/auth/facebook/unlink`,
       {
@@ -146,11 +116,8 @@ export const facebookApi = {
     );
 
     if (!response.ok) {
-      console.error('[facebookApi.unlink] response not ok', { status: response.status });
       throw await buildError(response, 'Failed to unlink Facebook account');
     }
-
-    console.log('[facebookApi.unlink] success');
   }
 };
 

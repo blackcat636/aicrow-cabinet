@@ -228,7 +228,6 @@ const doFetchWithAuth = async (
           throw new Error('Unauthorized');
         }
       } catch (refreshError) {
-        console.error('❌ fetchWithAuth: Token refresh error:', refreshError);
         removeTokens();
         window.location.href = '/';
         throw new Error('Unauthorized');

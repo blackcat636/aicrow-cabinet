@@ -32,12 +32,9 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
 
   const handleConnect = () => {
     try {
-      console.log('[FacebookIntegration] connect click');
       const url = facebookApi.getAuthUrl(true);
-      console.log('[FacebookIntegration] redirect', url);
       window.location.href = url;
     } catch (error: any) {
-      console.error('[FacebookIntegration] connect error', error);
       toast.error(error?.message || t('facebookLinkError'));
     }
   };
@@ -45,12 +42,10 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
   const handleUnlink = async () => {
     try {
       setLoading(true);
-      console.log('[FacebookIntegration] unlink start');
       await facebookApi.unlink();
       toast.success(t('facebookUnlinked'));
       setIsLinked(false);
     } catch (error: any) {
-      console.error('[FacebookIntegration] unlink error', error);
       toast.error(error?.message || t('facebookLinkError'));
     } finally {
       setLoading(false);

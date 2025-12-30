@@ -268,7 +268,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      console.log('[AuthContext.login] start');
       // Call our Next.js API route instead of external API directly
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -280,7 +279,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       });
 
       if (!response.ok) {
-        console.error('[AuthContext.login] response not ok', { status: response.status });
         const errorData = await response.json();
         throw new Error(errorData.error || 'Login failed');
       }
@@ -291,18 +289,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(true);
         // Load full user profile to get photo and other details
         try {
-          console.log('[AuthContext.login] fetch profile after login');
           const profile = await userApi.getProfile();
           setUser(mapProfileToUser(profile));
         } catch (error) {
-          console.error('[AuthContext.login] profile fetch failed, fallback', error);
           setUser(data.user);
         }
       } else {
         throw new Error('Login failed');
       }
     } catch (error: any) {
-      console.error('[AuthContext.login] error', error);
       setError(error.message || 'Login failed');
       throw error;
     } finally {
@@ -316,31 +311,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      console.log('[AuthContext.loginWithFacebook] start', { codeExists: !!code });
       const result = (await facebookApi.verify(code, false)) as FacebookAuthResponse;
       const data = result?.data;
 
       if (!data?.accessToken || !data?.refreshToken) {
-        console.error('[AuthContext.loginWithFacebook] missing tokens');
         throw new Error('Invalid credentials');
       }
 
       const deviceId = data.deviceId || getDeviceId();
 
-      console.log('[AuthContext.loginWithFacebook] set tokens', { hasDeviceId: !!deviceId });
       setTokens({
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
         deviceId
       });
 
-      console.log('[AuthContext.loginWithFacebook] fetch profile');
       const profile = await userApi.getProfile();
       setUser(mapProfileToUser(profile));
       setIsAuthenticated(true);
       setImpersonationInfo(getImpersonationMeta());
     } catch (error: any) {
-      console.error('[AuthContext.loginWithFacebook] error', error);
       removeTokens();
       setIsAuthenticated(false);
       setUser(null);
@@ -358,14 +348,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      console.log('[AuthContext.linkFacebook] start', { codeExists: !!code });
       await facebookApi.verify(code, true);
-      console.log('[AuthContext.linkFacebook] fetch profile after link');
       const profile = await userApi.getProfile();
       setUser(mapProfileToUser(profile));
       setIsAuthenticated(true);
     } catch (error: any) {
-      console.error('[AuthContext.linkFacebook] error', error);
       setError(error?.message || 'Facebook link failed');
       throw error;
     } finally {
