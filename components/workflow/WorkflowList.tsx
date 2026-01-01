@@ -145,13 +145,17 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
     <div className="space-y-6 relative min-h-[400px]">
       <div className="rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm">
         {/* Header skeleton - reserves space for header with fixed height */}
-        <div className="flex items-center justify-between p-6 min-h-[100px]">
-          <div className="ml-6">
-            <div className="h-8 w-48 bg-gray-700 rounded mb-2 animate-pulse"></div>
-            <div className="h-5 w-64 bg-gray-700 rounded animate-pulse"></div>
-          </div>
-          <div className="mr-6">
-            <div className="h-10 w-32 bg-gray-700 rounded animate-pulse"></div>
+        <div className="p-6">
+          <div className="ml-6 mb-4 md:mb-0">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <div>
+                <div className="h-8 w-48 bg-gray-700 rounded mb-2 animate-pulse"></div>
+                <div className="h-5 w-64 bg-gray-700 rounded animate-pulse"></div>
+              </div>
+              <div className="md:mr-6">
+                <div className="h-10 w-full md:w-32 bg-gray-700 rounded animate-pulse"></div>
+              </div>
+            </div>
           </div>
         </div>
         {/* Cards skeleton - reserves space for 2 cards */}
@@ -258,19 +262,23 @@ export const WorkflowList: React.FC<WorkflowListProps> = ({
       ) : (
         <div className="rounded-lg border border-gray-700 bg-[#141519]/80 backdrop-blur-sm">
           {/* Header - fixed height to prevent layout shift */}
-          <div className="flex items-center justify-between p-6 min-h-[100px]">
-            <div className="ml-6">
-              <h2 className="text-2xl font-bold text-white">{t('myWorkflows')}</h2>
-              <p className="text-gray-300 mt-1">{t('createManageRun')}</p>
-            </div>
-            <div className="flex items-center gap-3 mr-6">
-              <button
-                onClick={onAddWorkflow}
-                className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/25"
-              >
-                <PlusIcon className="w-4 h-4" />
-{t('addWorkflow')}
-              </button>
+          <div className="p-6">
+            <div className="ml-6 mb-4 md:mb-0">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">{t('myWorkflows')}</h2>
+                  <p className="text-gray-300 mt-1">{t('createManageRun')}</p>
+                </div>
+                <div className="md:mr-6 -ml-6 md:ml-0">
+                  <button
+                    onClick={onAddWorkflow}
+                    className="w-full md:w-auto flex items-center justify-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors shadow-lg shadow-purple-500/25"
+                  >
+                    <PlusIcon className="w-4 h-4" />
+                    {t('addWorkflow')}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
           <div className="p-6">

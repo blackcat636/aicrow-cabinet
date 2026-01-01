@@ -442,74 +442,177 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
             {/* Fullscreen burger menu overlay */}
             {isMobileMenuOpen && (
               <div
-                className='fixed inset-0 z-[100] bg-[#0b0c10]/80 backdrop-blur-sm'
+                className='fixed inset-0 z-[100] bg-[#0b0c10]/80 backdrop-blur-sm animate-in fade-in duration-200'
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 <div
-                  className='absolute inset-0 bg-[#141519]/95'
+                  className='absolute inset-0 bg-[#141519]/95 animate-in slide-in-from-right duration-300'
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <div className='absolute top-4 right-4'>
-                    <button
-                      onClick={() => setIsMobileMenuOpen(false)}
-                      aria-label={t('closeMenu') || 'Close menu'}
-                      className='p-2 text-gray-300 hover:text-white'
-                    >
-                      <XIcon className='w-7 h-7' />
-                    </button>
-                  </div>
-                  <nav className='h-full w-full flex flex-col items-center justify-center gap-6 px-6'>
-                    <I18nLink href='/dashboard' onClick={() => setIsMobileMenuOpen(false)}>
-                      <span className={`text-2xl md:text-3xl transition-all ${
-                        activeStates.dashboard
-                          ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
-                          : 'font-medium text-gray-300 hover:text-white'
-                      }`}>
-                        {t('dashboard')}
-                      </span>
-                    </I18nLink>
-                    <I18nLink href='/workflows' onClick={() => setIsMobileMenuOpen(false)}>
-                      <span className={`text-2xl md:text-3xl transition-all ${
-                        activeStates.workflows
-                          ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
-                          : 'font-medium text-gray-300 hover:text-white'
-                      }`}>
-                        {t('workflows')}
-                      </span>
-                    </I18nLink>
-                    <I18nLink href='/executions' onClick={() => setIsMobileMenuOpen(false)}>
-                      <span className={`text-2xl md:text-3xl transition-all ${
-                        activeStates.executions
-                          ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
-                          : 'font-medium text-gray-300 hover:text-white'
-                      }`}>
-                        {t('executions')}
-                      </span>
-                    </I18nLink>
-                    <I18nLink href='/balance' onClick={() => setIsMobileMenuOpen(false)}>
-                      <span className={`text-2xl md:text-3xl transition-all ${
-                        activeStates.balance
-                          ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
-                          : 'font-medium text-gray-300 hover:text-white'
-                      }`}>
-                        {t('balance')}
-                      </span>
-                    </I18nLink>
-                    <div className='flex flex-col items-center gap-2 mt-2'>
-                      <span className='text-sm uppercase tracking-wider text-gray-400'>{t('integrations')}</span>
-                      <I18nLink
-                        href='/integrations/telegram'
+                  <div className='h-full w-full flex flex-col overflow-y-auto'>
+                    {/* Header with close button */}
+                    <div className='flex items-center justify-between p-4 border-b border-white/10'>
+                      <h2 className='text-lg font-semibold text-white'>Menu</h2>
+                      <button
                         onClick={() => setIsMobileMenuOpen(false)}
-                        className={`text-2xl md:text-3xl transition-all ${
-                          activeStates.telegram
-                            ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent'
-                            : 'font-medium text-gray-300 hover:text-white'
-                        }`}
+                        aria-label={t('closeMenu') || 'Close menu'}
+                        className='p-2 text-gray-300 hover:text-white transition-colors rounded-lg hover:bg-white/10'
                       >
-                        Telegram
+                        <XIcon className='w-6 h-6' />
+                      </button>
+                    </div>
+
+                    {/* User Profile Section */}
+                    <div className='p-4 border-b border-white/10'>
+                      <I18nLink
+                        href='/profile'
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className='flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-white/5'
+                      >
+                        <Avatar className='w-12 h-12 flex-shrink-0'>
+                          <AvatarImage 
+                            src={user?.photo || undefined} 
+                            alt={user?.username || 'User'} 
+                          />
+                          <AvatarFallback className='bg-purple-600 text-white text-lg'>
+                            {userInitials}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className='flex flex-col flex-1 min-w-0'>
+                          <span className='text-base font-semibold text-white truncate'>
+                            {`${(user?.firstName || '').trim()} ${(user?.lastName || '').trim()}`.trim() || user?.username || 'User'}
+                          </span>
+                          <span className='text-sm text-gray-400 truncate'>
+                            {user?.email}
+                          </span>
+                        </div>
+                        <ChevronRightIcon className='w-5 h-5 text-gray-400 flex-shrink-0' />
                       </I18nLink>
                     </div>
-                  </nav>
+
+                    {/* Navigation Items */}
+                    <nav className='flex-1 px-4 py-6 space-y-2'>
+                      <I18nLink
+                        href='/dashboard'
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                          activeStates.dashboard
+                            ? 'bg-gradient-to-r from-[#A500E1]/20 to-[#7B61FF]/20 text-white border border-purple-500/30'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <WorkflowsIcon className='w-5 h-5 flex-shrink-0' />
+                        <span className='text-lg font-medium'>{t('dashboard')}</span>
+                      </I18nLink>
+
+                      <I18nLink
+                        href='/workflows'
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                          activeStates.workflows
+                            ? 'bg-gradient-to-r from-[#A500E1]/20 to-[#7B61FF]/20 text-white border border-purple-500/30'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <WorkflowsIcon className='w-5 h-5 flex-shrink-0' />
+                        <span className='text-lg font-medium'>{t('workflows')}</span>
+                      </I18nLink>
+
+                      {/* Social Media */}
+                      <button
+                        onClick={async () => {
+                          setIsMobileMenuOpen(false);
+                          try {
+                            const { userApi } = await import('@/lib/apiUser');
+                            const { toast } = await import('sonner');
+                            const result = await userApi.updateSocialUp();
+                            if (result.access_url) {
+                              window.open(result.access_url, '_blank', 'noopener,noreferrer');
+                              toast.success(tProfile('socialUpSuccess'));
+                            }
+                          } catch (error: any) {
+                            const { toast } = await import('sonner');
+                            if (error.status === 503) {
+                              toast.error(tProfile('socialUpError503'));
+                            } else {
+                              toast.error(tProfile('socialUpError'));
+                            }
+                          }
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-gray-300 hover:bg-white/10 hover:text-white"
+                      >
+                        <SettingsNewIcon className='w-5 h-5 flex-shrink-0' />
+                        <span className='text-lg font-medium'>{t('socialMedia')}</span>
+                      </button>
+
+                      <I18nLink
+                        href='/executions'
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                          activeStates.executions
+                            ? 'bg-gradient-to-r from-[#A500E1]/20 to-[#7B61FF]/20 text-white border border-purple-500/30'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <ExecutionIcon className='w-5 h-5 flex-shrink-0' />
+                        <span className='text-lg font-medium'>{t('executions')}</span>
+                      </I18nLink>
+
+                      <I18nLink
+                        href='/balance'
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                          activeStates.balance
+                            ? 'bg-gradient-to-r from-[#A500E1]/20 to-[#7B61FF]/20 text-white border border-purple-500/30'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <BalanceIcon className='w-5 h-5 flex-shrink-0' />
+                        <span className='text-lg font-medium'>{t('balance')}</span>
+                      </I18nLink>
+                    </nav>
+
+                    {/* Footer Actions */}
+                    <div className='p-4 border-t border-white/10 space-y-2'>
+                      {isAdmin && !isImpersonated && (
+                        <button
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            handleOpenImpersonation();
+                          }}
+                          className='w-full flex items-center gap-3 px-4 py-3 rounded-lg text-purple-400 hover:text-purple-300 hover:bg-white/10 transition-colors'
+                        >
+                          <SettingsNewIcon className='w-5 h-5 flex-shrink-0' />
+                          <span className='text-lg font-medium'>{tImpersonation('loginMenu')}</span>
+                        </button>
+                      )}
+                      {isImpersonated && (
+                        <button
+                          onClick={() => {
+                            setIsMobileMenuOpen(false);
+                            handleStopImpersonation();
+                          }}
+                          disabled={isStoppingImpersonation}
+                          className='w-full flex items-center gap-3 px-4 py-3 rounded-lg text-amber-300 hover:text-amber-200 hover:bg-white/10 transition-colors disabled:opacity-60'
+                        >
+                          <SettingsNewIcon className='w-5 h-5 flex-shrink-0' />
+                          <span className='text-lg font-medium'>
+                            {isStoppingImpersonation ? tImpersonation('exiting') : tImpersonation('exit')}
+                          </span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          handleLogout();
+                        }}
+                        className='w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/30 transition-colors border border-red-500/30'
+                      >
+                        <LogOutIcon className='w-5 h-5 flex-shrink-0' />
+                        <span className='text-lg font-medium'>{t('logout')}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
