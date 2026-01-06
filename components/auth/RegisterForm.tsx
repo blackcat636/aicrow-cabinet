@@ -33,6 +33,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
     email: "",
     password: "",
     confirmPassword: "",
+    firstName: "",
+    lastName: "",
+    phone: "",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -313,6 +316,75 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   <p className="mt-1 text-sm text-red-400">
                     {errors.confirmPassword}
                   </p>
+                )}
+              </div>
+
+              {/* First Name */}
+              <div>
+                <label
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                  htmlFor="register-first-name"
+                >
+                  {t('firstName') || 'First Name'}
+                </label>
+                <input
+                  className={`w-full p-3 bg-white/10 text-white placeholder-gray-300 border ${isModal ? "rounded-lg" : "rounded-full"} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                    errors.firstName ? "border-red-500" : "border-white/30"
+                  }`}
+                  id="register-first-name"
+                  placeholder={t('enterFirstName') || 'Enter your first name'}
+                  type="text"
+                  value={formData.firstName || ""}
+                  onChange={(e) => handleInputChange("firstName", e.target.value)}
+                />
+                {errors.firstName && (
+                  <p className="mt-1 text-sm text-red-400">{errors.firstName}</p>
+                )}
+              </div>
+
+              {/* Last Name */}
+              <div>
+                <label
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                  htmlFor="register-last-name"
+                >
+                  {t('lastName') || 'Last Name'}
+                </label>
+                <input
+                  className={`w-full p-3 bg-white/10 text-white placeholder-gray-300 border ${isModal ? "rounded-lg" : "rounded-full"} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                    errors.lastName ? "border-red-500" : "border-white/30"
+                  }`}
+                  id="register-last-name"
+                  placeholder={t('enterLastName') || 'Enter your last name'}
+                  type="text"
+                  value={formData.lastName || ""}
+                  onChange={(e) => handleInputChange("lastName", e.target.value)}
+                />
+                {errors.lastName && (
+                  <p className="mt-1 text-sm text-red-400">{errors.lastName}</p>
+                )}
+              </div>
+
+              {/* Phone */}
+              <div>
+                <label
+                  className="block text-sm font-medium text-gray-300 mb-2"
+                  htmlFor="register-phone"
+                >
+                  {t('phone') || 'Phone'}
+                </label>
+                <input
+                  className={`w-full p-3 bg-white/10 text-white placeholder-gray-300 border ${isModal ? "rounded-lg" : "rounded-full"} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
+                    errors.phone ? "border-red-500" : "border-white/30"
+                  }`}
+                  id="register-phone"
+                  placeholder={t('enterPhone') || 'Enter your phone number (e.g., +14161234567)'}
+                  type="tel"
+                  value={formData.phone || ""}
+                  onChange={(e) => handleInputChange("phone", e.target.value)}
+                />
+                {errors.phone && (
+                  <p className="mt-1 text-sm text-red-400">{errors.phone}</p>
                 )}
               </div>
 
