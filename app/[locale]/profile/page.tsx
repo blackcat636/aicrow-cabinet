@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { ChangeEmailForm } from '@/components/profile/ChangeEmailForm';
 import { ChangePasswordForm } from '@/components/profile/ChangePasswordForm';
 import { AvatarManager } from '@/components/profile/AvatarManager';
-import { LanguageSwitcher } from '@/components/profile/LanguageSwitcher';
 import { getAvatarUrl } from '@/lib/avatars';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
@@ -439,11 +438,6 @@ export default function ProfilePage() {
               </Button>
             </div>
           </form>
-
-          {/* Language Switcher Section */}
-          <div className="mt-6">
-            <LanguageSwitcher />
-          </div>
 
           {/* Integrations Section */}
           <div className="mt-6 p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">

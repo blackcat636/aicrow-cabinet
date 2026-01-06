@@ -20,6 +20,7 @@ import {
 } from '@/components/icons';
 import { UserImpersonationModal } from '@/components/admin/UserImpersonationModal';
 import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
+import { LanguageSwitcherMenu } from '@/components/LanguageSwitcherMenu';
 import { toast } from 'sonner';
 import { getImpersonationMeta } from '@/lib/auth';
 
@@ -351,6 +352,11 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
           
           {/* Right Side - User */}
           <div className='flex items-center gap-2 lg:gap-4 flex-shrink-0 ml-auto'>
+            {/* Language Switcher - circular icon */}
+            <div className='hidden md:block'>
+              <LanguageSwitcherMenu variant="desktop" />
+            </div>
+            
             {/* User Avatar with dropdown */}
             <div className='hidden md:flex items-center gap-3 relative' ref={userMenuRef}>
               <button
@@ -385,7 +391,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
 
               {/* Dropdown */}
               <div
-                className={`absolute right-0 top-full mt-2 w-44 bg-[#141519] border border-gray-700 rounded-lg shadow-xl z-[100] overflow-hidden transition-all duration-200 ease-out ${isUserMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}
+                className={`absolute right-0 top-full mt-2 w-44 bg-[#141519] border border-gray-700 rounded-lg shadow-xl z-[100] overflow-visible transition-all duration-200 ease-out ${isUserMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}
                 role='menu'
                 aria-hidden={!isUserMenuOpen}
                 {...(!isUserMenuOpen && { tabIndex: -1, 'aria-disabled': true })}
@@ -463,7 +469,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                     </div>
 
                     {/* User Profile Section */}
-                    <div className='p-4 border-b border-white/10'>
+                    <div className='p-4 border-b border-white/10 space-y-2'>
                       <I18nLink
                         href='/profile'
                         onClick={() => setIsMobileMenuOpen(false)}
@@ -488,6 +494,11 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         </div>
                         <ChevronRightIcon className='w-5 h-5 text-gray-400 flex-shrink-0' />
                       </I18nLink>
+                      
+                      {/* Language Switcher - text menu item */}
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <LanguageSwitcherMenu variant="mobile" onClose={() => setIsMobileMenuOpen(false)} />
+                      </div>
                     </div>
 
                     {/* Navigation Items */}
