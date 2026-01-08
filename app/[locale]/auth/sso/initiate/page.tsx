@@ -26,8 +26,16 @@ export default function SSOInitiatePage() {
   const router = useRouter();
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState<string>('Ініціалізація SSO...');
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Ensure we're on client side before normalizing redirect_uri
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
 
   useEffect(() => {
+    if (!isMounted) return;
+
     let redirectUri = searchParams.get('redirect_uri');
     const service = searchParams.get('service') || undefined;
 
@@ -40,6 +48,7 @@ export default function SSOInitiatePage() {
     // Normalize redirect_uri - convert relative paths to absolute URLs
     // This allows using paths like "/callback" which will be automatically
     // converted to the correct URL based on the current environment
+    // Only normalize on client side to avoid hydration mismatch
     try {
       redirectUri = normalizeRedirectUri(redirectUri);
     } catch (error) {
@@ -86,7 +95,7 @@ export default function SSOInitiatePage() {
     };
 
     void initiate();
-  }, [router, searchParams]);
+  }, [router, searchParams, isMounted]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-black text-white">
