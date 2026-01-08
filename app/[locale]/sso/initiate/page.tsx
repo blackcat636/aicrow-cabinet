@@ -61,21 +61,44 @@ export default function SSOInitiatePage() {
     }
 
     const initiate = async () => {
+      const logPrefix = '[SSO Initiate Page]';
+      
       try {
+        console.log(`${logPrefix} Starting SSO flow:`, {
+          redirectUri: redirectUri,
+          service: service,
+          currentUrl: window.location.href
+        });
+
         const params = new URLSearchParams();
         params.set('redirect_uri', redirectUri);
         if (service) {
           params.set('service', service);
         }
 
-        const res = await fetch(`/api/auth/sso/initiate-check?${params.toString()}`, {
+        const apiUrl = `/api/auth/sso/initiate-check?${params.toString()}`;
+        console.log(`${logPrefix} Calling API:`, apiUrl);
+
+        const res = await fetch(apiUrl, {
           method: 'GET',
           cache: 'no-store',
           credentials: 'include'
         });
+        
+        console.log(`${logPrefix} API response status:`, res.status);
+        
         const data = await res.json();
+        console.log(`${logPrefix} API response data:`, {
+          status: data?.status,
+          hasRedirectUrl: !!data?.data?.redirectUrl,
+          hasLoginUrl: !!data?.data?.loginUrl,
+          redirectUrl: data?.data?.redirectUrl,
+          loginUrl: data?.data?.loginUrl,
+          message: data?.message
+        });
 
         if (data?.status === 200 && data?.data?.redirectUrl) {
+          console.log(`${logPrefix} User authenticated, redirecting to:`, data.data.redirectUrl);
           setStatus('redirecting');
           setMessage('Перенаправлення до сервісу...');
           window.location.href = data.data.redirectUrl;
@@ -83,15 +106,18 @@ export default function SSOInitiatePage() {
         }
 
         if (data?.status === 401 && data?.data?.loginUrl) {
+          console.log(`${logPrefix} User not authenticated, redirecting to login:`, data.data.loginUrl);
           setStatus('redirecting');
           setMessage('Необхідна автентифікація. Перенаправлення на логін...');
           window.location.href = data.data.loginUrl;
           return;
         }
 
+        console.error(`${logPrefix} Unexpected response:`, data);
         setStatus('error');
         setMessage(data?.message || 'Не вдалося ініціювати SSO');
       } catch (error) {
+        console.error(`${logPrefix} Error:`, error);
         setStatus('error');
         setMessage('Помилка під час ініціації SSO');
       }

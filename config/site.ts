@@ -55,6 +55,8 @@ export const getExternalServiceBaseUrl = (hostname?: string): string => {
  * This makes it work universally across all environments without configuration
  */
 export const normalizeRedirectUri = (redirectUri: string, requestOrigin?: string): string => {
+  const logPrefix = '[normalizeRedirectUri]';
+  
   // Get current origin (where the request is coming from)
   let currentOrigin: string;
   
@@ -69,6 +71,13 @@ export const normalizeRedirectUri = (redirectUri: string, requestOrigin?: string
     currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
   }
 
+  console.log(`${logPrefix} Input:`, {
+    redirectUri,
+    requestOrigin,
+    currentOrigin,
+    isClient: typeof window !== 'undefined'
+  });
+
   try {
     // Try to parse as absolute URL
     const url = new URL(redirectUri);
@@ -77,15 +86,26 @@ export const normalizeRedirectUri = (redirectUri: string, requestOrigin?: string
     if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
       // Preserve path, query, and hash from original redirect_uri
       const path = url.pathname + url.search + url.hash;
-      return `${currentOrigin}${path}`;
+      const normalized = `${currentOrigin}${path}`;
+      console.log(`${logPrefix} Localhost detected, normalized:`, {
+        original: redirectUri,
+        normalized
+      });
+      return normalized;
     }
     
     // If it's already a valid absolute URL from different domain, use as is
+    console.log(`${logPrefix} Absolute URL, using as is:`, redirectUri);
     return url.toString();
   } catch {
     // If it's a relative path, prepend current origin
     const path = redirectUri.startsWith('/') ? redirectUri : `/${redirectUri}`;
-    return `${currentOrigin}${path}`;
+    const normalized = `${currentOrigin}${path}`;
+    console.log(`${logPrefix} Relative path, normalized:`, {
+      original: redirectUri,
+      normalized
+    });
+    return normalized;
   }
 };
 

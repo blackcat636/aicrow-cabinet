@@ -7,10 +7,20 @@ export const runtime = 'edge';
 const API_URL = API_CONFIG.BASE_URL;
 
 export async function POST(request: NextRequest) {
+  const logPrefix = '[Login API]';
+  
   try {
     const body = await request.json();
     const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
     const service = request.nextUrl.searchParams.get('service');
+
+    console.log(`${logPrefix} Login request:`, {
+      hasRedirectUri: !!redirectUri,
+      redirectUri: redirectUri,
+      service: service,
+      hasEmail: !!body.email,
+      email: body.email ? `${body.email.substring(0, 3)}***` : 'none'
+    });
 
     const url = new URL(`${API_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`);
     if (redirectUri) {
@@ -19,6 +29,8 @@ export async function POST(request: NextRequest) {
     if (service) {
       url.searchParams.set('service', service);
     }
+
+    console.log(`${logPrefix} Calling backend:`, url.toString());
 
     const response = await fetch(url.toString(), {
       method: 'POST',
@@ -29,17 +41,28 @@ export async function POST(request: NextRequest) {
       redirect: 'manual'
     });
 
+    console.log(`${logPrefix} Backend response status:`, response.status);
+
     // Handle backend redirect responses explicitly (e.g., SSO flow)
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location');
+      console.log(`${logPrefix} Backend redirect (${response.status}):`, location);
       if (location) {
         return NextResponse.redirect(location, { status: response.status });
       }
     }
 
     const data = await response.json();
+    
+    console.log(`${logPrefix} Backend response data:`, {
+      status: data?.status,
+      hasRedirectUrl: !!data?.data?.redirectUrl,
+      redirectUrl: data?.data?.redirectUrl,
+      hasTokens: !!(data?.data?.accessToken && data?.data?.refreshToken)
+    });
 
     if (!response.ok) {
+      console.error(`${logPrefix} Login failed:`, data.message);
       return NextResponse.json(
         { error: data.message || 'Login failed' },
         { status: response.status }
@@ -48,6 +71,7 @@ export async function POST(request: NextRequest) {
 
     // If backend returns redirectUrl in payload (SSO flow)
     if (data?.data?.redirectUrl) {
+      console.log(`${logPrefix} SSO flow - redirecting to:`, data.data.redirectUrl);
       return NextResponse.redirect(data.data.redirectUrl, { status: 302 });
     }
 

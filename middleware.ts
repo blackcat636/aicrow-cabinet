@@ -230,7 +230,24 @@ export async function middleware(request: NextRequest) {
   const isAuthRoute = authRoutes.some((route) => normalizedPathname === route);
   const isSSORoute = ssoRoutes.some((route) => normalizedPathname === route);
 
+  // Log SSO route access
+  if (isSSORoute) {
+    console.log('[Middleware] SSO route detected:', {
+      pathname: normalizedPathname,
+      isSSORoute: true,
+      isAuthRoute: isAuthRoute
+    });
+  }
+
   const { accessToken, refreshToken, deviceId } = getTokens(request);
+
+  if (isSSORoute) {
+    console.log('[Middleware] SSO route tokens:', {
+      hasAccessToken: !!accessToken,
+      hasRefreshToken: !!refreshToken,
+      hasDeviceId: !!deviceId
+    });
+  }
 
   if (!accessToken && refreshToken && deviceId) {
     try {

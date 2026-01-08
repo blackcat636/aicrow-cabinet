@@ -251,6 +251,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const login = useCallback(async (credentials: LoginRequest): Promise<void> => {
+    const logPrefix = '[AuthContext Login]';
+    
     setIsLoading(true);
     setError(null);
 
@@ -267,6 +269,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         loginUrl += `?${loginParams.toString()}`;
       }
 
+      console.log(`${logPrefix} Starting login:`, {
+        hasRedirectUri: !!credentials.redirectUri,
+        redirectUri: credentials.redirectUri,
+        service: credentials.service,
+        loginUrl: loginUrl,
+        isSSOFlow: !!(credentials.redirectUri || credentials.service)
+      });
+
       const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
@@ -276,35 +286,54 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         cache: 'no-cache'
       });
 
+      console.log(`${logPrefix} Login response:`, {
+        status: response.status,
+        redirected: response.redirected,
+        redirectUrl: response.url
+      });
+
       if (response.redirected && response.url) {
+        console.log(`${logPrefix} Response redirected to:`, response.url);
         window.location.href = response.url;
         return;
       }
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error(`${logPrefix} Login failed:`, errorData);
         throw new Error(errorData.error || 'Login failed');
       }
 
       const data = await response.json();
+      
+      console.log(`${logPrefix} Login response data:`, {
+        hasRedirectUrl: !!data?.data?.redirectUrl,
+        redirectUrl: data?.data?.redirectUrl,
+        hasUser: !!data.user,
+        hasTokens: !!(data?.data?.accessToken && data?.data?.refreshToken)
+      });
 
       if (data?.data?.redirectUrl) {
+        console.log(`${logPrefix} SSO flow - redirecting to:`, data.data.redirectUrl);
         window.location.href = data.data.redirectUrl;
         return;
       }
 
       if (data.user) {
+        console.log(`${logPrefix} Regular login successful, fetching profile`);
         setIsAuthenticated(true);
         try {
           const profile = await userApi.getProfile();
           setUser(mapProfileToUser(profile));
         } catch (error) {
+          console.warn(`${logPrefix} Failed to fetch profile, using user from response`);
           setUser(data.user);
         }
       } else {
         throw new Error('Login failed');
       }
     } catch (error: any) {
+      console.error(`${logPrefix} Login error:`, error);
       setError(error.message || 'Login failed');
       throw error;
     } finally {
