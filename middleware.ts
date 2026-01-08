@@ -13,7 +13,7 @@ const protectedRoutes = [
   '/balance',
   '/integrations'
 ];
-const authRoutes = ['/login', '/signup', '/auth/callback'];
+const authRoutes = ['/login', '/signup', '/auth/callback', '/sso/initiate', '/auth/sso/initiate'];
 
 const intlMiddleware = createMiddleware({
   ...routing,
