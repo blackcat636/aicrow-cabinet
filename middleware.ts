@@ -362,9 +362,23 @@ export async function middleware(request: NextRequest) {
 
   if (isAccessTokenValid) {
     if (isAuthRoute && !isSSORoute) {
+      console.log(
+        '[Middleware] Valid token, redirecting auth route to dashboard:',
+        {
+          pathname: normalizedPathname,
+          isAuthRoute: true,
+          isSSORoute: false
+        }
+      );
       return NextResponse.redirect(
         createLocalizedUrl('/dashboard', currentLocale, request)
       );
+    }
+    if (isSSORoute) {
+      console.log('[Middleware] Valid token, allowing SSO route:', {
+        pathname: normalizedPathname,
+        isSSORoute: true
+      });
     }
     if (intlResponse) {
       return intlResponse;

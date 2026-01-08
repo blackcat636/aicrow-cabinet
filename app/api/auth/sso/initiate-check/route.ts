@@ -87,10 +87,72 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     
-    console.log(`${logPrefix} Backend response:`, {
+    console.log(`${logPrefix} Backend response (raw):`, {
       status: response.status,
       hasRedirectUrl: !!data?.data?.redirectUrl,
       hasLoginUrl: !!data?.data?.loginUrl,
+      loginUrl: data?.data?.loginUrl,
+      redirectUrl: data?.data?.redirectUrl,
+      message: data?.message
+    });
+
+    // Normalize loginUrl - replace backend URL with frontend URL
+    // Backend might return loginUrl pointing to backend, but we need frontend URL
+    if (data?.data?.loginUrl) {
+      try {
+        const loginUrlObj = new URL(data.data.loginUrl);
+        const originalLoginUrl = data.data.loginUrl;
+        
+        // If loginUrl points to backend domain, replace with frontend domain
+        if (loginUrlObj.origin === API_URL || loginUrlObj.hostname.includes('api.')) {
+          // Get frontend origin from request
+          let frontendOrigin: string;
+          try {
+            if (requestOrigin) {
+              const originUrl = new URL(requestOrigin);
+              frontendOrigin = originUrl.origin;
+            } else {
+              const requestUrl = new URL(request.url);
+              frontendOrigin = requestUrl.origin;
+            }
+          } catch {
+            // Fallback to request URL origin
+            const requestUrl = new URL(request.url);
+            frontendOrigin = requestUrl.origin;
+          }
+          
+          const path = loginUrlObj.pathname + loginUrlObj.search + loginUrlObj.hash;
+          data.data.loginUrl = `${frontendOrigin}${path}`;
+          console.log(`${logPrefix} LoginUrl normalized:`, {
+            original: originalLoginUrl,
+            normalized: data.data.loginUrl,
+            frontendOrigin: frontendOrigin
+          });
+        }
+      } catch (error) {
+        console.warn(`${logPrefix} Failed to normalize loginUrl:`, error);
+      }
+    }
+
+    // Normalize redirectUrl as well (in case backend returns backend URL)
+    if (data?.data?.redirectUrl) {
+      try {
+        const redirectUrlObj = new URL(data.data.redirectUrl);
+        // If redirectUrl points to backend domain, it's probably wrong
+        if (redirectUrlObj.origin === API_URL || redirectUrlObj.hostname.includes('api.')) {
+          console.warn(`${logPrefix} RedirectUrl points to backend, this might be wrong:`, data.data.redirectUrl);
+        }
+      } catch (error) {
+        // Not a URL, skip
+      }
+    }
+
+    console.log(`${logPrefix} Backend response (normalized):`, {
+      status: response.status,
+      hasRedirectUrl: !!data?.data?.redirectUrl,
+      hasLoginUrl: !!data?.data?.loginUrl,
+      loginUrl: data?.data?.loginUrl,
+      redirectUrl: data?.data?.redirectUrl,
       message: data?.message
     });
 

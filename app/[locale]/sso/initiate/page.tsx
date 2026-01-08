@@ -52,9 +52,15 @@ export default function SSOInitiatePage() {
     // This allows using paths like "/callback" which will be automatically
     // converted to the correct URL based on the current environment
     // Only normalize on client side to avoid hydration mismatch
+    const originalRedirectUri = redirectUri;
     try {
       redirectUri = normalizeRedirectUri(redirectUri);
+      console.log('[SSO Initiate Page] Redirect URI normalized in component:', {
+        original: originalRedirectUri,
+        normalized: redirectUri
+      });
     } catch (error) {
+      console.error('[SSO Initiate Page] Failed to normalize redirect_uri:', error);
       setStatus('error');
       setMessage('Невірний формат redirect_uri');
       return;
@@ -98,22 +104,34 @@ export default function SSOInitiatePage() {
         });
 
         if (data?.status === 200 && data?.data?.redirectUrl) {
-          console.log(`${logPrefix} User authenticated, redirecting to:`, data.data.redirectUrl);
+          console.log(`${logPrefix} ✅ User authenticated, redirecting to:`, data.data.redirectUrl);
+          console.log(`${logPrefix} Full redirect data:`, JSON.stringify(data, null, 2));
           setStatus('redirecting');
           setMessage('Перенаправлення до сервісу...');
-          window.location.href = data.data.redirectUrl;
+          // Small delay to ensure logs are visible
+          setTimeout(() => {
+            window.location.href = data.data.redirectUrl;
+          }, 100);
           return;
         }
 
         if (data?.status === 401 && data?.data?.loginUrl) {
-          console.log(`${logPrefix} User not authenticated, redirecting to login:`, data.data.loginUrl);
+          console.log(`${logPrefix} ❌ User not authenticated, redirecting to login:`, data.data.loginUrl);
+          console.log(`${logPrefix} Full login URL data:`, JSON.stringify(data, null, 2));
           setStatus('redirecting');
           setMessage('Необхідна автентифікація. Перенаправлення на логін...');
-          window.location.href = data.data.loginUrl;
+          // Small delay to ensure logs are visible
+          setTimeout(() => {
+            window.location.href = data.data.loginUrl;
+          }, 100);
           return;
         }
 
-        console.error(`${logPrefix} Unexpected response:`, data);
+        console.error(`${logPrefix} ⚠️ Unexpected response format:`, {
+          status: data?.status,
+          data: data,
+          fullResponse: JSON.stringify(data, null, 2)
+        });
         setStatus('error');
         setMessage(data?.message || 'Не вдалося ініціювати SSO');
       } catch (error) {
