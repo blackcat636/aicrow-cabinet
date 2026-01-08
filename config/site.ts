@@ -51,9 +51,14 @@ export const getExternalServiceBaseUrl = (hostname?: string): string => {
  * Internal routes should not be used as redirect_uri
  * This validates BEFORE normalization to catch localhost/internal routes early
  */
-const validateRedirectUri = (redirectUri: string, currentOrigin: string): { valid: boolean; error?: string } => {
+const validateRedirectUri = (
+  redirectUri: string,
+  currentOrigin: string
+): { valid: boolean; error?: string } => {
   const internalRoutes = ['/login', '/signup', '/auth/callback', '/sso/initiate', '/auth/sso/initiate', '/dashboard'];
   const logPrefix = '[validateRedirectUri]';
+  const allowInternalRedirects =
+    process.env.NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS === 'true';
   
   console.log(`${logPrefix} Validating redirect_uri:`, {
     redirectUri,
@@ -75,21 +80,30 @@ const validateRedirectUri = (redirectUri: string, currentOrigin: string): { vali
       console.error(`${logPrefix} ❌ Internal route detected:`, {
         pathname,
         hostname: url.hostname,
-        fullUrl: redirectUri
+        fullUrl: redirectUri,
+        allowInternalRedirects
       });
-      
+
+      if (allowInternalRedirects) {
+        console.warn(
+          `${logPrefix} ⚠️ Internal redirect allowed by NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS. This is for testing only and should NOT be used in production.`
+        );
+        return { valid: true };
+      }
+
       // Provide more specific error message
       const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
-      const domainInfo = isLocalhost 
+      const domainInfo = isLocalhost
         ? ` (ви використовуєте localhost, але проблема не в цьому - проблема в тому, що ${pathname} є внутрішнім маршрутом)`
         : '';
       
       return {
         valid: false,
-        error: `Невірний redirect_uri: ${pathname} є внутрішнім маршрутом і не може бути використаний як redirect_uri.${domainInfo} ` +
-               `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
-               `https://external-service.com/callback або /callback. ` +
-               `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
+        error:
+          `Невірний redirect_uri: ${pathname} є внутрішнім маршрутом і не може бути використаний як redirect_uri.${domainInfo} ` +
+          `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
+          `https://external-service.com/callback або /callback. ` +
+          `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
       };
     }
     
@@ -101,20 +115,29 @@ const validateRedirectUri = (redirectUri: string, currentOrigin: string): { vali
           pathname,
           hostname: url.hostname,
           currentOrigin,
-          fullUrl: redirectUri
+          fullUrl: redirectUri,
+          allowInternalRedirects
         });
+
+        if (allowInternalRedirects) {
+          console.warn(
+            `${logPrefix} ⚠️ Internal redirect allowed by NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS. This is for testing only and should NOT be used in production.`
+          );
+          return { valid: true };
+        }
         
         const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
-        const domainInfo = isLocalhost 
+        const domainInfo = isLocalhost
           ? ` (ви використовуєте localhost, але проблема не в цьому - проблема в тому, що ${pathname} є внутрішнім маршрутом)`
           : '';
         
         return {
           valid: false,
-          error: `Невірний redirect_uri: ${pathname} є внутрішнім маршрутом і не може бути використаний як redirect_uri.${domainInfo} ` +
-                 `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
-                 `https://external-service.com/callback або /callback. ` +
-                 `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
+          error:
+            `Невірний redirect_uri: ${pathname} є внутрішнім маршрутом і не може бути використаний як redirect_uri.${domainInfo} ` +
+            `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
+            `https://external-service.com/callback або /callback. ` +
+            `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
         };
       }
     }
@@ -129,14 +152,24 @@ const validateRedirectUri = (redirectUri: string, currentOrigin: string): { vali
     if (internalRoutes.some(route => path === route || path.startsWith(route + '/'))) {
       console.error(`${logPrefix} ❌ Internal route in relative path:`, {
         path,
-        originalRedirectUri: redirectUri
+        originalRedirectUri: redirectUri,
+        allowInternalRedirects
       });
+
+      if (allowInternalRedirects) {
+        console.warn(
+          `${logPrefix} ⚠️ Internal redirect allowed by NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS. This is for testing only and should NOT be used in production.`
+        );
+        return { valid: true };
+      }
+
       return {
         valid: false,
-        error: `Невірний redirect_uri: ${path} є внутрішнім маршрутом і не може бути використаний як redirect_uri. ` +
-               `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
-               `https://external-service.com/callback або /callback. ` +
-               `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
+        error:
+          `Невірний redirect_uri: ${path} є внутрішнім маршрутом і не може бути використаний як redirect_uri. ` +
+          `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
+          `https://external-service.com/callback або /callback. ` +
+          `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
       };
     }
     
