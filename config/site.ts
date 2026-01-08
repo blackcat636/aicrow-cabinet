@@ -72,13 +72,24 @@ const validateRedirectUri = (redirectUri: string, currentOrigin: string): { vali
     
     // Check if it's an internal route (regardless of domain)
     if (internalRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
-      console.error(`${logPrefix} ❌ Internal route detected:`, pathname);
+      console.error(`${logPrefix} ❌ Internal route detected:`, {
+        pathname,
+        hostname: url.hostname,
+        fullUrl: redirectUri
+      });
+      
+      // Provide more specific error message
+      const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+      const domainInfo = isLocalhost 
+        ? ` (ви використовуєте localhost, але проблема не в цьому - проблема в тому, що ${pathname} є внутрішнім маршрутом)`
+        : '';
+      
       return {
         valid: false,
-        error: `redirect_uri не може вказувати на внутрішні маршрути (${pathname}). ` +
+        error: `Невірний redirect_uri: ${pathname} є внутрішнім маршрутом і не може бути використаний як redirect_uri.${domainInfo} ` +
                `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
                `https://external-service.com/callback або /callback. ` +
-               `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом.`
+               `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
       };
     }
     
@@ -86,13 +97,24 @@ const validateRedirectUri = (redirectUri: string, currentOrigin: string): { vali
     if (url.origin === currentOrigin || url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
       // If it's localhost, it will be normalized to currentOrigin, so check pathname
       if (internalRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
-        console.error(`${logPrefix} ❌ Internal route on localhost/current domain:`, pathname);
+        console.error(`${logPrefix} ❌ Internal route on localhost/current domain:`, {
+          pathname,
+          hostname: url.hostname,
+          currentOrigin,
+          fullUrl: redirectUri
+        });
+        
+        const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+        const domainInfo = isLocalhost 
+          ? ` (ви використовуєте localhost, але проблема не в цьому - проблема в тому, що ${pathname} є внутрішнім маршрутом)`
+          : '';
+        
         return {
           valid: false,
-          error: `redirect_uri не може вказувати на внутрішні маршрути (${pathname}). ` +
+          error: `Невірний redirect_uri: ${pathname} є внутрішнім маршрутом і не може бути використаний як redirect_uri.${domainInfo} ` +
                  `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
                  `https://external-service.com/callback або /callback. ` +
-                 `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом.`
+                 `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
         };
       }
     }
@@ -105,13 +127,16 @@ const validateRedirectUri = (redirectUri: string, currentOrigin: string): { vali
     console.log(`${logPrefix} Relative path detected:`, path);
     
     if (internalRoutes.some(route => path === route || path.startsWith(route + '/'))) {
-      console.error(`${logPrefix} ❌ Internal route in relative path:`, path);
+      console.error(`${logPrefix} ❌ Internal route in relative path:`, {
+        path,
+        originalRedirectUri: redirectUri
+      });
       return {
         valid: false,
-        error: `redirect_uri не може вказувати на внутрішні маршрути (${path}). ` +
+        error: `Невірний redirect_uri: ${path} є внутрішнім маршрутом і не може бути використаний як redirect_uri. ` +
                `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
                `https://external-service.com/callback або /callback. ` +
-               `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом.`
+               `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
       };
     }
     
