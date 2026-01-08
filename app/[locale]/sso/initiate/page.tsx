@@ -163,8 +163,26 @@ export default function SSOInitiatePage() {
           </p>
         </div>
         {status === 'error' && (
-          <div className="mt-2 text-xs text-red-300">
-            Спробуйте ще раз або поверніться на головну.
+          <div className="mt-4 space-y-2">
+            <div className="text-xs text-red-300">
+              {message}
+            </div>
+            <div className="text-xs text-gray-400">
+              <p className="font-semibold mb-1">Що робити:</p>
+              <ul className="list-disc list-inside space-y-1 ml-2">
+                <li>Перевірте, що <code className="bg-white/10 px-1 rounded">redirect_uri</code> вказує на зовнішній сервіс (callback URL)</li>
+                <li>Приклад правильного <code className="bg-white/10 px-1 rounded">redirect_uri</code>: <code className="bg-white/10 px-1 rounded">https://external-service.com/callback</code> або <code className="bg-white/10 px-1 rounded">/callback</code></li>
+                <li>Не використовуйте внутрішні маршрути: <code className="bg-white/10 px-1 rounded">/login</code>, <code className="bg-white/10 px-1 rounded">/signup</code>, <code className="bg-white/10 px-1 rounded">/dashboard</code></li>
+              </ul>
+            </div>
+            <div className="mt-3 pt-3 border-t border-white/10">
+              <button
+                onClick={() => window.location.href = '/'}
+                className="text-xs text-purple-400 hover:text-purple-300 underline"
+              >
+                Повернутися на головну
+              </button>
+            </div>
           </div>
         )}
       </div>

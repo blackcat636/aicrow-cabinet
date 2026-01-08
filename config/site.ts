@@ -49,32 +49,73 @@ export const getExternalServiceBaseUrl = (hostname?: string): string => {
 /**
  * Validate redirect_uri - check if it points to internal routes
  * Internal routes should not be used as redirect_uri
+ * This validates BEFORE normalization to catch localhost/internal routes early
  */
 const validateRedirectUri = (redirectUri: string, currentOrigin: string): { valid: boolean; error?: string } => {
   const internalRoutes = ['/login', '/signup', '/auth/callback', '/sso/initiate', '/auth/sso/initiate', '/dashboard'];
+  const logPrefix = '[validateRedirectUri]';
+  
+  console.log(`${logPrefix} Validating redirect_uri:`, {
+    redirectUri,
+    currentOrigin
+  });
   
   try {
     const url = new URL(redirectUri);
-    // Check if redirect_uri points to current domain
-    if (url.origin === currentOrigin) {
-      // Check if it's an internal route
-      if (internalRoutes.some(route => url.pathname === route || url.pathname.startsWith(route + '/'))) {
+    const pathname = url.pathname;
+    
+    console.log(`${logPrefix} Parsed URL:`, {
+      hostname: url.hostname,
+      pathname: pathname,
+      origin: url.origin
+    });
+    
+    // Check if it's an internal route (regardless of domain)
+    if (internalRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
+      console.error(`${logPrefix} ❌ Internal route detected:`, pathname);
+      return {
+        valid: false,
+        error: `redirect_uri не може вказувати на внутрішні маршрути (${pathname}). ` +
+               `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
+               `https://external-service.com/callback або /callback. ` +
+               `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом.`
+      };
+    }
+    
+    // Check if redirect_uri points to current domain (after normalization would happen)
+    if (url.origin === currentOrigin || url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+      // If it's localhost, it will be normalized to currentOrigin, so check pathname
+      if (internalRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
+        console.error(`${logPrefix} ❌ Internal route on localhost/current domain:`, pathname);
         return {
           valid: false,
-          error: `redirect_uri не може вказувати на внутрішні маршрути (${url.pathname}). Використовуйте зовнішній сервіс або /callback`
+          error: `redirect_uri не може вказувати на внутрішні маршрути (${pathname}). ` +
+                 `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
+                 `https://external-service.com/callback або /callback. ` +
+                 `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом.`
         };
       }
     }
+    
+    console.log(`${logPrefix} ✅ Validation passed`);
     return { valid: true };
   } catch {
     // Relative path - check if it's internal route
     const path = redirectUri.startsWith('/') ? redirectUri : `/${redirectUri}`;
+    console.log(`${logPrefix} Relative path detected:`, path);
+    
     if (internalRoutes.some(route => path === route || path.startsWith(route + '/'))) {
+      console.error(`${logPrefix} ❌ Internal route in relative path:`, path);
       return {
         valid: false,
-        error: `redirect_uri не може вказувати на внутрішні маршрути (${path}). Використовуйте зовнішній сервіс або /callback`
+        error: `redirect_uri не може вказувати на внутрішні маршрути (${path}). ` +
+               `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
+               `https://external-service.com/callback або /callback. ` +
+               `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом.`
       };
     }
+    
+    console.log(`${logPrefix} ✅ Validation passed for relative path`);
     return { valid: true };
   }
 };
@@ -112,7 +153,8 @@ export const normalizeRedirectUri = (redirectUri: string, requestOrigin?: string
     windowOrigin: typeof window !== 'undefined' ? window.location.origin : 'N/A'
   });
 
-  // Validate redirect_uri before normalization
+  // Validate redirect_uri BEFORE normalization
+  // This catches localhost/internal routes early
   const validation = validateRedirectUri(redirectUri, currentOrigin);
   if (!validation.valid) {
     console.error(`${logPrefix} ❌ Validation failed:`, validation.error);
