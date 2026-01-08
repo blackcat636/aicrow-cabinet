@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/routing';
+import { normalizeRedirectUri } from '@/config/site';
 
 type Status = 'loading' | 'redirecting' | 'error';
 
@@ -27,12 +28,23 @@ export default function SSOInitiatePage() {
   const [message, setMessage] = useState<string>('Ініціалізація SSO...');
 
   useEffect(() => {
-    const redirectUri = searchParams.get('redirect_uri');
+    let redirectUri = searchParams.get('redirect_uri');
     const service = searchParams.get('service') || undefined;
 
     if (!redirectUri) {
       setStatus('error');
       setMessage('redirect_uri не вказано');
+      return;
+    }
+
+    // Normalize redirect_uri - convert relative paths to absolute URLs
+    // This allows using paths like "/callback" which will be automatically
+    // converted to the correct URL based on the current environment
+    try {
+      redirectUri = normalizeRedirectUri(redirectUri);
+    } catch (error) {
+      setStatus('error');
+      setMessage('Невірний формат redirect_uri');
       return;
     }
 
