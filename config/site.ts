@@ -58,7 +58,8 @@ const validateRedirectUri = (
   const internalRoutes = ['/login', '/signup', '/auth/callback', '/sso/initiate', '/auth/sso/initiate', '/dashboard'];
   const logPrefix = '[validateRedirectUri]';
   const allowInternalRedirects =
-    process.env.NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS === 'true';
+    process.env.NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS === 'true' ||
+    (currentOrigin?.includes('develop.aicrow-cabinet.pages.dev') ?? false);
   
   console.log(`${logPrefix} Validating redirect_uri:`, {
     redirectUri,
