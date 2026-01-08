@@ -92,15 +92,23 @@ export default function SSOInitiatePage() {
         });
         
         console.log(`${logPrefix} API response status:`, res.status);
+        console.log(`${logPrefix} API response headers:`, {
+          contentType: res.headers.get('content-type'),
+          location: res.headers.get('location')
+        });
         
         const data = await res.json();
-        console.log(`${logPrefix} API response data:`, {
+        console.log(`${logPrefix} 📦 API response data (full):`, JSON.stringify(data, null, 2));
+        console.log(`${logPrefix} API response data (summary):`, {
           status: data?.status,
           hasRedirectUrl: !!data?.data?.redirectUrl,
           hasLoginUrl: !!data?.data?.loginUrl,
           redirectUrl: data?.data?.redirectUrl,
           loginUrl: data?.data?.loginUrl,
-          message: data?.message
+          hasCode: !!data?.data?.code,
+          hasState: !!data?.data?.state,
+          message: data?.message,
+          error: data?.error
         });
 
         if (data?.status === 200 && data?.data?.redirectUrl) {

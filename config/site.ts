@@ -71,39 +71,57 @@ export const normalizeRedirectUri = (redirectUri: string, requestOrigin?: string
     currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
   }
 
-  console.log(`${logPrefix} Input:`, {
+  console.log(`${logPrefix} 📥 Input:`, {
     redirectUri,
     requestOrigin,
     currentOrigin,
-    isClient: typeof window !== 'undefined'
+    isClient: typeof window !== 'undefined',
+    windowOrigin: typeof window !== 'undefined' ? window.location.origin : 'N/A'
   });
 
   try {
     // Try to parse as absolute URL
     const url = new URL(redirectUri);
     
+    console.log(`${logPrefix} Parsed URL:`, {
+      hostname: url.hostname,
+      pathname: url.pathname,
+      search: url.search,
+      hash: url.hash,
+      origin: url.origin
+    });
+    
     // If it's localhost, replace with current domain
     if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
       // Preserve path, query, and hash from original redirect_uri
       const path = url.pathname + url.search + url.hash;
       const normalized = `${currentOrigin}${path}`;
-      console.log(`${logPrefix} Localhost detected, normalized:`, {
+      console.log(`${logPrefix} ✅ Localhost detected, normalized:`, {
         original: redirectUri,
-        normalized
+        normalized,
+        path: path,
+        currentOrigin: currentOrigin
       });
       return normalized;
     }
     
     // If it's already a valid absolute URL from different domain, use as is
-    console.log(`${logPrefix} Absolute URL, using as is:`, redirectUri);
+    console.log(`${logPrefix} ✅ Absolute URL from different domain, using as is:`, {
+      original: redirectUri,
+      hostname: url.hostname,
+      origin: url.origin
+    });
     return url.toString();
-  } catch {
+  } catch (error) {
     // If it's a relative path, prepend current origin
     const path = redirectUri.startsWith('/') ? redirectUri : `/${redirectUri}`;
     const normalized = `${currentOrigin}${path}`;
-    console.log(`${logPrefix} Relative path, normalized:`, {
+    console.log(`${logPrefix} ✅ Relative path, normalized:`, {
       original: redirectUri,
-      normalized
+      normalized,
+      path: path,
+      currentOrigin: currentOrigin,
+      parseError: error instanceof Error ? error.message : 'Unknown error'
     });
     return normalized;
   }

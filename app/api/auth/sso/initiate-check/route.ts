@@ -87,13 +87,21 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     
-    console.log(`${logPrefix} Backend response (raw):`, {
+    console.log(`${logPrefix} 📦 Backend response (raw, full):`, JSON.stringify(data, null, 2));
+    console.log(`${logPrefix} Backend response (raw, summary):`, {
       status: response.status,
+      httpStatus: response.status,
       hasRedirectUrl: !!data?.data?.redirectUrl,
       hasLoginUrl: !!data?.data?.loginUrl,
       loginUrl: data?.data?.loginUrl,
       redirectUrl: data?.data?.redirectUrl,
-      message: data?.message
+      hasCode: !!data?.data?.code,
+      hasState: !!data?.data?.state,
+      code: data?.data?.code ? data.data.code.substring(0, 20) + '...' : null,
+      state: data?.data?.state ? data.data.state.substring(0, 20) + '...' : null,
+      message: data?.message,
+      error: data?.error,
+      fullData: data
     });
 
     // Normalize loginUrl - replace backend URL with frontend URL
@@ -147,13 +155,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    console.log(`${logPrefix} Backend response (normalized):`, {
+    console.log(`${logPrefix} ✅ Backend response (normalized, full):`, JSON.stringify(data, null, 2));
+    console.log(`${logPrefix} Backend response (normalized, summary):`, {
       status: response.status,
       hasRedirectUrl: !!data?.data?.redirectUrl,
       hasLoginUrl: !!data?.data?.loginUrl,
       loginUrl: data?.data?.loginUrl,
       redirectUrl: data?.data?.redirectUrl,
-      message: data?.message
+      hasCode: !!data?.data?.code,
+      hasState: !!data?.data?.state,
+      message: data?.message,
+      error: data?.error
     });
 
     return NextResponse.json(data, { status: response.status });

@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { LoginForm } from '@/components/auth/LoginForm';
@@ -14,6 +14,47 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const redirectUri = searchParams?.get('redirect_uri') || undefined;
   const service = searchParams?.get('service') || undefined;
+  const code = searchParams?.get('code');
+  const state = searchParams?.get('state');
+  
+  const [ssoError, setSsoError] = useState<string | null>(null);
+
+  // Handle SSO callback - if code and state are present, this means redirect_uri was wrong
+  useEffect(() => {
+    const logPrefix = '[Login Page]';
+    
+    console.log(`${logPrefix} Page loaded with params:`, {
+      hasRedirectUri: !!redirectUri,
+      redirectUri: redirectUri,
+      service: service,
+      hasCode: !!code,
+      hasState: !!state,
+      code: code ? code.substring(0, 20) + '...' : null,
+      state: state ? state.substring(0, 20) + '...' : null,
+      allParams: Object.fromEntries(searchParams?.entries() || [])
+    });
+
+    if (code && state) {
+      console.warn(`${logPrefix} ⚠️ SSO callback detected on login page!`, {
+        code: code.substring(0, 20) + '...',
+        state: state.substring(0, 20) + '...',
+        redirectUri: redirectUri,
+        message: 'This means redirect_uri was pointing to /login instead of external service',
+        currentUrl: typeof window !== 'undefined' ? window.location.href : 'N/A'
+      });
+      
+      setSsoError(
+        'Помилка: redirect_uri вказує на сторінку логіну замість зовнішнього сервісу. ' +
+        'Будь ласка, використовуйте правильний redirect_uri (наприклад, /callback або URL зовнішнього сервісу).'
+      );
+    } else if (redirectUri || service) {
+      console.log(`${logPrefix} SSO flow initiated:`, {
+        redirectUri: redirectUri,
+        service: service,
+        isSSOFlow: true
+      });
+    }
+  }, [code, state, redirectUri, service, searchParams]);
 
   return (
     <div className="min-h-screen relative">
@@ -31,6 +72,19 @@ export default function LoginPage() {
       </div>
 
       <div className="relative z-20">
+        {ssoError && (
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
+            <div className="bg-red-900/90 border border-red-600 rounded-lg p-4 shadow-lg">
+              <p className="text-sm text-red-200">{ssoError}</p>
+              <button
+                onClick={() => setSsoError(null)}
+                className="mt-2 text-xs text-red-300 hover:text-red-100 underline"
+              >
+                Закрити
+              </button>
+            </div>
+          </div>
+        )}
         <LoginForm
           variant="modal"
           isOpen={true}
