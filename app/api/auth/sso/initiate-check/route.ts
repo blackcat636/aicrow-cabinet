@@ -1,3 +1,13 @@
+/**
+ * SSO Initiate Check API Route
+ * 
+ * This is an INTERNAL API endpoint called by the frontend SSO initiate page.
+ * External services should NOT call this directly - they should redirect to:
+ * {MAIN_FRONTEND_URL}/sso/initiate or {MAIN_FRONTEND_URL}/auth/sso/initiate
+ * 
+ * The backend URL is hidden from the user - they only see frontend URLs.
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
 import { API_CONFIG } from '@/config/api';
 import { getTokens } from '@/lib/auth';

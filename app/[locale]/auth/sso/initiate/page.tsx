@@ -1,5 +1,16 @@
 'use client';
 
+/**
+ * SSO Initiate Page (Alternative route) - Frontend entry point for SSO flow
+ * 
+ * IMPORTANT: This is a FRONTEND route, not a backend API endpoint.
+ * External services should redirect to: {MAIN_FRONTEND_URL}/auth/sso/initiate?redirect_uri=...
+ * NOT to: {MAIN_BACKEND_URL}/api/auth/sso/initiate
+ * 
+ * This is an alternative route to /sso/initiate for compatibility.
+ * Same functionality as /sso/initiate.
+ */
+
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/routing';
@@ -35,7 +46,8 @@ export default function SSOInitiatePage() {
 
         const res = await fetch(`/api/auth/sso/initiate-check?${params.toString()}`, {
           method: 'GET',
-          cache: 'no-store'
+          cache: 'no-store',
+          credentials: 'include'
         });
         const data = await res.json();
 

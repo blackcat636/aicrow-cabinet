@@ -13,7 +13,14 @@ const protectedRoutes = [
   '/balance',
   '/integrations'
 ];
-const authRoutes = ['/login', '/signup', '/auth/callback', '/sso/initiate', '/auth/sso/initiate'];
+const authRoutes = [
+  '/login',
+  '/signup',
+  '/auth/callback',
+  '/sso/initiate',
+  '/auth/sso/initiate'
+];
+const ssoRoutes = ['/sso/initiate', '/auth/sso/initiate'];
 
 const intlMiddleware = createMiddleware({
   ...routing,
@@ -221,6 +228,7 @@ export async function middleware(request: NextRequest) {
     normalizedPathname.startsWith(route)
   );
   const isAuthRoute = authRoutes.some((route) => normalizedPathname === route);
+  const isSSORoute = ssoRoutes.some((route) => normalizedPathname === route);
 
   const { accessToken, refreshToken, deviceId } = getTokens(request);
 
@@ -228,9 +236,10 @@ export async function middleware(request: NextRequest) {
     try {
       const response = await authApi.refreshToken(refreshToken, deviceId);
       if (response.status === 200 && response.data) {
-        const nextResponse = isAuthRoute
-          ? NextResponse.redirect(new URL('/dashboard', request.url))
-          : NextResponse.next();
+        const nextResponse =
+          isAuthRoute && !isSSORoute
+            ? NextResponse.redirect(new URL('/dashboard', request.url))
+            : NextResponse.next();
 
         const nowSec = Math.floor(Date.now() / 1000);
         const accessExp = decodeToken(response.data.accessToken)?.exp;
@@ -331,12 +340,11 @@ export async function middleware(request: NextRequest) {
         const now = Math.floor(Date.now() / 1000);
         isAccessTokenValid = decoded.exp > now;
       }
-    } catch (error) {
-    }
+    } catch (error) {}
   }
 
   if (isAccessTokenValid) {
-    if (isAuthRoute) {
+    if (isAuthRoute && !isSSORoute) {
       return NextResponse.redirect(
         createLocalizedUrl('/dashboard', currentLocale, request)
       );
