@@ -11,6 +11,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_CONFIG } from '@/config/api';
 import { getTokens } from '@/lib/auth';
+import { normalizeRedirectUri } from '@/config/site';
 
 export const runtime = 'edge';
 
@@ -18,7 +19,7 @@ const API_URL = API_CONFIG.BASE_URL;
 
 export async function GET(request: NextRequest) {
   try {
-    const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
+    let redirectUri = request.nextUrl.searchParams.get('redirect_uri');
     const service = request.nextUrl.searchParams.get('service');
 
     if (!redirectUri) {
@@ -27,6 +28,12 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Normalize redirect_uri - replace localhost with correct environment URL
+    // This ensures that if someone passes localhost URL in production/staging,
+    // it will be automatically replaced with the correct URL
+    const requestOrigin = request.headers.get('origin') || request.url;
+    redirectUri = normalizeRedirectUri(redirectUri, requestOrigin);
 
     const { accessToken } = getTokens(request);
 

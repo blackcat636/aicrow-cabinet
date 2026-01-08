@@ -5,18 +5,19 @@ export type SiteConfig = typeof siteConfig;
  * This allows using relative paths in redirect_uri that will be automatically
  * converted to absolute URLs based on the environment
  */
-export const getExternalServiceBaseUrl = (): string => {
-  // Check if we're in browser environment
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname;
-    
+export const getExternalServiceBaseUrl = (hostname?: string): string => {
+  // Get hostname from parameter or window
+  const currentHostname = hostname || 
+    (typeof window !== 'undefined' ? window.location.hostname : undefined);
+  
+  if (currentHostname) {
     // Development environments
-    if (hostname.includes('localhost') || hostname.includes('127.0.0.1')) {
+    if (currentHostname.includes('localhost') || currentHostname.includes('127.0.0.1')) {
       return process.env.NEXT_PUBLIC_EXTERNAL_SERVICE_URL_DEV || 'http://localhost:3000';
     }
     
     // Develop/staging environments (Cloudflare Pages)
-    if (hostname.includes('develop.') || hostname.includes('staging.')) {
+    if (currentHostname.includes('develop.') || currentHostname.includes('staging.')) {
       // For develop branch, use the same domain but different subdomain if needed
       // Or use the configured staging URL
       const stagingUrl = process.env.NEXT_PUBLIC_EXTERNAL_SERVICE_URL_STAGING;
@@ -25,11 +26,11 @@ export const getExternalServiceBaseUrl = (): string => {
       }
       // Auto-detect: if we're on develop.aicrow-cabinet.pages.dev, 
       // external service might be on the same domain
-      return `https://${hostname}`;
+      return `https://${currentHostname}`;
     }
     
     // Production environment
-    if (hostname.includes('pages.dev') || hostname.includes('aicrow-cabinet')) {
+    if (currentHostname.includes('pages.dev') || currentHostname.includes('aicrow-cabinet')) {
       const prodUrl = process.env.NEXT_PUBLIC_EXTERNAL_SERVICE_URL_PROD;
       if (prodUrl) {
         return prodUrl;
@@ -46,20 +47,45 @@ export const getExternalServiceBaseUrl = (): string => {
 };
 
 /**
- * Normalize redirect_uri - converts relative paths to absolute URLs
- * based on the current environment
+ * Normalize redirect_uri - universal solution that works for all cases:
+ * 1. If redirect_uri is localhost - replace with current domain
+ * 2. If redirect_uri is relative path - use current domain
+ * 3. If redirect_uri is absolute URL from different domain - use as is
+ * 
+ * This makes it work universally across all environments without configuration
  */
-export const normalizeRedirectUri = (redirectUri: string): string => {
+export const normalizeRedirectUri = (redirectUri: string, requestOrigin?: string): string => {
+  // Get current origin (where the request is coming from)
+  let currentOrigin: string;
+  
+  if (requestOrigin) {
+    try {
+      const originUrl = new URL(requestOrigin);
+      currentOrigin = originUrl.origin;
+    } catch {
+      currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+    }
+  } else {
+    currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+  }
+
   try {
-    // If it's already an absolute URL, return as is
+    // Try to parse as absolute URL
     const url = new URL(redirectUri);
+    
+    // If it's localhost, replace with current domain
+    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+      // Preserve path, query, and hash from original redirect_uri
+      const path = url.pathname + url.search + url.hash;
+      return `${currentOrigin}${path}`;
+    }
+    
+    // If it's already a valid absolute URL from different domain, use as is
     return url.toString();
   } catch {
-    // If it's a relative path, convert to absolute URL
-    const baseUrl = getExternalServiceBaseUrl();
-    // Remove leading slash if present to avoid double slashes
+    // If it's a relative path, prepend current origin
     const path = redirectUri.startsWith('/') ? redirectUri : `/${redirectUri}`;
-    return `${baseUrl}${path}`;
+    return `${currentOrigin}${path}`;
   }
 };
 
