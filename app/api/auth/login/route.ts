@@ -9,14 +9,33 @@ const API_URL = API_CONFIG.BASE_URL;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
+    const service = request.nextUrl.searchParams.get('service');
 
-    const response = await fetch(`${API_URL}/auth/login`, {
+    const url = new URL(`${API_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`);
+    if (redirectUri) {
+      url.searchParams.set('redirect_uri', redirectUri);
+    }
+    if (service) {
+      url.searchParams.set('service', service);
+    }
+
+    const response = await fetch(url.toString(), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
+      redirect: 'manual'
     });
+
+    // Handle backend redirect responses explicitly (e.g., SSO flow)
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('location');
+      if (location) {
+        return NextResponse.redirect(location, { status: response.status });
+      }
+    }
 
     const data = await response.json();
 
@@ -25,6 +44,11 @@ export async function POST(request: NextRequest) {
         { error: data.message || 'Login failed' },
         { status: response.status }
       );
+    }
+
+    // If backend returns redirectUrl in payload (SSO flow)
+    if (data?.data?.redirectUrl) {
+      return NextResponse.redirect(data.data.redirectUrl, { status: 302 });
     }
 
     if (data.status === 200 && data.data) {

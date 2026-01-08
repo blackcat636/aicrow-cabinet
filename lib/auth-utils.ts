@@ -33,13 +33,10 @@ export const decodeToken = (token: string): TokenPayload | null => {
   }
 };
 
-// Global threshold (seconds) to refresh token before actual expiry
-const TOKEN_REFRESH_THRESHOLD_SEC = 600; // 10 minutes
+const TOKEN_REFRESH_THRESHOLD_SEC = 600;
 
-// Promise barrier to prevent concurrent refresh requests
 let refreshPromise: Promise<boolean> | null = null;
 
-// Helper function to check if token is valid
 const isTokenValid = (token: string): boolean => {
   const decoded = decodeToken(token);
 
@@ -91,7 +88,6 @@ export const refreshAccessToken = async (): Promise<boolean> => {
       } catch {}
       return false;
     } finally {
-      // Reset barrier after completion
       refreshPromise = null;
     }
   })();
@@ -100,7 +96,6 @@ export const refreshAccessToken = async (): Promise<boolean> => {
   return ok;
 };
 
-// Function to check if token needs to be refreshed before API request
 export const ensureValidToken = async (): Promise<boolean> => {
   const accessToken = getAccessToken();
 
@@ -117,7 +112,6 @@ export const ensureValidToken = async (): Promise<boolean> => {
   const now = Math.floor(Date.now() / 1000);
   const timeUntilExpiry = decoded.exp - now;
 
-  // If token expires soon, try to refresh
   if (timeUntilExpiry < TOKEN_REFRESH_THRESHOLD_SEC) {
     try {
       const refreshed = await refreshAccessToken();

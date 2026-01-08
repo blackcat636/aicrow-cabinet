@@ -1,19 +1,18 @@
-// API Configuration
 export const API_CONFIG = {
-  // Base URL for API requests
   BASE_URL:
     process.env.NEXT_PUBLIC_API_URL ||
     process.env.API_BASE_URL ||
     'https://api.tempdomain.site',
 
-  // API Endpoints
   ENDPOINTS: {
     AUTH: {
       LOGIN: '/auth/login',
       REGISTER: '/auth/register',
       REFRESH: '/auth/refresh',
       LOGOUT: '/auth/logout',
-      ME: '/auth/profile'
+      ME: '/auth/profile',
+      SSO_INITIATE_CHECK: '/auth/sso/initiate-check',
+      SSO_EXCHANGE: '/auth/sso/exchange'
     },
     USERS: {
       PROFILE: '/users/profile'
@@ -26,16 +25,13 @@ export const API_CONFIG = {
     }
   },
 
-  // Request timeout in milliseconds
   TIMEOUT: 10000,
 
-  // Default headers
   DEFAULT_HEADERS: {
     'Content-Type': 'application/json'
   }
 };
 
-// Helper function to build full API URL
 export const buildApiUrl = (endpoint: string): string => {
   const url = `${API_CONFIG.BASE_URL}${endpoint}`;
   return url;

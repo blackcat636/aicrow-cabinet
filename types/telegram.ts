@@ -1,4 +1,3 @@
-// Telegram API types
 export interface TelegramLinkResponse {
   status: number;
   data: {
@@ -36,7 +35,6 @@ export interface TelegramUnlinkResponse {
   message: string;
 }
 
-// Admin endpoints types
 export interface TelegramUser {
   id: number;
   userId: number;

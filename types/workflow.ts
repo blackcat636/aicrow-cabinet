@@ -1,5 +1,3 @@
-// Workflow Management Types
-
 export interface Workflow {
   id: number;
   name: string;
@@ -70,9 +68,9 @@ export type TriggerType = 'manual' | 'cron' | 'scheduled' | 'telegram';
 export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed';
 
 export interface CredentialData {
-  chatId?: string; // for telegram
-  email?: string; // for email
-  webhookUrl?: string; // for webhook
+  chatId?: string;
+  email?: string;
+  webhookUrl?: string;
 }
 
 export interface AttachWorkflowRequest {
@@ -125,30 +123,30 @@ export interface UserField {
   default?: any;
   enum?: any[];
   options?: EnumOption[];
-  fields?: UserField[]; // For object type - nested fields
-  hidden?: boolean; // If true, field should not be rendered in UI
+  fields?: UserField[];
+  hidden?: boolean;
 }
 
 export interface WorkflowRequirements {
   workflowId?: number;
   workflowName?: string;
   userFields?: UserField[];
-  fields?: UserField[]; // Alternative field name from API
-  formFields?: UserField[]; // Form fields from chain-form endpoint (with values)
+  fields?: UserField[];
+  formFields?: UserField[];
   schema?: any;
   existingValues?: Record<string, any>;
   sampleTemplate?: string;
   version?: number;
-  defaultDataMapping?: Record<string, string>; // Default data mapping from chain-form endpoint
-  transformedData?: Record<string, any>; // Pre-filled transformed data from chain-form endpoint
-  sourceExecutionId?: number; // Source execution ID from chain-form endpoint
-  targetUserWorkflowId?: number; // Target user workflow ID from chain-form endpoint
+  defaultDataMapping?: Record<string, string>;
+  transformedData?: Record<string, any>;
+  sourceExecutionId?: number;
+  targetUserWorkflowId?: number;
   targetWorkflow?: {
     id: number;
     name: string;
     description?: string;
   };
-  availableSocialAccounts?: AvailableSocialAccounts | null; // Connected social accounts from Upload-Post
+  availableSocialAccounts?: AvailableSocialAccounts | null;
 }
 
 export interface ExecutionsResponse {
@@ -173,7 +171,6 @@ export interface TelegramCommand {
   example?: string;
 }
 
-// Chainable Workflows Types
 export interface ChainableWorkflowsConfig {
   allowedTargets?: number[];
   defaultDataMapping?: Record<string, string>;
@@ -222,7 +219,6 @@ export interface ChainHistoryData {
   children: WorkflowExecution[];
 }
 
-// Social Networks Types
 export interface SocialNetwork {
   value: string;
   label: string;
@@ -232,8 +228,8 @@ export interface SocialAccount {
   username: string;
   display_name: string;
   social_images: string | null;
-  handle?: string; // Social media handle (e.g., @username)
-  reauth_required?: boolean; // Whether re-authentication is required
+  handle?: string;
+  reauth_required?: boolean;
 }
 
 export interface AvailableSocialAccounts {

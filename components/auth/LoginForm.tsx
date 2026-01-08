@@ -15,6 +15,8 @@ interface LoginFormProps {
   isOpen?: boolean;
   onClose?: () => void;
   onSwitchToRegister: () => void;
+  redirectUri?: string;
+  service?: string;
   className?: string;
 }
 
@@ -23,6 +25,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   isOpen = false,
   onClose,
   onSwitchToRegister,
+  redirectUri,
+  service,
   className
 }) => {
   const t = useTranslations('auth');
@@ -61,7 +65,11 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       clearError();
-      await login(formData as LoginRequest);
+      await login({
+        ...(formData as LoginRequest),
+        redirectUri,
+        service
+      });
       if (isModal && onClose) {
         onClose();
       }
@@ -93,6 +101,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className={isModal ? "p-6 space-y-4" : "space-y-4"}>
+          {/* SSO notice */}
+          {redirectUri && (
+            <div className="p-3 bg-purple-900/20 border border-purple-500/40 rounded-lg text-sm text-purple-100">
+              Ви входите, щоб продовжити в зовнішній сервіс{service ? `: ${service}` : ''}.
+            </div>
+          )}
           {/* Error Message */}
           {error && (
             <div className="p-3 bg-red-900/20 border border-red-600 rounded-lg">

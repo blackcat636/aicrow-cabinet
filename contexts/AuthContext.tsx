@@ -61,13 +61,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  // Get pathname from window.location (client-side only) to avoid static export issues
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
     const updatePathname = () => {
       const currentPath = window.location.pathname;
-      // Remove locale prefix if present (uk, en, fr)
       const normalizedPath = currentPath.replace(/^\/(uk|en|fr)(\/|$)/, '/') || '/';
       setPathname(normalizedPath);
     };
@@ -82,21 +80,18 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  // Initialize authentication on mount via server API and HttpOnly cookies
   useEffect(() => {
     const initializeAuth = async () => {
       try {
         if (isLoggingOutRef.current) {
           return;
         }
-        // Skip auth checks on public auth routes
         if (pathname === '/login' || pathname === '/signup') {
           setIsAuthenticated(false);
           setUser(null);
           return;
         }
 
-        // If no client-visible tokens exist, avoid hitting profile/refresh
         const at = getAccessToken();
         const rt = getRefreshToken();
         if (!at && !rt) {
@@ -106,7 +101,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return;
         }
 
-        // Try to get profile using current cookies
         const res = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
         if (res.ok) {
           const profile = await res.json();
@@ -114,7 +108,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setUser(mapProfileToUser(profile));
           setImpersonationInfo(getImpersonationMeta());
         } else if (res.status === 401) {
-          // Attempt refresh and retry
           const refreshRes = await fetch('/api/auth/refresh', { method: 'POST', cache: 'no-cache' });
           if (refreshRes.ok) {
             const profileRes = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
@@ -153,13 +146,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     initializeAuth();
   }, [pathname, mapProfileToUser]);
 
-  // Memoize logout function
   const logout = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     isLoggingOutRef.current = true;
     
     try {
-      // Call our Next.js API route for logout
       const response = await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
@@ -170,7 +161,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     } catch (error) {
     } finally {
-      // Always clear local state
       clearImpersonationMeta();
       removeTokens();
       setIsAuthenticated(false);
@@ -207,7 +197,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Sync impersonation meta from cookies whenever user changes
   useEffect(() => {
     const meta = getImpersonationMeta();
     setImpersonationInfo(meta);
@@ -250,26 +239,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         logout();
       }
-    }, 5 * 60 * 1000); // Refresh every 5 minutes (more frequent)
+    }, 5 * 60 * 1000);
 
     return () => {
       clearInterval(refreshInterval);
     };
   }, [isAuthenticated, logout]);
 
-  // Memoize clear error function
   const clearError = useCallback(() => {
     setError(null);
   }, []);
 
-  // Memoize login function
   const login = useCallback(async (credentials: LoginRequest): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Call our Next.js API route instead of external API directly
-      const response = await fetch('/api/auth/login', {
+      let loginUrl = '/api/auth/login';
+      const loginParams = new URLSearchParams();
+      if (credentials.redirectUri) {
+        loginParams.set('redirect_uri', credentials.redirectUri);
+      }
+      if (credentials.service) {
+        loginParams.set('service', credentials.service);
+      }
+      if ([...loginParams.keys()].length) {
+        loginUrl += `?${loginParams.toString()}`;
+      }
+
+      const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -278,6 +276,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         cache: 'no-cache'
       });
 
+      if (response.redirected && response.url) {
+        window.location.href = response.url;
+        return;
+      }
+
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Login failed');
@@ -285,9 +288,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const data = await response.json();
 
+      if (data?.data?.redirectUrl) {
+        window.location.href = data.data.redirectUrl;
+        return;
+      }
+
       if (data.user) {
         setIsAuthenticated(true);
-        // Load full user profile to get photo and other details
         try {
           const profile = await userApi.getProfile();
           setUser(mapProfileToUser(profile));
@@ -305,7 +312,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Facebook OAuth login
   const loginWithFacebook = useCallback(async (code: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
@@ -342,7 +348,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [mapProfileToUser]);
 
-  // Facebook account linking
   const linkFacebook = useCallback(async (code: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
@@ -360,12 +365,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [mapProfileToUser]);
 
-  // Memoize register function
   const register = useCallback(async (userData: RegisterRequest): Promise<any> => {
     setIsLoading(true);
     setError(null);
-
-    
 
     try {
       const response = await fetch('/api/auth/register', {
@@ -377,8 +379,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         cache: 'no-cache'
       });
 
-      
-
       const data = await response.json();
 
       if (!response.ok) {
@@ -386,7 +386,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error(errorMessage);
       }
       
-      // Return result for email verification handling
       return data;
     } catch (error: any) {
       const errorMessage = error.message || 'Registration failed';
@@ -397,7 +396,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Memoize context value to prevent unnecessary re-renders
   const value: AuthContextType = useMemo(() => ({
     user,
     isAuthenticated,

@@ -1,5 +1,3 @@
-// Balance Types
-
 export interface Currency {
   id: number;
   code: string;
@@ -36,7 +34,6 @@ export interface BalanceStats {
   currencies: BalanceData[];
 }
 
-// Transaction Types
 export interface TransactionMetadata {
   timestamp?: string;
   admin_email?: string;

@@ -1,9 +1,9 @@
-// Authentication Types
-
 export interface LoginRequest {
   email: string;
   password: string;
-  deviceId?: string; // Optional, will be generated automatically
+  deviceId?: string;
+  redirectUri?: string;
+  service?: string;
 }
 
 export interface RegisterRequest {
@@ -130,7 +130,6 @@ export interface AuthContextType extends AuthState {
   clearError: () => void;
 }
 
-// Facebook OAuth Types
 export interface FacebookAuthResponse {
   status: number;
   data: {
@@ -145,4 +144,30 @@ export interface FacebookStatusResponse {
   isLinked: boolean;
   email?: string;
   name?: string;
+}
+
+export interface SSOInitiateCheckResponse {
+  status: number;
+  data: {
+    redirectUrl?: string;
+    code?: string;
+    state?: string;
+    loginUrl?: string;
+  };
+  message?: string;
+}
+
+export interface SSOExchangeRequest {
+  code: string;
+  redirectUri: string;
+}
+
+export interface SSOExchangeResponse {
+  status: number;
+  data: {
+    serviceToken: string;
+    userId: number;
+    serviceName?: string;
+  };
+  message?: string;
 }

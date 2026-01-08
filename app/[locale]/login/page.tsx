@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useRouter } from '@/i18n/routing';
+import { useSearchParams } from 'next/navigation';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { LanguageSwitcherCompact } from '@/components/LanguageSwitcherCompact';
 
@@ -10,6 +11,9 @@ export const runtime = 'edge';
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirectUri = searchParams?.get('redirect_uri') || undefined;
+  const service = searchParams?.get('service') || undefined;
 
   return (
     <div className="min-h-screen relative">
@@ -30,6 +34,8 @@ export default function LoginPage() {
         <LoginForm
           variant="modal"
           isOpen={true}
+          redirectUri={redirectUri}
+          service={service}
           onClose={() => router.push('/')}
           onSwitchToRegister={() => router.push('/signup')}
         />

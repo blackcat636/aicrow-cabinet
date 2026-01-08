@@ -8,14 +8,15 @@ import {
   ResendVerificationRequest,
   ChangeEmailRequest,
   ConfirmEmailChangeRequest,
-  ImpersonateResponse
+  ImpersonateResponse,
+  SSOInitiateCheckResponse,
+  SSOExchangeResponse
 } from '@/types/auth';
 import { API_CONFIG } from '@/config/api';
 
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
 export const authApi = {
-  // Login
   login: async (
     email: string,
     password: string,
@@ -36,7 +37,6 @@ export const authApi = {
       if (!response.ok) {
         let errorMessage = 'Login failed';
 
-        // Handle specific status codes first
         if (response.status === 401) {
           errorMessage = 'Invalid credentials';
         } else {
@@ -44,7 +44,6 @@ export const authApi = {
             const errorData = await response.json();
 
             if (errorData.message) {
-              // Translate Ukrainian messages to English
               if (errorData.message === 'Invalid credentials') {
                 errorMessage = 'Invalid credentials';
               } else {
@@ -54,20 +53,17 @@ export const authApi = {
               errorMessage = errorData.error;
             }
           } catch (e) {
-            // If JSON parsing fails, try to get text
             try {
               const errorText = await response.text();
               if (errorText) {
                 errorMessage = errorText;
               }
             } catch (textError) {
-              // Fallback to status text
               errorMessage = response.statusText || 'Login failed';
             }
           }
         }
 
-        // Create error object with status code
         const error = new Error(errorMessage);
         (error as any).status = response.status;
         throw error;
@@ -81,7 +77,6 @@ export const authApi = {
     }
   },
 
-  // Registration
   register: async (
     email: string,
     password: string,
@@ -100,7 +95,6 @@ export const authApi = {
       if (!response.ok) {
         let errorMessage = 'Registration failed';
 
-        // Handle specific status codes
         if (response.status === 409) {
           errorMessage = 'User with this email already exists';
         } else if (response.status === 400) {
@@ -114,20 +108,17 @@ export const authApi = {
               errorMessage = errorData.error;
             }
           } catch (e) {
-            // If JSON parsing fails, try to get text
             try {
               const errorText = await response.text();
               if (errorText) {
                 errorMessage = errorText;
               }
             } catch (textError) {
-              // Fallback to status text
               errorMessage = response.statusText || 'Registration failed';
             }
           }
         }
 
-        // Create error object with status code
         const error = new Error(errorMessage);
         (error as any).status = response.status;
         throw error;
@@ -140,7 +131,6 @@ export const authApi = {
     }
   },
 
-  // Refresh token
   refreshToken: async (
     refreshToken: string,
     deviceId: string
@@ -159,7 +149,6 @@ export const authApi = {
         let errorMessage = 'Token refresh failed';
         let errorData = null;
 
-        // Handle specific status codes
         if (response.status === 401) {
           errorMessage = 'Invalid refresh token';
         } else {
@@ -171,20 +160,17 @@ export const authApi = {
               errorMessage = errorData.error;
             }
           } catch (e) {
-            // If JSON parsing fails, try to get text
             try {
               const errorText = await response.text();
               if (errorText) {
                 errorMessage = errorText;
               }
             } catch (textError) {
-              // Fallback to status text
               errorMessage = response.statusText || 'Token refresh failed';
             }
           }
         }
 
-        // Create error object with status code
         const error = new Error(errorMessage);
         (error as any).status = response.status;
         throw error;
@@ -198,7 +184,6 @@ export const authApi = {
     }
   },
 
-  // Impersonate user (admin only)
   impersonateUser: async (userId: number): Promise<ImpersonateResponse> => {
     const response = await fetch(`/api/auth/admin/users/${userId}/impersonate`, {
       method: 'POST',
@@ -219,7 +204,6 @@ export const authApi = {
     return (await response.json()) as ImpersonateResponse;
   },
 
-  // Stop impersonation and restore admin session
   stopImpersonation: async (): Promise<void> => {
     const response = await fetch('/api/auth/admin/stop-impersonate', {
       method: 'POST',
@@ -238,7 +222,6 @@ export const authApi = {
     }
   },
 
-  // Admin users list
   getUsersList: async (): Promise<any> => {
     const response = await fetch('/api/admin/users', {
       method: 'GET',
@@ -259,7 +242,6 @@ export const authApi = {
     return await response.json();
   },
 
-  // Logout
   logout: async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/logout`, {
@@ -281,19 +263,16 @@ export const authApi = {
             errorMessage = errorData.error;
           }
         } catch (e) {
-          // If JSON parsing fails, try to get text
           try {
             const errorText = await response.text();
             if (errorText) {
               errorMessage = errorText;
             }
           } catch (textError) {
-            // Fallback to status text
             errorMessage = response.statusText || 'Logout failed';
           }
         }
 
-        // Create error object with status code
         const error = new Error(errorMessage);
         (error as any).status = response.status;
         throw error;
@@ -306,7 +285,6 @@ export const authApi = {
     }
   },
 
-  // Forgot Password - Send reset code to email
   forgotPassword: async (email: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
@@ -333,7 +311,6 @@ export const authApi = {
     }
   },
 
-  // Reset Password - Set new password with code
   resetPassword: async (resetData: ResetPasswordRequest) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
@@ -360,7 +337,6 @@ export const authApi = {
     }
   },
 
-  // Verify Email - Verify email after registration
   verifyEmail: async (verifyData: VerifyEmailRequest) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/verify-email`, {
@@ -387,7 +363,6 @@ export const authApi = {
     }
   },
 
-  // Resend Verification - Resend verification code
   resendVerification: async (email: string) => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/resend-verification`, {
@@ -414,7 +389,74 @@ export const authApi = {
     }
   },
 
-  // Change email - Step 1
+  ssoInitiateCheck: async (
+    redirectUri: string,
+    service?: string,
+    accessToken?: string
+  ): Promise<SSOInitiateCheckResponse> => {
+    const url = new URL(
+      `${API_BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.SSO_INITIATE_CHECK}`
+    );
+    url.searchParams.set('redirect_uri', redirectUri);
+    if (service) {
+      url.searchParams.set('service', service);
+    }
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json'
+    };
+
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers,
+      cache: 'no-cache'
+    });
+
+    const data = (await response.json()) as SSOInitiateCheckResponse;
+
+    if (!response.ok) {
+      const error = new Error(data?.message || 'SSO initiate check failed');
+      (error as any).status = response.status;
+      throw error;
+    }
+
+    return data;
+  },
+
+  ssoExchange: async (
+    code: string,
+    redirectUri: string
+  ): Promise<SSOExchangeResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.SSO_EXCHANGE}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code,
+          redirect_uri: redirectUri
+        }),
+        cache: 'no-cache'
+      }
+    );
+
+    const data = (await response.json()) as SSOExchangeResponse;
+
+    if (!response.ok) {
+      const error = new Error(data?.message || 'SSO exchange failed');
+      (error as any).status = response.status;
+      throw error;
+    }
+
+    return data;
+  },
+
   changeEmail: async (newEmail: string): Promise<void> => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/change-email`, {
@@ -456,7 +498,6 @@ export const authApi = {
     }
   },
 
-  // Confirm email change - Step 2
   confirmEmailChange: async (email: string, code: string): Promise<void> => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/confirm-email-change`, {

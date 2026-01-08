@@ -1,5 +1,3 @@
-// User Profile Types
-
 export interface UserProfile {
   id: number;
   uuid: string;
