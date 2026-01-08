@@ -47,6 +47,39 @@ export const getExternalServiceBaseUrl = (hostname?: string): string => {
 };
 
 /**
+ * Validate redirect_uri - check if it points to internal routes
+ * Internal routes should not be used as redirect_uri
+ */
+const validateRedirectUri = (redirectUri: string, currentOrigin: string): { valid: boolean; error?: string } => {
+  const internalRoutes = ['/login', '/signup', '/auth/callback', '/sso/initiate', '/auth/sso/initiate', '/dashboard'];
+  
+  try {
+    const url = new URL(redirectUri);
+    // Check if redirect_uri points to current domain
+    if (url.origin === currentOrigin) {
+      // Check if it's an internal route
+      if (internalRoutes.some(route => url.pathname === route || url.pathname.startsWith(route + '/'))) {
+        return {
+          valid: false,
+          error: `redirect_uri не може вказувати на внутрішні маршрути (${url.pathname}). Використовуйте зовнішній сервіс або /callback`
+        };
+      }
+    }
+    return { valid: true };
+  } catch {
+    // Relative path - check if it's internal route
+    const path = redirectUri.startsWith('/') ? redirectUri : `/${redirectUri}`;
+    if (internalRoutes.some(route => path === route || path.startsWith(route + '/'))) {
+      return {
+        valid: false,
+        error: `redirect_uri не може вказувати на внутрішні маршрути (${path}). Використовуйте зовнішній сервіс або /callback`
+      };
+    }
+    return { valid: true };
+  }
+};
+
+/**
  * Normalize redirect_uri - universal solution that works for all cases:
  * 1. If redirect_uri is localhost - replace with current domain
  * 2. If redirect_uri is relative path - use current domain
@@ -78,6 +111,13 @@ export const normalizeRedirectUri = (redirectUri: string, requestOrigin?: string
     isClient: typeof window !== 'undefined',
     windowOrigin: typeof window !== 'undefined' ? window.location.origin : 'N/A'
   });
+
+  // Validate redirect_uri before normalization
+  const validation = validateRedirectUri(redirectUri, currentOrigin);
+  if (!validation.valid) {
+    console.error(`${logPrefix} ❌ Validation failed:`, validation.error);
+    throw new Error(validation.error || 'Invalid redirect_uri');
+  }
 
   try {
     // Try to parse as absolute URL

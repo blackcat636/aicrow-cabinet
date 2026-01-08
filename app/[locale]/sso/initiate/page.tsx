@@ -59,10 +59,10 @@ export default function SSOInitiatePage() {
         original: originalRedirectUri,
         normalized: redirectUri
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('[SSO Initiate Page] Failed to normalize redirect_uri:', error);
       setStatus('error');
-      setMessage('Невірний формат redirect_uri');
+      setMessage(error?.message || 'Невірний формат redirect_uri');
       return;
     }
 

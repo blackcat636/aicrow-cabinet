@@ -45,12 +45,22 @@ export async function GET(request: NextRequest) {
 
     // Normalize redirect_uri - replace localhost with correct environment URL
     const originalRedirectUri = redirectUri;
-    redirectUri = normalizeRedirectUri(redirectUri, requestOrigin);
-    
-    console.log(`${logPrefix} Redirect URI normalized:`, {
-      original: originalRedirectUri,
-      normalized: redirectUri
-    });
+    try {
+      redirectUri = normalizeRedirectUri(redirectUri, requestOrigin);
+      console.log(`${logPrefix} Redirect URI normalized:`, {
+        original: originalRedirectUri,
+        normalized: redirectUri
+      });
+    } catch (error: any) {
+      console.error(`${logPrefix} Failed to normalize redirect_uri:`, error);
+      return NextResponse.json(
+        { 
+          error: error?.message || 'Invalid redirect_uri',
+          message: error?.message || 'redirect_uri не може вказувати на внутрішні маршрути'
+        },
+        { status: 400 }
+      );
+    }
 
     const { accessToken } = getTokens(request);
     
