@@ -7,30 +7,43 @@ export type SiteConfig = typeof siteConfig;
  */
 export const getExternalServiceBaseUrl = (hostname?: string): string => {
   // Get hostname from parameter or window
-  const currentHostname = hostname || 
+  const currentHostname =
+    hostname ||
     (typeof window !== 'undefined' ? window.location.hostname : undefined);
-  
+
   if (currentHostname) {
     // Development environments
-    if (currentHostname.includes('localhost') || currentHostname.includes('127.0.0.1')) {
-      return process.env.NEXT_PUBLIC_EXTERNAL_SERVICE_URL_DEV || 'http://localhost:3000';
+    if (
+      currentHostname.includes('localhost') ||
+      currentHostname.includes('127.0.0.1')
+    ) {
+      return (
+        process.env.NEXT_PUBLIC_EXTERNAL_SERVICE_URL_DEV ||
+        'http://localhost:3000'
+      );
     }
-    
+
     // Develop/staging environments (Cloudflare Pages)
-    if (currentHostname.includes('develop.') || currentHostname.includes('staging.')) {
+    if (
+      currentHostname.includes('develop.') ||
+      currentHostname.includes('staging.')
+    ) {
       // For develop branch, use the same domain but different subdomain if needed
       // Or use the configured staging URL
       const stagingUrl = process.env.NEXT_PUBLIC_EXTERNAL_SERVICE_URL_STAGING;
       if (stagingUrl) {
         return stagingUrl;
       }
-      // Auto-detect: if we're on develop.aicrow-cabinet.pages.dev, 
+      // Auto-detect: if we're on develop.aicrow-cabinet.pages.dev,
       // external service might be on the same domain
       return `https://${currentHostname}`;
     }
-    
+
     // Production environment
-    if (currentHostname.includes('pages.dev') || currentHostname.includes('aicrow-cabinet')) {
+    if (
+      currentHostname.includes('pages.dev') ||
+      currentHostname.includes('aicrow-cabinet')
+    ) {
       const prodUrl = process.env.NEXT_PUBLIC_EXTERNAL_SERVICE_URL_PROD;
       if (prodUrl) {
         return prodUrl;
@@ -39,11 +52,13 @@ export const getExternalServiceBaseUrl = (hostname?: string): string => {
       return 'https://aicrow-cabinet.pages.dev';
     }
   }
-  
+
   // Server-side fallback - use environment variables
-  return process.env.NEXT_PUBLIC_EXTERNAL_SERVICE_URL || 
-         process.env.NEXT_PUBLIC_EXTERNAL_SERVICE_URL_PROD || 
-         'https://aicrow-cabinet.pages.dev';
+  return (
+    process.env.NEXT_PUBLIC_EXTERNAL_SERVICE_URL ||
+    process.env.NEXT_PUBLIC_EXTERNAL_SERVICE_URL_PROD ||
+    'https://aicrow-cabinet.pages.dev'
+  );
 };
 
 /**
@@ -55,18 +70,29 @@ const validateRedirectUri = (
   redirectUri: string,
   currentOrigin: string
 ): { valid: boolean; error?: string } => {
-  const internalRoutes = ['/login', '/signup', '/auth/callback', '/sso/initiate', '/auth/sso/initiate', '/dashboard'];
+  const internalRoutes = [
+    '/login',
+    '/signup',
+    '/auth/callback',
+    '/sso/initiate',
+    '/auth/sso/initiate',
+    '/dashboard'
+  ];
   const logPrefix = '[validateRedirectUri]';
   const allowInternalRedirects =
     process.env.NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS === 'true' ||
     (currentOrigin?.includes('develop.aicrow-cabinet.pages.dev') ?? false);
-  
+
   try {
     const url = new URL(redirectUri);
     const pathname = url.pathname;
-    
+
     // Check if it's an internal route (regardless of domain)
-    if (internalRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
+    if (
+      internalRoutes.some(
+        (route) => pathname === route || pathname.startsWith(route + '/')
+      )
+    ) {
       console.error(`${logPrefix} ❌ Internal route detected:`, {
         pathname,
         hostname: url.hostname,
@@ -82,11 +108,12 @@ const validateRedirectUri = (
       }
 
       // Provide more specific error message
-      const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+      const isLocalhost =
+        url.hostname === 'localhost' || url.hostname === '127.0.0.1';
       const domainInfo = isLocalhost
         ? ` (ви використовуєте localhost, але проблема не в цьому - проблема в тому, що ${pathname} є внутрішнім маршрутом)`
         : '';
-      
+
       return {
         valid: false,
         error:
@@ -96,18 +123,29 @@ const validateRedirectUri = (
           `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
       };
     }
-    
+
     // Check if redirect_uri points to current domain (after normalization would happen)
-    if (url.origin === currentOrigin || url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
+    if (
+      url.origin === currentOrigin ||
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1'
+    ) {
       // If it's localhost, it will be normalized to currentOrigin, so check pathname
-      if (internalRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
-        console.error(`${logPrefix} ❌ Internal route on localhost/current domain:`, {
-          pathname,
-          hostname: url.hostname,
-          currentOrigin,
-          fullUrl: redirectUri,
-          allowInternalRedirects
-        });
+      if (
+        internalRoutes.some(
+          (route) => pathname === route || pathname.startsWith(route + '/')
+        )
+      ) {
+        console.error(
+          `${logPrefix} ❌ Internal route on localhost/current domain:`,
+          {
+            pathname,
+            hostname: url.hostname,
+            currentOrigin,
+            fullUrl: redirectUri,
+            allowInternalRedirects
+          }
+        );
 
         if (allowInternalRedirects) {
           console.warn(
@@ -115,12 +153,13 @@ const validateRedirectUri = (
           );
           return { valid: true };
         }
-        
-        const isLocalhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+
+        const isLocalhost =
+          url.hostname === 'localhost' || url.hostname === '127.0.0.1';
         const domainInfo = isLocalhost
           ? ` (ви використовуєте localhost, але проблема не в цьому - проблема в тому, що ${pathname} є внутрішнім маршрутом)`
           : '';
-        
+
         return {
           valid: false,
           error:
@@ -131,13 +170,17 @@ const validateRedirectUri = (
         };
       }
     }
-    
+
     return { valid: true };
   } catch {
     // Relative path - check if it's internal route
     const path = redirectUri.startsWith('/') ? redirectUri : `/${redirectUri}`;
-    
-    if (internalRoutes.some(route => path === route || path.startsWith(route + '/'))) {
+
+    if (
+      internalRoutes.some(
+        (route) => path === route || path.startsWith(route + '/')
+      )
+    ) {
       console.error(`${logPrefix} ❌ Internal route in relative path:`, {
         path,
         originalRedirectUri: redirectUri,
@@ -160,7 +203,7 @@ const validateRedirectUri = (
           `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
       };
     }
-    
+
     return { valid: true };
   }
 };
@@ -170,21 +213,25 @@ const validateRedirectUri = (
  * 1. If redirect_uri is localhost - replace with current domain
  * 2. If redirect_uri is relative path - use current domain
  * 3. If redirect_uri is absolute URL from different domain - use as is
- * 
+ *
  * This makes it work universally across all environments without configuration
  */
-export const normalizeRedirectUri = (redirectUri: string, requestOrigin?: string): string => {
+export const normalizeRedirectUri = (
+  redirectUri: string,
+  requestOrigin?: string
+): string => {
   const logPrefix = '[normalizeRedirectUri]';
-  
+
   // Get current origin (where the request is coming from)
   let currentOrigin: string;
-  
+
   if (requestOrigin) {
     try {
       const originUrl = new URL(requestOrigin);
       currentOrigin = originUrl.origin;
     } catch {
-      currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
+      currentOrigin =
+        typeof window !== 'undefined' ? window.location.origin : '';
     }
   } else {
     currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
@@ -201,15 +248,16 @@ export const normalizeRedirectUri = (redirectUri: string, requestOrigin?: string
   try {
     // Try to parse as absolute URL
     const url = new URL(redirectUri);
-    
-    // If it's localhost, replace with current domain
-    if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
-      // Preserve path, query, and hash from original redirect_uri
-      const path = url.pathname + url.search + url.hash;
-      const normalized = `${currentOrigin}${path}`;
-      return normalized;
+
+    const isLocalhost =
+      url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+
+    // If absolute URL is explicitly provided (even localhost with a different port),
+    // keep it as-is to respect external dev callback hosts.
+    if (isLocalhost) {
+      return url.toString();
     }
-    
+
     // If it's already a valid absolute URL from different domain, use as is
     return url.toString();
   } catch (error) {

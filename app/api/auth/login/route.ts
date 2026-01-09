@@ -14,6 +14,16 @@ export async function POST(request: NextRequest) {
     const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
     const service = request.nextUrl.searchParams.get('service');
 
+    console.info(
+      `${logPrefix} Incoming`,
+      JSON.stringify({
+        redirectUri,
+        service,
+        hasBody: Boolean(body),
+        email: body?.email ?? null
+      })
+    );
+
     const url = new URL(`${API_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`);
     if (redirectUri) {
       url.searchParams.set('redirect_uri', redirectUri);
@@ -21,6 +31,13 @@ export async function POST(request: NextRequest) {
     if (service) {
       url.searchParams.set('service', service);
     }
+
+    console.info(
+      `${logPrefix} Forwarding to backend`,
+      JSON.stringify({
+        url: url.toString()
+      })
+    );
 
     const response = await fetch(url.toString(), {
       method: 'POST',
@@ -34,12 +51,29 @@ export async function POST(request: NextRequest) {
     // Handle backend redirect responses explicitly (e.g., SSO flow)
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location');
+      console.info(
+        `${logPrefix} Backend redirect response`,
+        JSON.stringify({
+          status: response.status,
+          location
+        })
+      );
       if (location) {
         return NextResponse.redirect(location, { status: response.status });
       }
     }
 
     const data = await response.json();
+
+    console.info(
+      `${logPrefix} Backend JSON response`,
+      JSON.stringify({
+        status: response.status,
+        dataStatus: data?.status,
+        hasRedirectUrl: Boolean(data?.data?.redirectUrl),
+        hasUser: Boolean(data?.data?.user)
+      })
+    );
 
     if (!response.ok) {
       console.error(`${logPrefix} Login failed:`, data.message);

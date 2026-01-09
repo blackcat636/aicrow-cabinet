@@ -25,6 +25,16 @@ export async function GET(request: NextRequest) {
     const service = request.nextUrl.searchParams.get('service');
     const requestOrigin = request.headers.get('origin') || request.url;
     const referer = request.headers.get('referer');
+
+    console.info(
+      `${logPrefix} Incoming request`,
+      JSON.stringify({
+        redirectUri,
+        service,
+        requestOrigin,
+        referer
+      })
+    );
     
     if (!redirectUri) {
       console.error(`${logPrefix} Missing redirect_uri parameter`);
@@ -67,12 +77,30 @@ export async function GET(request: NextRequest) {
       headers.Authorization = `Bearer ${accessToken}`;
     }
 
+    console.info(
+      `${logPrefix} Forwarding to backend`,
+      JSON.stringify({
+        url: url.toString(),
+        hasAccessToken: Boolean(accessToken)
+      })
+    );
+
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers
     });
 
     const data = await response.json();
+
+    console.info(
+      `${logPrefix} Backend response`,
+      JSON.stringify({
+        status: response.status,
+        dataStatus: data?.status,
+        hasLoginUrl: Boolean(data?.data?.loginUrl),
+        hasRedirectUrl: Boolean(data?.data?.redirectUrl)
+      })
+    );
     
     // Normalize loginUrl - replace backend URL with frontend URL
     // Backend might return loginUrl pointing to backend, but we need frontend URL

@@ -61,6 +61,14 @@ export default function SSOInitiatePage() {
       return;
     }
 
+    // Debug log to track normalized params (client-side only)
+    // Note: console is acceptable here as a temporary diagnostic tool.
+    console.info('[SSO Initiate Page] Params', {
+      originalRedirectUri,
+      normalizedRedirectUri: redirectUri,
+      service
+    });
+
     const initiate = async () => {
       try {
         const params = new URLSearchParams();
@@ -76,6 +84,12 @@ export default function SSOInitiatePage() {
         });
 
         const data = await res.json();
+
+        console.info('[SSO Initiate Page] initiate-check response', {
+          status: data?.status,
+          hasRedirectUrl: Boolean(data?.data?.redirectUrl),
+          hasLoginUrl: Boolean(data?.data?.loginUrl)
+        });
 
         if (data?.status === 200 && data?.data?.redirectUrl) {
           setStatus('redirecting');
