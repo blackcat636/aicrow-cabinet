@@ -55,68 +55,32 @@ export default function SSOInitiatePage() {
     const originalRedirectUri = redirectUri;
     try {
       redirectUri = normalizeRedirectUri(redirectUri);
-      console.log('[SSO Initiate Page] Redirect URI normalized in component:', {
-        original: originalRedirectUri,
-        normalized: redirectUri
-      });
     } catch (error: any) {
-      console.error('[SSO Initiate Page] Failed to normalize redirect_uri:', error);
       setStatus('error');
       setMessage(error?.message || 'Невірний формат redirect_uri');
       return;
     }
 
     const initiate = async () => {
-      const logPrefix = '[SSO Initiate Page]';
-      
       try {
-        console.log(`${logPrefix} Starting SSO flow:`, {
-          redirectUri: redirectUri,
-          service: service,
-          currentUrl: window.location.href
-        });
-
         const params = new URLSearchParams();
         params.set('redirect_uri', redirectUri);
         if (service) {
           params.set('service', service);
         }
 
-        const apiUrl = `/api/auth/sso/initiate-check?${params.toString()}`;
-        console.log(`${logPrefix} Calling API:`, apiUrl);
-
-        const res = await fetch(apiUrl, {
+        const res = await fetch(`/api/auth/sso/initiate-check?${params.toString()}`, {
           method: 'GET',
           cache: 'no-store',
           credentials: 'include'
         });
-        
-        console.log(`${logPrefix} API response status:`, res.status);
-        console.log(`${logPrefix} API response headers:`, {
-          contentType: res.headers.get('content-type'),
-          location: res.headers.get('location')
-        });
-        
+
         const data = await res.json();
-        console.log(`${logPrefix} 📦 API response data (full):`, JSON.stringify(data, null, 2));
-        console.log(`${logPrefix} API response data (summary):`, {
-          status: data?.status,
-          hasRedirectUrl: !!data?.data?.redirectUrl,
-          hasLoginUrl: !!data?.data?.loginUrl,
-          redirectUrl: data?.data?.redirectUrl,
-          loginUrl: data?.data?.loginUrl,
-          hasCode: !!data?.data?.code,
-          hasState: !!data?.data?.state,
-          message: data?.message,
-          error: data?.error
-        });
 
         if (data?.status === 200 && data?.data?.redirectUrl) {
-          console.log(`${logPrefix} ✅ User authenticated, redirecting to:`, data.data.redirectUrl);
-          console.log(`${logPrefix} Full redirect data:`, JSON.stringify(data, null, 2));
           setStatus('redirecting');
           setMessage('Перенаправлення до сервісу...');
-          // Small delay to ensure logs are visible
+          // Small delay to ensure the user sees the status before redirect
           setTimeout(() => {
             window.location.href = data.data.redirectUrl;
           }, 100);
@@ -124,26 +88,18 @@ export default function SSOInitiatePage() {
         }
 
         if (data?.status === 401 && data?.data?.loginUrl) {
-          console.log(`${logPrefix} ❌ User not authenticated, redirecting to login:`, data.data.loginUrl);
-          console.log(`${logPrefix} Full login URL data:`, JSON.stringify(data, null, 2));
           setStatus('redirecting');
           setMessage('Необхідна автентифікація. Перенаправлення на логін...');
-          // Small delay to ensure logs are visible
+          // Small delay to ensure the user sees the status before redirect
           setTimeout(() => {
             window.location.href = data.data.loginUrl;
           }, 100);
           return;
         }
 
-        console.error(`${logPrefix} ⚠️ Unexpected response format:`, {
-          status: data?.status,
-          data: data,
-          fullResponse: JSON.stringify(data, null, 2)
-        });
         setStatus('error');
         setMessage(data?.message || 'Не вдалося ініціювати SSO');
       } catch (error) {
-        console.error(`${logPrefix} Error:`, error);
         setStatus('error');
         setMessage('Помилка під час ініціації SSO');
       }

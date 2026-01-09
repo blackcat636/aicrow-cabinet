@@ -21,40 +21,13 @@ export default function LoginPage() {
 
   // Handle SSO callback - if code and state are present, this means redirect_uri was wrong
   useEffect(() => {
-    const logPrefix = '[Login Page]';
-    
-    console.log(`${logPrefix} Page loaded with params:`, {
-      hasRedirectUri: !!redirectUri,
-      redirectUri: redirectUri,
-      service: service,
-      hasCode: !!code,
-      hasState: !!state,
-      code: code ? code.substring(0, 20) + '...' : null,
-      state: state ? state.substring(0, 20) + '...' : null,
-      allParams: Object.fromEntries(searchParams?.entries() || [])
-    });
-
     if (code && state) {
-      console.warn(`${logPrefix} ⚠️ SSO callback detected on login page!`, {
-        code: code.substring(0, 20) + '...',
-        state: state.substring(0, 20) + '...',
-        redirectUri: redirectUri,
-        message: 'This means redirect_uri was pointing to /login instead of external service',
-        currentUrl: typeof window !== 'undefined' ? window.location.href : 'N/A'
-      });
-      
       setSsoError(
         'Помилка: redirect_uri вказує на сторінку логіну замість зовнішнього сервісу. ' +
         'Будь ласка, використовуйте правильний redirect_uri (наприклад, /callback або URL зовнішнього сервісу).'
       );
-    } else if (redirectUri || service) {
-      console.log(`${logPrefix} SSO flow initiated:`, {
-        redirectUri: redirectUri,
-        service: service,
-        isSSOFlow: true
-      });
     }
-  }, [code, state, redirectUri, service, searchParams]);
+  }, [code, state, redirectUri, service]);
 
   return (
     <div className="min-h-screen relative">

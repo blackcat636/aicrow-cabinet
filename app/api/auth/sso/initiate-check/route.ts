@@ -26,15 +26,6 @@ export async function GET(request: NextRequest) {
     const requestOrigin = request.headers.get('origin') || request.url;
     const referer = request.headers.get('referer');
     
-    console.log(`${logPrefix} Request received:`, {
-      redirectUri: redirectUri,
-      service: service,
-      origin: requestOrigin,
-      referer: referer,
-      url: request.url,
-      method: request.method
-    });
-
     if (!redirectUri) {
       console.error(`${logPrefix} Missing redirect_uri parameter`);
       return NextResponse.json(
@@ -47,10 +38,6 @@ export async function GET(request: NextRequest) {
     const originalRedirectUri = redirectUri;
     try {
       redirectUri = normalizeRedirectUri(redirectUri, requestOrigin);
-      console.log(`${logPrefix} Redirect URI normalized:`, {
-        original: originalRedirectUri,
-        normalized: redirectUri
-      });
     } catch (error: any) {
       console.error(`${logPrefix} Failed to normalize redirect_uri:`, error);
       return NextResponse.json(
@@ -64,11 +51,6 @@ export async function GET(request: NextRequest) {
 
     const { accessToken } = getTokens(request);
     
-    console.log(`${logPrefix} Token check:`, {
-      hasAccessToken: !!accessToken,
-      tokenPreview: accessToken ? `${accessToken.substring(0, 20)}...` : 'none'
-    });
-
     const url = new URL(
       `${API_URL}${API_CONFIG.ENDPOINTS.AUTH.SSO_INITIATE_CHECK}`
     );
@@ -85,11 +67,6 @@ export async function GET(request: NextRequest) {
       headers.Authorization = `Bearer ${accessToken}`;
     }
 
-    console.log(`${logPrefix} Calling backend:`, {
-      url: url.toString(),
-      hasAuth: !!accessToken
-    });
-
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers
@@ -97,23 +74,6 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
     
-    console.log(`${logPrefix} 📦 Backend response (raw, full):`, JSON.stringify(data, null, 2));
-    console.log(`${logPrefix} Backend response (raw, summary):`, {
-      status: response.status,
-      httpStatus: response.status,
-      hasRedirectUrl: !!data?.data?.redirectUrl,
-      hasLoginUrl: !!data?.data?.loginUrl,
-      loginUrl: data?.data?.loginUrl,
-      redirectUrl: data?.data?.redirectUrl,
-      hasCode: !!data?.data?.code,
-      hasState: !!data?.data?.state,
-      code: data?.data?.code ? data.data.code.substring(0, 20) + '...' : null,
-      state: data?.data?.state ? data.data.state.substring(0, 20) + '...' : null,
-      message: data?.message,
-      error: data?.error,
-      fullData: data
-    });
-
     // Normalize loginUrl - replace backend URL with frontend URL
     // Backend might return loginUrl pointing to backend, but we need frontend URL
     if (data?.data?.loginUrl) {
@@ -141,11 +101,6 @@ export async function GET(request: NextRequest) {
           
           const path = loginUrlObj.pathname + loginUrlObj.search + loginUrlObj.hash;
           data.data.loginUrl = `${frontendOrigin}${path}`;
-          console.log(`${logPrefix} LoginUrl normalized:`, {
-            original: originalLoginUrl,
-            normalized: data.data.loginUrl,
-            frontendOrigin: frontendOrigin
-          });
         }
       } catch (error) {
         console.warn(`${logPrefix} Failed to normalize loginUrl:`, error);
@@ -164,19 +119,6 @@ export async function GET(request: NextRequest) {
         // Not a URL, skip
       }
     }
-
-    console.log(`${logPrefix} ✅ Backend response (normalized, full):`, JSON.stringify(data, null, 2));
-    console.log(`${logPrefix} Backend response (normalized, summary):`, {
-      status: response.status,
-      hasRedirectUrl: !!data?.data?.redirectUrl,
-      hasLoginUrl: !!data?.data?.loginUrl,
-      loginUrl: data?.data?.loginUrl,
-      redirectUrl: data?.data?.redirectUrl,
-      hasCode: !!data?.data?.code,
-      hasState: !!data?.data?.state,
-      message: data?.message,
-      error: data?.error
-    });
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {

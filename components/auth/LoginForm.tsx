@@ -58,37 +58,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const logPrefix = '[LoginForm]';
-    console.log(`${logPrefix} Form submitted:`, {
-      hasEmail: !!formData.email,
-      email: formData.email ? `${formData.email.substring(0, 3)}***` : 'none',
-      hasPassword: !!formData.password,
-      hasRedirectUri: !!redirectUri,
-      redirectUri: redirectUri,
-      service: service,
-      isSSOFlow: !!(redirectUri || service)
-    });
-    
+
     if (!validateForm()) {
-      console.warn(`${logPrefix} Form validation failed`);
       return;
     }
 
     try {
       clearError();
-      console.log(`${logPrefix} Calling login function...`);
       await login({
         ...(formData as LoginRequest),
         redirectUri,
         service
       });
-      console.log(`${logPrefix} Login successful`);
       if (isModal && onClose) {
         onClose();
       }
     } catch (err: any) {
-      console.error(`${logPrefix} Login error:`, err);
+      // Error state is handled inside the auth context
     }
   };
 

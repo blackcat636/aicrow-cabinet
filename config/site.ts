@@ -61,20 +61,9 @@ const validateRedirectUri = (
     process.env.NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS === 'true' ||
     (currentOrigin?.includes('develop.aicrow-cabinet.pages.dev') ?? false);
   
-  console.log(`${logPrefix} Validating redirect_uri:`, {
-    redirectUri,
-    currentOrigin
-  });
-  
   try {
     const url = new URL(redirectUri);
     const pathname = url.pathname;
-    
-    console.log(`${logPrefix} Parsed URL:`, {
-      hostname: url.hostname,
-      pathname: pathname,
-      origin: url.origin
-    });
     
     // Check if it's an internal route (regardless of domain)
     if (internalRoutes.some(route => pathname === route || pathname.startsWith(route + '/'))) {
@@ -143,12 +132,10 @@ const validateRedirectUri = (
       }
     }
     
-    console.log(`${logPrefix} ✅ Validation passed`);
     return { valid: true };
   } catch {
     // Relative path - check if it's internal route
     const path = redirectUri.startsWith('/') ? redirectUri : `/${redirectUri}`;
-    console.log(`${logPrefix} Relative path detected:`, path);
     
     if (internalRoutes.some(route => path === route || path.startsWith(route + '/'))) {
       console.error(`${logPrefix} ❌ Internal route in relative path:`, {
@@ -174,7 +161,6 @@ const validateRedirectUri = (
       };
     }
     
-    console.log(`${logPrefix} ✅ Validation passed for relative path`);
     return { valid: true };
   }
 };
@@ -204,14 +190,6 @@ export const normalizeRedirectUri = (redirectUri: string, requestOrigin?: string
     currentOrigin = typeof window !== 'undefined' ? window.location.origin : '';
   }
 
-  console.log(`${logPrefix} 📥 Input:`, {
-    redirectUri,
-    requestOrigin,
-    currentOrigin,
-    isClient: typeof window !== 'undefined',
-    windowOrigin: typeof window !== 'undefined' ? window.location.origin : 'N/A'
-  });
-
   // Validate redirect_uri BEFORE normalization
   // This catches localhost/internal routes early
   const validation = validateRedirectUri(redirectUri, currentOrigin);
@@ -224,46 +202,20 @@ export const normalizeRedirectUri = (redirectUri: string, requestOrigin?: string
     // Try to parse as absolute URL
     const url = new URL(redirectUri);
     
-    console.log(`${logPrefix} Parsed URL:`, {
-      hostname: url.hostname,
-      pathname: url.pathname,
-      search: url.search,
-      hash: url.hash,
-      origin: url.origin
-    });
-    
     // If it's localhost, replace with current domain
     if (url.hostname === 'localhost' || url.hostname === '127.0.0.1') {
       // Preserve path, query, and hash from original redirect_uri
       const path = url.pathname + url.search + url.hash;
       const normalized = `${currentOrigin}${path}`;
-      console.log(`${logPrefix} ✅ Localhost detected, normalized:`, {
-        original: redirectUri,
-        normalized,
-        path: path,
-        currentOrigin: currentOrigin
-      });
       return normalized;
     }
     
     // If it's already a valid absolute URL from different domain, use as is
-    console.log(`${logPrefix} ✅ Absolute URL from different domain, using as is:`, {
-      original: redirectUri,
-      hostname: url.hostname,
-      origin: url.origin
-    });
     return url.toString();
   } catch (error) {
     // If it's a relative path, prepend current origin
     const path = redirectUri.startsWith('/') ? redirectUri : `/${redirectUri}`;
     const normalized = `${currentOrigin}${path}`;
-    console.log(`${logPrefix} ✅ Relative path, normalized:`, {
-      original: redirectUri,
-      normalized,
-      path: path,
-      currentOrigin: currentOrigin,
-      parseError: error instanceof Error ? error.message : 'Unknown error'
-    });
     return normalized;
   }
 };
