@@ -9,10 +9,30 @@ const API_URL = API_CONFIG.BASE_URL;
 export async function POST(request: NextRequest) {
   const logPrefix = '[Login API]';
 
+  const getFrontendOrigin = (req: NextRequest, requestOrigin?: string): string => {
+    // Prefer explicit Origin header, fallback to request URL
+    if (requestOrigin) {
+      try {
+        const originUrl = new URL(requestOrigin);
+        return originUrl.origin;
+      } catch {
+        // ignore and fallback below
+      }
+    }
+    try {
+      const reqUrl = new URL(req.url);
+      return reqUrl.origin;
+    } catch {
+      return '';
+    }
+  };
+
   try {
     const body = await request.json();
     const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
     const service = request.nextUrl.searchParams.get('service');
+    const requestOrigin = request.headers.get('origin') || undefined;
+    const frontendOrigin = getFrontendOrigin(request, requestOrigin);
 
     console.info(
       `${logPrefix} Incoming`,
@@ -20,7 +40,9 @@ export async function POST(request: NextRequest) {
         redirectUri,
         service,
         hasBody: Boolean(body),
-        email: body?.email ?? null
+        email: body?.email ?? null,
+        requestOrigin,
+        frontendOrigin
       })
     );
 
@@ -59,7 +81,25 @@ export async function POST(request: NextRequest) {
         })
       );
       if (location) {
-        return NextResponse.redirect(location, { status: response.status });
+        let targetLocation = location;
+        try {
+          const locUrl = new URL(location);
+          // If backend redirects to its own (api) origin, rewrite to frontend origin
+          if (locUrl.origin === API_URL || locUrl.hostname.includes('api.')) {
+            const path = locUrl.pathname + locUrl.search + locUrl.hash;
+            targetLocation = `${frontendOrigin}${path}`;
+            console.info(
+              `${logPrefix} Rewriting backend Location to frontend origin`,
+              JSON.stringify({
+                original: location,
+                rewritten: targetLocation
+              })
+            );
+          }
+        } catch {
+          // keep original if parsing fails
+        }
+        return NextResponse.redirect(targetLocation, { status: response.status });
       }
     }
 
@@ -85,7 +125,24 @@ export async function POST(request: NextRequest) {
 
     // If backend returns redirectUrl in payload (SSO flow)
     if (data?.data?.redirectUrl) {
-      return NextResponse.redirect(data.data.redirectUrl, { status: 302 });
+      let targetLocation = data.data.redirectUrl;
+      try {
+        const locUrl = new URL(data.data.redirectUrl);
+        if (locUrl.origin === API_URL || locUrl.hostname.includes('api.')) {
+          const path = locUrl.pathname + locUrl.search + locUrl.hash;
+          targetLocation = `${frontendOrigin}${path}`;
+          console.info(
+            `${logPrefix} Rewriting payload redirectUrl to frontend origin`,
+            JSON.stringify({
+              original: data.data.redirectUrl,
+              rewritten: targetLocation
+            })
+          );
+        }
+      } catch {
+        // keep original if parsing fails
+      }
+      return NextResponse.redirect(targetLocation, { status: 302 });
     }
 
     if (data.status === 200 && data.data) {
