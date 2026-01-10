@@ -70,6 +70,8 @@ const validateRedirectUri = (
   redirectUri: string,
   currentOrigin: string
 ): { valid: boolean; error?: string } => {
+  // Вимога: дозволити використовувати будь-які внутрішні маршрути як redirect_uri.
+  // Тому список internalRoutes лишається для логів, але не блокує редірект.
   const internalRoutes = [
     '/login',
     '/signup',
@@ -79,49 +81,25 @@ const validateRedirectUri = (
     '/dashboard'
   ];
   const logPrefix = '[validateRedirectUri]';
-  const allowInternalRedirects =
-    process.env.NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS === 'true' ||
-    (currentOrigin?.includes('develop.aicrow-cabinet.pages.dev') ?? false);
+  // Дозволяємо внутрішні маршрути без умови
+  const allowInternalRedirects = true;
 
   try {
     const url = new URL(redirectUri);
     const pathname = url.pathname;
 
-    // Check if it's an internal route (regardless of domain)
+    // Check if it's an internal route (regardless of domain) — тепер дозволяємо
     if (
       internalRoutes.some(
         (route) => pathname === route || pathname.startsWith(route + '/')
       )
     ) {
-      console.error(`${logPrefix} ❌ Internal route detected:`, {
+      console.warn(`${logPrefix} ⚠️ Internal route detected but allowed:`, {
         pathname,
         hostname: url.hostname,
-        fullUrl: redirectUri,
-        allowInternalRedirects
+        fullUrl: redirectUri
       });
-
-      if (allowInternalRedirects) {
-        console.warn(
-          `${logPrefix} ⚠️ Internal redirect allowed by NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS. This is for testing only and should NOT be used in production.`
-        );
-        return { valid: true };
-      }
-
-      // Provide more specific error message
-      const isLocalhost =
-        url.hostname === 'localhost' || url.hostname === '127.0.0.1';
-      const domainInfo = isLocalhost
-        ? ` (ви використовуєте localhost, але проблема не в цьому - проблема в тому, що ${pathname} є внутрішнім маршрутом)`
-        : '';
-
-      return {
-        valid: false,
-        error:
-          `Невірний redirect_uri: ${pathname} є внутрішнім маршрутом і не може бути використаний як redirect_uri.${domainInfo} ` +
-          `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
-          `https://external-service.com/callback або /callback. ` +
-          `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
-      };
+      return { valid: true };
     }
 
     // Check if redirect_uri points to current domain (after normalization would happen)
@@ -130,50 +108,27 @@ const validateRedirectUri = (
       url.hostname === 'localhost' ||
       url.hostname === '127.0.0.1'
     ) {
-      // If it's localhost, it will be normalized to currentOrigin, so check pathname
       if (
         internalRoutes.some(
           (route) => pathname === route || pathname.startsWith(route + '/')
         )
       ) {
-        console.error(
-          `${logPrefix} ❌ Internal route on localhost/current domain:`,
+        console.warn(
+          `${logPrefix} ⚠️ Internal route on localhost/current domain allowed:`,
           {
             pathname,
             hostname: url.hostname,
             currentOrigin,
-            fullUrl: redirectUri,
-            allowInternalRedirects
+            fullUrl: redirectUri
           }
         );
-
-        if (allowInternalRedirects) {
-          console.warn(
-            `${logPrefix} ⚠️ Internal redirect allowed by NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS. This is for testing only and should NOT be used in production.`
-          );
-          return { valid: true };
-        }
-
-        const isLocalhost =
-          url.hostname === 'localhost' || url.hostname === '127.0.0.1';
-        const domainInfo = isLocalhost
-          ? ` (ви використовуєте localhost, але проблема не в цьому - проблема в тому, що ${pathname} є внутрішнім маршрутом)`
-          : '';
-
-        return {
-          valid: false,
-          error:
-            `Невірний redirect_uri: ${pathname} є внутрішнім маршрутом і не може бути використаний як redirect_uri.${domainInfo} ` +
-            `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
-            `https://external-service.com/callback або /callback. ` +
-            `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
-        };
+        return { valid: true };
       }
     }
 
     return { valid: true };
   } catch {
-    // Relative path - check if it's internal route
+    // Relative path - check if it's internal route (тепер дозволяємо)
     const path = redirectUri.startsWith('/') ? redirectUri : `/${redirectUri}`;
 
     if (
@@ -181,27 +136,11 @@ const validateRedirectUri = (
         (route) => path === route || path.startsWith(route + '/')
       )
     ) {
-      console.error(`${logPrefix} ❌ Internal route in relative path:`, {
+      console.warn(`${logPrefix} ⚠️ Internal route in relative path allowed:`, {
         path,
-        originalRedirectUri: redirectUri,
-        allowInternalRedirects
+        originalRedirectUri: redirectUri
       });
-
-      if (allowInternalRedirects) {
-        console.warn(
-          `${logPrefix} ⚠️ Internal redirect allowed by NEXT_PUBLIC_ALLOW_INTERNAL_REDIRECTS. This is for testing only and should NOT be used in production.`
-        );
-        return { valid: true };
-      }
-
-      return {
-        valid: false,
-        error:
-          `Невірний redirect_uri: ${path} є внутрішнім маршрутом і не може бути використаний як redirect_uri. ` +
-          `redirect_uri має вказувати на зовнішній сервіс (callback URL), наприклад: ` +
-          `https://external-service.com/callback або /callback. ` +
-          `Після логіну система робить redirect на redirect_uri з SSO кодом, тому він не може бути внутрішнім маршрутом (/login, /signup, /dashboard тощо).`
-      };
+      return { valid: true };
     }
 
     return { valid: true };
