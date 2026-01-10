@@ -99,7 +99,14 @@ export async function POST(request: NextRequest) {
         } catch {
           // keep original if parsing fails
         }
-        return NextResponse.redirect(targetLocation, { status: response.status });
+        // Return JSON instead of redirect to avoid CORS/opaqueredirect issues on fetch.
+        return NextResponse.json(
+          {
+            status: response.status,
+            data: { redirectUrl: targetLocation }
+          },
+          { status: 200 }
+        );
       }
     }
 
@@ -142,7 +149,14 @@ export async function POST(request: NextRequest) {
       } catch {
         // keep original if parsing fails
       }
-      return NextResponse.redirect(targetLocation, { status: 302 });
+      // Same approach: return JSON to let client navigate, avoiding cross-origin redirect in fetch.
+      return NextResponse.json(
+        {
+          status: 200,
+          data: { redirectUrl: targetLocation }
+        },
+        { status: 200 }
+      );
     }
 
     if (data.status === 200 && data.data) {

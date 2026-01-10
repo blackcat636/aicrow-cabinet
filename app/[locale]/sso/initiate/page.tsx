@@ -69,6 +69,18 @@ export default function SSOInitiatePage() {
       service
     });
 
+    const hasAccessTokenCookie =
+      typeof document !== 'undefined' &&
+      document.cookie
+        .split(';')
+        .some((cookie) => cookie.trim().startsWith('access_token='));
+
+    if (process.env.NODE_ENV !== 'production') {
+      console.info('[SSO Initiate Page] Cookie presence check', {
+        hasAccessTokenCookie
+      });
+    }
+
     const initiate = async () => {
       try {
         const params = new URLSearchParams();
@@ -82,6 +94,12 @@ export default function SSOInitiatePage() {
           cache: 'no-store',
           credentials: 'include'
         });
+
+        if (process.env.NODE_ENV !== 'production') {
+          console.info('[SSO Initiate Page] initiate-check HTTP response', {
+            status: res.status
+          });
+        }
 
         const data = await res.json();
 
