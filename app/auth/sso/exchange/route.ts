@@ -21,6 +21,7 @@ export async function OPTIONS(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const logPrefix = '[SSO Exchange API]';
   const origin = request.headers.get('origin');
   
   try {
@@ -28,7 +29,19 @@ export async function POST(request: NextRequest) {
     const code: string | undefined = body?.code;
     const redirectUri: string | undefined = body?.redirect_uri || body?.redirectUri;
 
+    console.log(`${logPrefix} Request received:`, {
+      hasCode: !!code,
+      codeLength: code?.length,
+      redirectUri,
+      origin,
+      bodyKeys: Object.keys(body)
+    });
+
     if (!code || !redirectUri) {
+      console.error(`${logPrefix} Missing required parameters:`, {
+        hasCode: !!code,
+        hasRedirectUri: !!redirectUri
+      });
       return NextResponse.json(
         { error: 'code and redirect_uri are required' },
         { 
@@ -41,21 +54,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const response = await fetch(
-      `${API_URL}${API_CONFIG.ENDPOINTS.AUTH.SSO_EXCHANGE}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          code,
-          redirect_uri: redirectUri
-        })
-      }
-    );
+    const backendUrl = `${API_URL}${API_CONFIG.ENDPOINTS.AUTH.SSO_EXCHANGE}`;
+    const requestBody = {
+      code,
+      redirect_uri: redirectUri
+    };
+
+    console.log(`${logPrefix} Calling backend:`, {
+      url: backendUrl,
+      requestBody: { ...requestBody, code: `${code.substring(0, 10)}...` }
+    });
+
+    const response = await fetch(backendUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(requestBody)
+    });
 
     const data = await response.json();
+
+    console.log(`${logPrefix} Backend response:`, {
+      status: response.status,
+      hasData: !!data,
+      error: data?.error,
+      message: data?.message
+    });
 
     return NextResponse.json(data, { 
       status: response.status,
@@ -64,9 +89,10 @@ export async function POST(request: NextRequest) {
         'Access-Control-Allow-Credentials': 'true',
       },
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error(`${logPrefix} Error:`, error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Internal server error', message: error?.message },
       { 
         status: 500,
         headers: {

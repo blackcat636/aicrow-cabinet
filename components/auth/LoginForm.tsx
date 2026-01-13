@@ -65,16 +65,24 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       clearError();
-      await login({
+      const loginCredentials = {
         ...(formData as LoginRequest),
         redirectUri,
         service
+      };
+      console.info('[LoginForm] Calling login with:', {
+        email: loginCredentials.email,
+        redirectUri: loginCredentials.redirectUri,
+        service: loginCredentials.service,
+        hasPassword: Boolean(loginCredentials.password)
       });
+      await login(loginCredentials);
       if (isModal && onClose) {
         onClose();
       }
     } catch (err: any) {
       // Error state is handled inside the auth context
+      console.error('[LoginForm] Login error:', err);
     }
   };
 

@@ -267,6 +267,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         loginUrl += `?${loginParams.toString()}`;
       }
 
+      console.info('[AuthContext] Login request:', {
+        loginUrl,
+        redirectUri: credentials.redirectUri,
+        service: credentials.service,
+        email: credentials.email
+      });
+
       const response = await fetch(loginUrl, {
         method: 'POST',
         headers: {
@@ -276,19 +283,34 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         cache: 'no-cache'
       });
 
+      console.info('[AuthContext] Login response:', {
+        status: response.status,
+        redirected: response.redirected,
+        redirectUrl: response.redirected ? response.url : null
+      });
+
       if (response.redirected && response.url) {
+        console.info('[AuthContext] Redirecting to:', response.url);
         window.location.href = response.url;
         return;
       }
 
       if (!response.ok) {
         const errorData = await response.json();
+        console.error('[AuthContext] Login failed:', errorData);
         throw new Error(errorData.error || 'Login failed');
       }
 
       const data = await response.json();
 
+      console.info('[AuthContext] Login response data:', {
+        hasRedirectUrl: Boolean(data?.data?.redirectUrl),
+        redirectUrl: data?.data?.redirectUrl,
+        hasUser: Boolean(data?.user)
+      });
+
       if (data?.data?.redirectUrl) {
+        console.info('[AuthContext] Redirecting to redirectUrl:', data.data.redirectUrl);
         window.location.href = data.data.redirectUrl;
         return;
       }
@@ -305,6 +327,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Login failed');
       }
     } catch (error: any) {
+      console.error('[AuthContext] Login error:', error);
       setError(error.message || 'Login failed');
       throw error;
     } finally {

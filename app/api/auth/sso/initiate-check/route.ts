@@ -109,6 +109,13 @@ export async function GET(request: NextRequest) {
         const loginUrlObj = new URL(data.data.loginUrl);
         const originalLoginUrl = data.data.loginUrl;
         
+        console.info(`${logPrefix} Processing loginUrl:`, {
+          original: originalLoginUrl,
+          origin: loginUrlObj.origin,
+          pathname: loginUrlObj.pathname,
+          search: loginUrlObj.search
+        });
+        
         // If loginUrl points to backend domain, replace with frontend domain
         if (loginUrlObj.origin === API_URL || loginUrlObj.hostname.includes('api.')) {
           // Get frontend origin from request
@@ -129,10 +136,20 @@ export async function GET(request: NextRequest) {
           
           const path = loginUrlObj.pathname + loginUrlObj.search + loginUrlObj.hash;
           data.data.loginUrl = `${frontendOrigin}${path}`;
+          
+          console.info(`${logPrefix} Normalized loginUrl:`, {
+            original: originalLoginUrl,
+            normalized: data.data.loginUrl,
+            frontendOrigin
+          });
+        } else {
+          console.info(`${logPrefix} loginUrl already points to frontend:`, originalLoginUrl);
         }
       } catch (error) {
         console.warn(`${logPrefix} Failed to normalize loginUrl:`, error);
       }
+    } else {
+      console.warn(`${logPrefix} No loginUrl in backend response`);
     }
 
     // Normalize redirectUrl as well (in case backend returns backend URL)

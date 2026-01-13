@@ -19,6 +19,17 @@ export default function LoginPage() {
   
   const [ssoError, setSsoError] = useState<string | null>(null);
 
+  // Log SSO parameters from URL
+  useEffect(() => {
+    console.info('[Login Page] SSO params from URL:', {
+      redirectUri,
+      service,
+      code: code ? `${code.substring(0, 10)}...` : null,
+      state: state ? `${state.substring(0, 10)}...` : null,
+      fullUrl: typeof window !== 'undefined' ? window.location.href : null
+    });
+  }, [redirectUri, service, code, state]);
+
   // Handle SSO callback - if code and state are present, this means redirect_uri was wrong
   useEffect(() => {
     if (code && state) {
