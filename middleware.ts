@@ -50,17 +50,39 @@ function createLocalizedUrl(
   locale: string,
   request: NextRequest
 ): URL {
+  // Preserve query parameters from original request
+  const originalUrl = new URL(request.url);
+  const searchParams = originalUrl.searchParams.toString();
+  
   if (
     locale === routing.defaultLocale &&
     routing.localePrefix === 'as-needed'
   ) {
-    return new URL(path, request.url);
+    const url = new URL(path, request.url);
+    if (searchParams) {
+      url.search = searchParams;
+    }
+    return url;
   }
-  return new URL(`/${locale}${path}`, request.url);
+  const url = new URL(`/${locale}${path}`, request.url);
+  if (searchParams) {
+    url.search = searchParams;
+  }
+  return url;
 }
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Log incoming request for SSO routes
+  if (pathname === '/auth/sso/initiate' || pathname === '/sso/initiate' || pathname.startsWith('/uk/auth/sso/initiate') || pathname.startsWith('/uk/sso/initiate')) {
+    console.info('[Middleware] SSO route incoming:', {
+      pathname,
+      searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
+      fullUrl: request.url,
+      hasRedirectUri: request.nextUrl.searchParams.has('redirect_uri')
+    });
+  }
 
   if (
     pathname.startsWith('/api/') ||
@@ -139,10 +161,24 @@ export async function middleware(request: NextRequest) {
       : routing.defaultLocale;
 
   if (!pathHasLocale && !pathname.startsWith('/api')) {
+    // Log SSO routes to debug query params
+    if (pathname === '/auth/sso/initiate' || pathname === '/sso/initiate') {
+      console.info('[Middleware] SSO route detected:', {
+        pathname,
+        preferredLocale,
+        queryParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
+        fullUrl: request.url
+      });
+    }
+    
     if (preferredLocale !== routing.defaultLocale) {
-      return NextResponse.redirect(
-        createLocalizedUrl(pathname, preferredLocale, request)
-      );
+      const localizedUrl = createLocalizedUrl(pathname, preferredLocale, request);
+      console.info('[Middleware] Redirecting to localized URL:', {
+        original: request.url,
+        localized: localizedUrl.toString(),
+        hasQueryParams: localizedUrl.search.length > 0
+      });
+      return NextResponse.redirect(localizedUrl);
     }
 
     const modifiedHeaders = new Headers(request.headers);
@@ -163,12 +199,24 @@ export async function middleware(request: NextRequest) {
       let redirectedLocale: string | null = null;
 
       if (location) {
-        redirectedPath = new URL(location, request.url).pathname;
+        const locationUrl = new URL(location, request.url);
+        redirectedPath = locationUrl.pathname;
         redirectedLocale = getLocaleFromPathname(redirectedPath);
 
+        // Preserve query params from original request
+        const originalSearchParams = request.nextUrl.searchParams.toString();
+        
         if (redirectedLocale && redirectedLocale !== routing.defaultLocale) {
           const normalizedPath = normalizePathname(redirectedPath);
-          return NextResponse.redirect(new URL(normalizedPath, request.url));
+          const finalUrl = new URL(normalizedPath, request.url);
+          if (originalSearchParams) {
+            finalUrl.search = originalSearchParams;
+          }
+          console.info('[Middleware] next-intl redirect - preserving query params:', {
+            original: request.url,
+            redirected: finalUrl.toString()
+          });
+          return NextResponse.redirect(finalUrl);
         }
       }
 
@@ -177,7 +225,12 @@ export async function middleware(request: NextRequest) {
         if (finalPath === pathname) {
           return intlResponse;
         } else {
-          return NextResponse.redirect(new URL(pathname, request.url));
+          const finalUrl = new URL(pathname, request.url);
+          const originalSearchParams = request.nextUrl.searchParams.toString();
+          if (originalSearchParams) {
+            finalUrl.search = originalSearchParams;
+          }
+          return NextResponse.redirect(finalUrl);
         }
       }
       return intlResponse;
