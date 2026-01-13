@@ -134,16 +134,39 @@ export async function GET(request: NextRequest) {
             frontendOrigin = requestUrl.origin;
           }
           
+          // Preserve ALL query parameters and hash
           const path = loginUrlObj.pathname + loginUrlObj.search + loginUrlObj.hash;
           data.data.loginUrl = `${frontendOrigin}${path}`;
           
           console.info(`${logPrefix} Normalized loginUrl:`, {
             original: originalLoginUrl,
             normalized: data.data.loginUrl,
-            frontendOrigin
+            frontendOrigin,
+            preservedSearch: loginUrlObj.search,
+            preservedHash: loginUrlObj.hash
           });
         } else {
-          console.info(`${logPrefix} loginUrl already points to frontend:`, originalLoginUrl);
+          // Even if loginUrl points to frontend, ensure redirect_uri and service are present
+          // If they're missing, add them from the original request
+          const loginUrlParams = new URLSearchParams(loginUrlObj.search);
+          if (!loginUrlParams.has('redirect_uri') && redirectUri) {
+            loginUrlParams.set('redirect_uri', redirectUri);
+            loginUrlObj.search = loginUrlParams.toString();
+            data.data.loginUrl = loginUrlObj.toString();
+            console.info(`${logPrefix} Added missing redirect_uri to loginUrl:`, data.data.loginUrl);
+          }
+          if (!loginUrlParams.has('service') && service) {
+            loginUrlParams.set('service', service);
+            loginUrlObj.search = loginUrlParams.toString();
+            data.data.loginUrl = loginUrlObj.toString();
+            console.info(`${logPrefix} Added missing service to loginUrl:`, data.data.loginUrl);
+          }
+          
+          console.info(`${logPrefix} loginUrl already points to frontend:`, {
+            url: originalLoginUrl,
+            hasRedirectUri: loginUrlParams.has('redirect_uri'),
+            hasService: loginUrlParams.has('service')
+          });
         }
       } catch (error) {
         console.warn(`${logPrefix} Failed to normalize loginUrl:`, error);
