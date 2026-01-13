@@ -174,20 +174,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             )}
           </div>
 
-          {/* Social login separator */}
-          <div className="flex items-center gap-3 pt-2">
-            <div className="h-px bg-white/10 flex-1" />
-            <span className="text-xs text-gray-400 uppercase tracking-wide">
-              {t('or')}
-            </span>
-            <div className="h-px bg-white/10 flex-1" />
-          </div>
-
-          {/* Facebook Login */}
-          <FacebookLoginButton />
-
-          {/* Actions */}
-          <div className="pt-4 flex justify-center">
+          {/* Actions - Sign In button */}
+          <div className="pt-2 flex justify-center">
             <button
               type="submit"
               disabled={isLoading}
@@ -203,6 +191,18 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               )}
             </button>
           </div>
+
+          {/* Social login separator */}
+          <div className="flex items-center gap-3 pt-2">
+            <div className="h-px bg-white/10 flex-1" />
+            <span className="text-xs text-gray-400 uppercase tracking-wide">
+              {t('or')}
+            </span>
+            <div className="h-px bg-white/10 flex-1" />
+          </div>
+
+          {/* Facebook Login */}
+          <FacebookLoginButton />
 
           {/* Forgot Password + Create account (embedded) */}
           <div className="text-center">
