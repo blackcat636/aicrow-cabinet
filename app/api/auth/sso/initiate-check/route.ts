@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const service = request.nextUrl.searchParams.get('service');
     const requestOrigin = request.headers.get('origin') || request.url;
     const referer = request.headers.get('referer');
-
+    
     console.info(
       `${logPrefix} Incoming request`,
       JSON.stringify({
