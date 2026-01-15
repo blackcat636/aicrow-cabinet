@@ -18,6 +18,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/routing';
 import { normalizeRedirectUri } from '@/config/site';
+import { useTranslations } from 'next-intl';
 
 type Status = 'loading' | 'redirecting' | 'error';
 
@@ -25,10 +26,11 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
 export default function SSOInitiatePage() {
+  const t = useTranslations('sso');
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<Status>('loading');
-  const [message, setMessage] = useState<string>('Ініціалізація SSO...');
+  const [message, setMessage] = useState<string>(t('initializing'));
   const [isMounted, setIsMounted] = useState(false);
 
   // Ensure we're on client side before normalizing redirect_uri
@@ -44,7 +46,7 @@ export default function SSOInitiatePage() {
 
     if (!redirectUri) {
       setStatus('error');
-      setMessage('redirect_uri не вказано');
+      setMessage(t('redirectUriNotSpecified'));
       return;
     }
 
@@ -57,7 +59,7 @@ export default function SSOInitiatePage() {
       redirectUri = normalizeRedirectUri(redirectUri);
     } catch (error: any) {
       setStatus('error');
-      setMessage(error?.message || 'Невірний формат redirect_uri');
+      setMessage(error?.message || t('invalidRedirectUriFormat'));
       return;
     }
 
@@ -111,7 +113,7 @@ export default function SSOInitiatePage() {
 
         if (data?.status === 200 && data?.data?.redirectUrl) {
           setStatus('redirecting');
-          setMessage('Перенаправлення до сервісу...');
+          setMessage(t('redirectingToService'));
           // Small delay to ensure the user sees the status before redirect
           setTimeout(() => {
             window.location.href = data.data.redirectUrl;
@@ -121,7 +123,7 @@ export default function SSOInitiatePage() {
 
         if (data?.status === 401 && data?.data?.loginUrl) {
           setStatus('redirecting');
-          setMessage('Необхідна автентифікація. Перенаправлення на логін...');
+          setMessage(t('authenticationRequired'));
           // Small delay to ensure the user sees the status before redirect
           setTimeout(() => {
             window.location.href = data.data.loginUrl;
@@ -130,10 +132,10 @@ export default function SSOInitiatePage() {
         }
 
         setStatus('error');
-        setMessage(data?.message || 'Не вдалося ініціювати SSO');
+        setMessage(data?.message || t('failedToInitiate'));
       } catch (error) {
         setStatus('error');
-        setMessage('Помилка під час ініціації SSO');
+        setMessage(t('initiationError'));
       }
     };
 
@@ -147,7 +149,7 @@ export default function SSOInitiatePage() {
           <div className="h-3 w-3 animate-pulse rounded-full bg-purple-400" />
           <p className="text-sm">
             {message}
-            {status === 'loading' && ' Будь ласка, зачекайте...'}
+            {status === 'loading' && ` ${t('pleaseWait')}`}
           </p>
         </div>
         {status === 'error' && (
@@ -156,11 +158,11 @@ export default function SSOInitiatePage() {
               {message}
             </div>
             <div className="text-xs text-gray-400">
-              <p className="font-semibold mb-1">Що робити:</p>
+              <p className="font-semibold mb-1">{t('whatToDo')}</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>Перевірте, що <code className="bg-white/10 px-1 rounded">redirect_uri</code> вказує на зовнішній сервіс (callback URL)</li>
-                <li>Приклад правильного <code className="bg-white/10 px-1 rounded">redirect_uri</code>: <code className="bg-white/10 px-1 rounded">https://external-service.com/callback</code> або <code className="bg-white/10 px-1 rounded">/callback</code></li>
-                <li>Не використовуйте внутрішні маршрути: <code className="bg-white/10 px-1 rounded">/login</code>, <code className="bg-white/10 px-1 rounded">/signup</code>, <code className="bg-white/10 px-1 rounded">/dashboard</code></li>
+                <li>{t('checkRedirectUriExternal')}</li>
+                <li>{t('redirectUriExample')}</li>
+                <li>{t('dontUseInternalRoutes')}</li>
               </ul>
             </div>
             <div className="mt-3 pt-3 border-t border-white/10">
@@ -168,7 +170,7 @@ export default function SSOInitiatePage() {
                 onClick={() => window.location.href = '/'}
                 className="text-xs text-purple-400 hover:text-purple-300 underline"
               >
-                Повернутися на головну
+                {t('backToHome')}
               </button>
             </div>
           </div>

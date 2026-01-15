@@ -8,34 +8,27 @@ const API_URL = API_CONFIG.BASE_URL;
 // Handle CORS preflight requests
 export async function OPTIONS(request: NextRequest) {
   const origin = request.headers.get('origin');
-  
+
   return new NextResponse(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': origin || '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Max-Age': '86400',
-    },
+      'Access-Control-Max-Age': '86400'
+    }
   });
 }
 
 export async function POST(request: NextRequest) {
   const logPrefix = '[SSO Exchange API]';
   const origin = request.headers.get('origin');
-  
+
   try {
     const body = await request.json();
     const code: string | undefined = body?.code;
-    const redirectUri: string | undefined = body?.redirect_uri || body?.redirectUri;
-
-    console.log(`${logPrefix} Request received:`, {
-      hasCode: !!code,
-      codeLength: code?.length,
-      redirectUri,
-      origin,
-      bodyKeys: Object.keys(body)
-    });
+    const redirectUri: string | undefined =
+      body?.redirect_uri || body?.redirectUri;
 
     if (!code || !redirectUri) {
       console.error(`${logPrefix} Missing required parameters:`, {
@@ -44,12 +37,12 @@ export async function POST(request: NextRequest) {
       });
       return NextResponse.json(
         { error: 'code and redirect_uri are required' },
-        { 
+        {
           status: 400,
           headers: {
             'Access-Control-Allow-Origin': origin || '*',
-            'Access-Control-Allow-Credentials': 'true',
-          },
+            'Access-Control-Allow-Credentials': 'true'
+          }
         }
       );
     }
@@ -59,11 +52,6 @@ export async function POST(request: NextRequest) {
       code,
       redirect_uri: redirectUri
     };
-
-    console.log(`${logPrefix} Calling backend:`, {
-      url: backendUrl,
-      requestBody: { ...requestBody, code: `${code.substring(0, 10)}...` }
-    });
 
     const response = await fetch(backendUrl, {
       method: 'POST',
@@ -75,30 +63,23 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
 
-    console.log(`${logPrefix} Backend response:`, {
-      status: response.status,
-      hasData: !!data,
-      error: data?.error,
-      message: data?.message
-    });
-
-    return NextResponse.json(data, { 
+    return NextResponse.json(data, {
       status: response.status,
       headers: {
         'Access-Control-Allow-Origin': origin || '*',
-        'Access-Control-Allow-Credentials': 'true',
-      },
+        'Access-Control-Allow-Credentials': 'true'
+      }
     });
   } catch (error: any) {
     console.error(`${logPrefix} Error:`, error);
     return NextResponse.json(
       { error: 'Internal server error', message: error?.message },
-      { 
+      {
         status: 500,
         headers: {
           'Access-Control-Allow-Origin': origin || '*',
-          'Access-Control-Allow-Credentials': 'true',
-        },
+          'Access-Control-Allow-Credentials': 'true'
+        }
       }
     );
   }

@@ -5,6 +5,7 @@ import { useRouter } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { LanguageSwitcherCompact } from '@/components/LanguageSwitcherCompact';
+import { useTranslations } from 'next-intl';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -18,6 +19,8 @@ export default function LoginPage() {
   const state = searchParams?.get('state');
   
   const [ssoError, setSsoError] = useState<string | null>(null);
+  const t = useTranslations('sso');
+  const tCommon = useTranslations('common');
 
   // Log SSO parameters from URL
   useEffect(() => {
@@ -34,11 +37,10 @@ export default function LoginPage() {
   useEffect(() => {
     if (code && state) {
       setSsoError(
-        'Помилка: redirect_uri вказує на сторінку логіну замість зовнішнього сервісу. ' +
-        'Будь ласка, використовуйте правильний redirect_uri (наприклад, /callback або URL зовнішнього сервісу).'
+        `${t('redirectUriPointsToLogin')} ${t('useCorrectRedirectUri')}`
       );
     }
-  }, [code, state, redirectUri, service]);
+  }, [code, state, redirectUri, service, t]);
 
   return (
     <div className="min-h-screen relative">
@@ -64,7 +66,7 @@ export default function LoginPage() {
                 onClick={() => setSsoError(null)}
                 className="mt-2 text-xs text-red-300 hover:text-red-100 underline"
               >
-                Закрити
+                {tCommon('close')}
               </button>
             </div>
           </div>

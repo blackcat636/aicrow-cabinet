@@ -15,6 +15,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/routing';
 import { normalizeRedirectUri } from '@/config/site';
+import { useTranslations } from 'next-intl';
 
 type Status = 'loading' | 'redirecting' | 'error';
 
@@ -22,10 +23,11 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
 export default function SSOInitiatePage() {
+  const t = useTranslations('sso');
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<Status>('loading');
-  const [message, setMessage] = useState<string>('Ініціалізація SSO...');
+  const [message, setMessage] = useState<string>(t('initializing'));
   const [isMounted, setIsMounted] = useState(false);
 
   // Ensure we're on client side before normalizing redirect_uri
@@ -50,7 +52,7 @@ export default function SSOInitiatePage() {
 
     if (!redirectUri) {
       setStatus('error');
-      setMessage('redirect_uri не вказано');
+      setMessage(t('redirectUriNotSpecified'));
       console.error('[SSO Initiate Page /auth/sso/initiate] Missing redirect_uri in URL');
       return;
     }
@@ -68,7 +70,7 @@ export default function SSOInitiatePage() {
       });
     } catch (error: any) {
       setStatus('error');
-      setMessage(error?.message || 'Невірний формат redirect_uri');
+      setMessage(error?.message || t('invalidRedirectUriFormat'));
       console.error('[SSO Initiate Page /auth/sso/initiate] Normalization error:', error);
       return;
     }
@@ -103,7 +105,7 @@ export default function SSOInitiatePage() {
 
         if (data?.status === 200 && data?.data?.redirectUrl) {
           setStatus('redirecting');
-          setMessage('Перенаправлення до сервісу...');
+          setMessage(t('redirectingToService'));
           console.info('[SSO Initiate Page /auth/sso/initiate] Redirecting to:', data.data.redirectUrl);
           setTimeout(() => {
             window.location.href = data.data.redirectUrl;
@@ -113,7 +115,7 @@ export default function SSOInitiatePage() {
 
         if (data?.status === 401 && data?.data?.loginUrl) {
           setStatus('redirecting');
-          setMessage('Необхідна автентифікація. Перенаправлення на логін...');
+          setMessage(t('authenticationRequired'));
           console.info('[SSO Initiate Page /auth/sso/initiate] Redirecting to login:', data.data.loginUrl);
           setTimeout(() => {
             window.location.href = data.data.loginUrl;
@@ -122,11 +124,11 @@ export default function SSOInitiatePage() {
         }
 
         setStatus('error');
-        setMessage(data?.message || 'Не вдалося ініціювати SSO');
+        setMessage(data?.message || t('failedToInitiate'));
         console.error('[SSO Initiate Page /auth/sso/initiate] Unexpected response:', data);
       } catch (error) {
         setStatus('error');
-        setMessage('Помилка під час ініціації SSO');
+        setMessage(t('initiationError'));
         console.error('[SSO Initiate Page /auth/sso/initiate] Fetch error:', error);
       }
     };
@@ -141,7 +143,7 @@ export default function SSOInitiatePage() {
           <div className="h-3 w-3 animate-pulse rounded-full bg-purple-400" />
           <p className="text-sm">
             {message}
-            {status === 'loading' && ' Будь ласка, зачекайте...'}
+            {status === 'loading' && ` ${t('pleaseWait')}`}
           </p>
         </div>
         {status === 'error' && (
@@ -150,11 +152,11 @@ export default function SSOInitiatePage() {
               {message}
             </div>
             <div className="text-xs text-gray-400">
-              <p className="font-semibold mb-1">Що робити:</p>
+              <p className="font-semibold mb-1">{t('whatToDo')}</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>Перевірте, що <code className="bg-white/10 px-1 rounded">redirect_uri</code> передається в URL</li>
-                <li>Приклад правильного URL: <code className="bg-white/10 px-1 rounded">/auth/sso/initiate?redirect_uri=https://external-service.com/callback&service=my-service</code></li>
-                <li>Якщо ви використовуєте зовнішній сервіс, переконайтеся, що він передає <code className="bg-white/10 px-1 rounded">redirect_uri</code> параметр</li>
+                <li>{t('checkRedirectUriInUrl')}</li>
+                <li>{t('correctUrlExample')}</li>
+                <li>{t('externalServiceCheck')}</li>
               </ul>
             </div>
             <div className="mt-3 pt-3 border-t border-white/10">
@@ -162,7 +164,7 @@ export default function SSOInitiatePage() {
                 onClick={() => window.location.href = '/'}
                 className="text-xs text-purple-400 hover:text-purple-300 underline"
               >
-                Повернутися на головну
+                {t('backToHome')}
               </button>
             </div>
           </div>

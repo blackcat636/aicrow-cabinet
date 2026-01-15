@@ -30,6 +30,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   className
 }) => {
   const t = useTranslations('auth');
+  const tSso = useTranslations('sso');
   const { login, isLoading, error, clearError } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
@@ -113,7 +114,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {/* SSO notice */}
           {redirectUri && (
             <div className="p-3 bg-purple-900/20 border border-purple-500/40 rounded-lg text-sm text-purple-100">
-              Ви входите, щоб продовжити в зовнішній сервіс{service ? `: ${service}` : ''}.
+              {tSso('continueToExternalService', { service: service ? `: ${service}` : '' })}
             </div>
           )}
           {/* Error Message */}
