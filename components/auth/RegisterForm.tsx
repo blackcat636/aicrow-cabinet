@@ -166,28 +166,31 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
         <div
           className={
             isModal
-              ? "fixed inset-0 flex items-center justify-center p-4 z-50"
+              ? "fixed inset-0 flex items-start sm:items-center justify-center p-0 sm:p-4 z-50 overflow-y-auto"
               : ""
           }
         >
           <div
             className={
               (isModal
-                ? "bg-transparent rounded-2xl max-w-md w-full border border-white/10 shadow-2xl shadow-purple-500/20"
+                ? "bg-[#141519]/95 backdrop-blur-sm rounded-none sm:rounded-2xl max-w-md w-full min-h-full sm:min-h-0 border-0 sm:border border-white/10 shadow-2xl shadow-purple-500/20 flex flex-col"
                 : "") + (className ? ` ${className}` : "")
             }
           >
             {/* Header */}
             {isModal && (
-              <div className="p-6 border-b border-white/10">
-                <h2 className="text-2xl font-bold text-white">{t('accountTitle')}</h2>
-                <p className="text-sm text-gray-300 mt-1">{t('welcomeMessage')}</p>
+              <div className="p-5 sm:p-6 border-b border-white/30 flex-shrink-0 bg-[#141519] relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-transparent to-transparent pointer-events-none"></div>
+                <div className="relative z-10">
+                  <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight">{t('accountTitle')}</h2>
+                  <p className="text-base sm:text-lg text-gray-100 mt-2 leading-relaxed">{t('welcomeMessage')}</p>
+                </div>
               </div>
             )}
 
             {/* Step Indicator */}
             {isModal && (
-              <div className="px-6 pt-4 pb-2">
+              <div className="px-4 sm:px-6 pt-4 pb-2 flex-shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="flex-1 h-1 rounded bg-purple-600" />
                   <div className="flex-1 h-1 rounded bg-gray-700" />
@@ -203,7 +206,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
             {/* Form */}
             <form
-              className={isModal ? "p-6 space-y-4" : "space-y-4"}
+              className={isModal ? "p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto" : "space-y-4"}
               onSubmit={handleSubmit}
             >
               {/* Error Message */}
@@ -388,18 +391,6 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 )}
               </div>
 
-              {/* Social login separator */}
-              <div className="flex items-center gap-3 pt-2">
-                <div className="h-px bg-white/10 flex-1" />
-                <span className="text-xs text-gray-400 uppercase tracking-wide">
-                  {t('or')}
-                </span>
-                <div className="h-px bg-white/10 flex-1" />
-              </div>
-
-              {/* Facebook Register/Login */}
-              <FacebookLoginButton />
-
               {/* Actions */}
               <div className="pt-4 flex justify-center">
                 <button
@@ -417,6 +408,18 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   )}
                 </button>
               </div>
+
+              {/* Social login separator */}
+              <div className="flex items-center gap-3 pt-2">
+                <div className="h-px bg-white/10 flex-1" />
+                <span className="text-xs text-gray-400 uppercase tracking-wide">
+                  {t('or')}
+                </span>
+                <div className="h-px bg-white/10 flex-1" />
+              </div>
+
+              {/* Facebook Register/Login */}
+              <FacebookLoginButton />
 
               {/* Switch to Login */}
               <div

@@ -57,7 +57,9 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
           setAvailableSocialAccounts(socialAccounts);
         })
         .catch(error => {
-          console.error('Error fetching social accounts:', error);
+          // Silently handle error - social accounts are optional
+          // If accounts are not connected, workflow can still be executed
+          console.warn('Social accounts not available:', error?.message || error);
           setAvailableSocialAccounts(null);
         });
     }

@@ -428,11 +428,6 @@ export default function WorkflowDetailPage() {
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const executionsRef = useRef<WorkflowExecution[]>([]);
   
-  // Mouse tracking for Input Data Template card
-  const [inputTemplateMousePosition, setInputTemplateMousePosition] = useState({ x: 0, y: 0 });
-  const [isInputTemplateHovering, setIsInputTemplateHovering] = useState(false);
-  const inputTemplateRef = useRef<HTMLDivElement>(null);
-  
   // Mouse tracking for "No executions" card
   const [noExecutionsMousePosition, setNoExecutionsMousePosition] = useState({ x: 0, y: 0 });
   const [isNoExecutionsHovering, setIsNoExecutionsHovering] = useState(false);
@@ -456,24 +451,6 @@ export default function WorkflowDetailPage() {
 
   const handleWorkflowInfoMouseLeave = useCallback(() => {
     setIsWorkflowInfoHovering(false);
-  }, []);
-
-  // Mouse tracking handlers for Input Data Template card
-  const handleInputTemplateMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.currentTarget;
-    const rect = target.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    setInputTemplateMousePosition({ x, y });
-  }, []);
-
-  const handleInputTemplateMouseEnter = useCallback(() => {
-    setIsInputTemplateHovering(true);
-  }, []);
-
-  const handleInputTemplateMouseLeave = useCallback(() => {
-    setIsInputTemplateHovering(false);
   }, []);
 
   // Mouse tracking handlers for "No executions" card
@@ -1114,7 +1091,7 @@ export default function WorkflowDetailPage() {
             {/* Header - fixed height to prevent layout shift */}
             <div className="p-6 min-h-[120px]">
               {/* Top row with Back button and action buttons */}
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => router.push('/dashboard', { locale })}
@@ -1131,11 +1108,11 @@ export default function WorkflowDetailPage() {
                   </Badge>
                 </div>
                 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
                   <button
                     onClick={handleExecute}
                     disabled={executing || !workflow.isActive}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 w-full md:w-auto ${
                       executing 
                         ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
                         : !workflow.isActive
@@ -1159,7 +1136,7 @@ export default function WorkflowDetailPage() {
                   <button
                     onClick={handleToggle}
                     disabled={toggling}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
+                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all w-full md:w-auto ${
                       toggling
                         ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
                         : workflow.isActive
@@ -1185,7 +1162,7 @@ export default function WorkflowDetailPage() {
                   
                   <button
                     onClick={() => setShowEditForm(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors w-full md:w-auto"
                     title={t('edit')}
                   >
                     <SettingsIcon className="w-4 h-4" />
@@ -1194,7 +1171,7 @@ export default function WorkflowDetailPage() {
                   
                   <button
                     onClick={() => setShowDeleteDialog(true)}
-                    className="flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors"
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors w-full md:w-auto"
                     title={tCommon('delete')}
                   >
                     <TrashIcon className="w-4 h-4" />
@@ -1221,7 +1198,7 @@ export default function WorkflowDetailPage() {
             {/* Content */}
             <div className="p-6">
               {/* Workflow Info */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+              <div className="grid grid-cols-1 gap-6 mb-8">
                 {/* Basic Info */}
                 <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30">
                   <div 
@@ -1244,7 +1221,7 @@ export default function WorkflowDetailPage() {
                     {/* Content with relative z-index */}
                     <div className="relative z-10">
                       <h2 className="text-xl font-semibold text-white mb-4">{t('workflowInformation')}</h2>
-                      <div className="space-y-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         <div>
                           <span className="text-gray-400">{t('type')}:</span>
                           <Badge variant="outline" className="ml-2 text-xs border-gray-600 text-gray-300">
@@ -1269,44 +1246,11 @@ export default function WorkflowDetailPage() {
                           <span className="text-gray-400">{t('lastUpdated')}:</span>
                           <span className="ml-2 text-gray-300">{new Date(workflow.updatedAt).toLocaleDateString(locale)}</span>
                         </div>
-                        <div>
+                        <div className="md:col-span-2 lg:col-span-1">
                           <span className="text-gray-400">{t('credentialData.label')}:</span>
                           <span className="ml-2 text-gray-300 text-sm break-all">{getCredentialData()}</span>
                         </div>
                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Input Data Template */}
-                <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30">
-                  <div 
-                    ref={inputTemplateRef}
-                    className="relative bg-black rounded-lg p-6 h-full w-full overflow-hidden group"
-                    onMouseMove={handleInputTemplateMouseMove}
-                    onMouseEnter={handleInputTemplateMouseEnter}
-                    onMouseLeave={handleInputTemplateMouseLeave}
-                  >
-                    {/* Interactive gradient overlay that follows mouse */}
-                    <div 
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
-                      style={{
-                        background: isInputTemplateHovering
-                          ? `radial-gradient(500px circle at ${inputTemplateMousePosition.x}px ${inputTemplateMousePosition.y}px, rgba(165,0,225,0.4), rgba(123,97,255,0.2) 40%, transparent 70%)`
-                          : 'none'
-                      }}
-                    />
-                    
-                    {/* Content with relative z-index */}
-                    <div className="relative z-10">
-                      <h2 className="text-xl font-semibold text-white mb-4">{t('inputDataTemplate')}</h2>
-                      {workflow.inputDataTemplate ? (
-                        <div className="p-3 bg-gray-700 rounded text-sm font-mono text-gray-300 break-all">
-                          {workflow.inputDataTemplate}
-                        </div>
-                      ) : (
-                        <p className="text-gray-400 italic">{t('noInputDataTemplate')}</p>
-                      )}
                     </div>
                   </div>
                 </div>

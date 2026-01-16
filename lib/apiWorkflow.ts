@@ -624,6 +624,12 @@ export const workflowApi = {
       });
 
       if (!response.ok) {
+        // For 404 or similar errors (accounts not connected), return null instead of throwing
+        // This allows the workflow to continue without social accounts
+        if (response.status === 404 || response.status === 400) {
+          return null;
+        }
+        
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
           const errorData = await response.json();
@@ -646,6 +652,10 @@ export const workflowApi = {
         return null;
       }
     } catch (error) {
+      // If it's a known error about missing accounts, return null instead of throwing
+      if (error instanceof Error && error.message.includes('profile not found')) {
+        return null;
+      }
       throw error;
     }
   }
