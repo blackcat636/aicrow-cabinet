@@ -42,14 +42,6 @@ export default function SSOInitiatePage() {
     const service = searchParams.get('service') || undefined;
     const allParams = Object.fromEntries(searchParams.entries());
 
-    // Log all URL parameters for debugging
-    console.info('[SSO Initiate Page /auth/sso/initiate] URL params:', {
-      redirectUri,
-      service,
-      allParams,
-      fullUrl: typeof window !== 'undefined' ? window.location.href : null
-    });
-
     if (!redirectUri) {
       setStatus('error');
       setMessage(t('redirectUriNotSpecified'));
@@ -64,10 +56,6 @@ export default function SSOInitiatePage() {
     const originalRedirectUri = redirectUri;
     try {
       redirectUri = normalizeRedirectUri(redirectUri);
-      console.info('[SSO Initiate Page /auth/sso/initiate] Normalized redirect_uri:', {
-        original: originalRedirectUri,
-        normalized: redirectUri
-      });
     } catch (error: any) {
       setStatus('error');
       setMessage(error?.message || t('invalidRedirectUriFormat'));
@@ -83,12 +71,6 @@ export default function SSOInitiatePage() {
           params.set('service', service);
         }
 
-        console.info('[SSO Initiate Page /auth/sso/initiate] Calling initiate-check:', {
-          redirectUri,
-          service,
-          apiUrl: `/api/auth/sso/initiate-check?${params.toString()}`
-        });
-
         const res = await fetch(`/api/auth/sso/initiate-check?${params.toString()}`, {
           method: 'GET',
           cache: 'no-store',
@@ -96,17 +78,9 @@ export default function SSOInitiatePage() {
         });
         const data = await res.json();
 
-        console.info('[SSO Initiate Page /auth/sso/initiate] initiate-check response:', {
-          status: data?.status,
-          hasRedirectUrl: Boolean(data?.data?.redirectUrl),
-          hasLoginUrl: Boolean(data?.data?.loginUrl),
-          loginUrl: data?.data?.loginUrl
-        });
-
         if (data?.status === 200 && data?.data?.redirectUrl) {
           setStatus('redirecting');
           setMessage(t('redirectingToService'));
-          console.info('[SSO Initiate Page /auth/sso/initiate] Redirecting to:', data.data.redirectUrl);
           setTimeout(() => {
             window.location.href = data.data.redirectUrl;
           }, 100);
@@ -116,7 +90,6 @@ export default function SSOInitiatePage() {
         if (data?.status === 401 && data?.data?.loginUrl) {
           setStatus('redirecting');
           setMessage(t('authenticationRequired'));
-          console.info('[SSO Initiate Page /auth/sso/initiate] Redirecting to login:', data.data.loginUrl);
           setTimeout(() => {
             window.location.href = data.data.loginUrl;
           }, 100);

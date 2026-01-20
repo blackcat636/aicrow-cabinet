@@ -74,16 +74,6 @@ function createLocalizedUrl(
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Log incoming request for SSO routes
-  if (pathname === '/auth/sso/initiate' || pathname === '/sso/initiate' || pathname.startsWith('/uk/auth/sso/initiate') || pathname.startsWith('/uk/sso/initiate')) {
-    console.info('[Middleware] SSO route incoming:', {
-      pathname,
-      searchParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
-      fullUrl: request.url,
-      hasRedirectUri: request.nextUrl.searchParams.has('redirect_uri')
-    });
-  }
-
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
@@ -161,23 +151,8 @@ export async function middleware(request: NextRequest) {
       : routing.defaultLocale;
 
   if (!pathHasLocale && !pathname.startsWith('/api')) {
-    // Log SSO routes to debug query params
-    if (pathname === '/auth/sso/initiate' || pathname === '/sso/initiate') {
-      console.info('[Middleware] SSO route detected:', {
-        pathname,
-        preferredLocale,
-        queryParams: Object.fromEntries(request.nextUrl.searchParams.entries()),
-        fullUrl: request.url
-      });
-    }
-    
     if (preferredLocale !== routing.defaultLocale) {
       const localizedUrl = createLocalizedUrl(pathname, preferredLocale, request);
-      console.info('[Middleware] Redirecting to localized URL:', {
-        original: request.url,
-        localized: localizedUrl.toString(),
-        hasQueryParams: localizedUrl.search.length > 0
-      });
       return NextResponse.redirect(localizedUrl);
     }
 
@@ -212,10 +187,6 @@ export async function middleware(request: NextRequest) {
           if (originalSearchParams) {
             finalUrl.search = originalSearchParams;
           }
-          console.info('[Middleware] next-intl redirect - preserving query params:', {
-            original: request.url,
-            redirected: finalUrl.toString()
-          });
           return NextResponse.redirect(finalUrl);
         }
       }

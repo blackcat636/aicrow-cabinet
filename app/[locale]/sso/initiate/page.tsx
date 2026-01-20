@@ -63,25 +63,11 @@ export default function SSOInitiatePage() {
       return;
     }
 
-    // Debug log to track normalized params (client-side only)
-    // Note: console is acceptable here as a temporary diagnostic tool.
-    console.info('[SSO Initiate Page] Params', {
-      originalRedirectUri,
-      normalizedRedirectUri: redirectUri,
-      service
-    });
-
     const hasAccessTokenCookie =
       typeof document !== 'undefined' &&
       document.cookie
         .split(';')
         .some((cookie) => cookie.trim().startsWith('access_token='));
-
-    if (process.env.NODE_ENV !== 'production') {
-      console.info('[SSO Initiate Page] Cookie presence check', {
-        hasAccessTokenCookie
-      });
-    }
 
     const initiate = async () => {
       try {
@@ -97,19 +83,7 @@ export default function SSOInitiatePage() {
           credentials: 'include'
         });
 
-        if (process.env.NODE_ENV !== 'production') {
-          console.info('[SSO Initiate Page] initiate-check HTTP response', {
-            status: res.status
-          });
-        }
-
         const data = await res.json();
-
-        console.info('[SSO Initiate Page] initiate-check response', {
-          status: data?.status,
-          hasRedirectUrl: Boolean(data?.data?.redirectUrl),
-          hasLoginUrl: Boolean(data?.data?.loginUrl)
-        });
 
         if (data?.status === 200 && data?.data?.redirectUrl) {
           setStatus('redirecting');

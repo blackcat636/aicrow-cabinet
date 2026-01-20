@@ -71,12 +71,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
         redirectUri,
         service
       };
-      console.info('[LoginForm] Calling login with:', {
-        email: loginCredentials.email,
-        redirectUri: loginCredentials.redirectUri,
-        service: loginCredentials.service,
-        hasPassword: Boolean(loginCredentials.password)
-      });
       await login(loginCredentials);
       if (isModal && onClose) {
         onClose();

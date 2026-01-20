@@ -26,18 +26,7 @@ export async function GET(request: NextRequest) {
     const requestOrigin = request.headers.get('origin') || request.url;
     const referer = request.headers.get('referer');
     
-    console.info(
-      `${logPrefix} Incoming request`,
-      JSON.stringify({
-        redirectUri,
-        service,
-        requestOrigin,
-        referer
-      })
-    );
-    
     if (!redirectUri) {
-      console.error(`${logPrefix} Missing redirect_uri parameter`);
       return NextResponse.json(
         { error: 'redirect_uri is required' },
         { status: 400 }
@@ -77,14 +66,6 @@ export async function GET(request: NextRequest) {
       headers.Authorization = `Bearer ${accessToken}`;
     }
 
-    console.info(
-      `${logPrefix} Forwarding to backend`,
-      JSON.stringify({
-        url: url.toString(),
-        hasAccessToken: Boolean(accessToken)
-      })
-    );
-
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers
@@ -92,29 +73,12 @@ export async function GET(request: NextRequest) {
 
     const data = await response.json();
 
-    console.info(
-      `${logPrefix} Backend response`,
-      JSON.stringify({
-        status: response.status,
-        dataStatus: data?.status,
-        hasLoginUrl: Boolean(data?.data?.loginUrl),
-        hasRedirectUrl: Boolean(data?.data?.redirectUrl)
-      })
-    );
-    
     // Normalize loginUrl - replace backend URL with frontend URL
     // Backend might return loginUrl pointing to backend, but we need frontend URL
     if (data?.data?.loginUrl) {
       try {
         const loginUrlObj = new URL(data.data.loginUrl);
         const originalLoginUrl = data.data.loginUrl;
-        
-        console.info(`${logPrefix} Processing loginUrl:`, {
-          original: originalLoginUrl,
-          origin: loginUrlObj.origin,
-          pathname: loginUrlObj.pathname,
-          search: loginUrlObj.search
-        });
         
         // If loginUrl points to backend domain, replace with frontend domain
         if (loginUrlObj.origin === API_URL || loginUrlObj.hostname.includes('api.')) {
@@ -138,13 +102,6 @@ export async function GET(request: NextRequest) {
           const path = loginUrlObj.pathname + loginUrlObj.search + loginUrlObj.hash;
           data.data.loginUrl = `${frontendOrigin}${path}`;
           
-          console.info(`${logPrefix} Normalized loginUrl:`, {
-            original: originalLoginUrl,
-            normalized: data.data.loginUrl,
-            frontendOrigin,
-            preservedSearch: loginUrlObj.search,
-            preservedHash: loginUrlObj.hash
-          });
         } else {
           // Even if loginUrl points to frontend, ensure redirect_uri and service are present
           // If they're missing, add them from the original request
@@ -153,26 +110,15 @@ export async function GET(request: NextRequest) {
             loginUrlParams.set('redirect_uri', redirectUri);
             loginUrlObj.search = loginUrlParams.toString();
             data.data.loginUrl = loginUrlObj.toString();
-            console.info(`${logPrefix} Added missing redirect_uri to loginUrl:`, data.data.loginUrl);
           }
           if (!loginUrlParams.has('service') && service) {
             loginUrlParams.set('service', service);
             loginUrlObj.search = loginUrlParams.toString();
             data.data.loginUrl = loginUrlObj.toString();
-            console.info(`${logPrefix} Added missing service to loginUrl:`, data.data.loginUrl);
           }
-          
-          console.info(`${logPrefix} loginUrl already points to frontend:`, {
-            url: originalLoginUrl,
-            hasRedirectUri: loginUrlParams.has('redirect_uri'),
-            hasService: loginUrlParams.has('service')
-          });
         }
       } catch (error) {
-        console.warn(`${logPrefix} Failed to normalize loginUrl:`, error);
       }
-    } else {
-      console.warn(`${logPrefix} No loginUrl in backend response`);
     }
 
     // Normalize redirectUrl as well (in case backend returns backend URL)
