@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { facebookApi } from '@/lib/apiFacebook';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface FacebookIntegrationProps {
   className?: string;
@@ -26,9 +27,61 @@ const FacebookIcon: React.FC<{ className?: string }> = ({ className }) => (
 
 export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ className }) => {
   const t = useTranslations('profile');
+  const { isAuthenticated } = useAuth();
   const [isLinked, setIsLinked] = useState(false);
+  const [facebookAccount, setFacebookAccount] = useState<{ email?: string; firstName?: string; lastName?: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingStatus, setLoadingStatus] = useState(true);
   const [confirmUnlink, setConfirmUnlink] = useState(false);
+
+  // Load Facebook linking status when component mounts or user becomes authenticated
+  const loadStatus = useCallback(async () => {
+    if (!isAuthenticated) {
+      setLoadingStatus(false);
+      return;
+    }
+
+    try {
+      setLoadingStatus(true);
+      const response = await facebookApi.getStatus();
+      // Find Facebook account in the array
+      const facebookData = response.data?.find(account => account.provider === 'facebook');
+      const linked = !!facebookData;
+      setIsLinked(linked);
+      if (linked && facebookData) {
+        setFacebookAccount({
+          email: facebookData.email,
+          firstName: facebookData.firstName,
+          lastName: facebookData.lastName
+        });
+      } else {
+        setFacebookAccount(null);
+      }
+    } catch (error: any) {
+      // Silently handle errors - user might not have linked Facebook yet
+      console.warn('[FacebookIntegration] Failed to load status:', error?.message);
+      setIsLinked(false);
+      setFacebookAccount(null);
+    } finally {
+      setLoadingStatus(false);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    loadStatus();
+  }, [loadStatus]);
+
+  // Reload status when window regains focus (user returns from Facebook OAuth)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (isAuthenticated) {
+        loadStatus();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [isAuthenticated, loadStatus]);
 
   const handleConnect = () => {
     try {
@@ -45,6 +98,24 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
       await facebookApi.unlink();
       toast.success(t('facebookUnlinked'));
       setIsLinked(false);
+      setFacebookAccount(null);
+      // Reload status to ensure UI is in sync
+      try {
+        const response = await facebookApi.getStatus();
+        const facebookData = response.data?.find(account => account.provider === 'facebook');
+        setIsLinked(!!facebookData);
+        if (facebookData) {
+          setFacebookAccount({
+            email: facebookData.email,
+            firstName: facebookData.firstName,
+            lastName: facebookData.lastName
+          });
+        } else {
+          setFacebookAccount(null);
+        }
+      } catch {
+        // Ignore status reload errors
+      }
     } catch (error: any) {
       toast.error(error?.message || t('facebookLinkError'));
     } finally {
@@ -69,9 +140,19 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
             <div className="text-sm font-medium text-gray-200">
               {t('facebookIntegration')}
             </div>
-            {isLinked ? (
+            {loadingStatus ? (
+              <div className="text-xs text-gray-400">{t('integrationsLoading')}</div>
+            ) : isLinked ? (
               <div className="text-xs text-green-400 flex flex-col gap-0.5">
-                <span>{t('facebookConnected')}</span>
+                <span>{t('integrationsConnected')}</span>
+                {facebookAccount?.email && (
+                  <span className="text-gray-400">{facebookAccount.email}</span>
+                )}
+                {(facebookAccount?.firstName || facebookAccount?.lastName) && (
+                  <span className="text-gray-400">
+                    {[facebookAccount.firstName, facebookAccount.lastName].filter(Boolean).join(' ')}
+                  </span>
+                )}
               </div>
             ) : (
               <div className="text-xs text-gray-400">{t('facebookNotConnected')}</div>
@@ -86,7 +167,7 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
               variant="outline"
               onClick={() => setConfirmUnlink(true)}
               disabled={loading}
-              className="border-red-600 text-red-300 hover:text-white hover:bg-red-600/20"
+              className="border-red-600 text-red-300 hover:text-white hover:bg-red-600/20 text-xs px-4 py-2"
             >
               {t('facebookUnlink')}
             </Button>
@@ -94,8 +175,8 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
             <Button
               type="button"
               onClick={handleConnect}
-              disabled={loading}
-              className="bg-[#1877F2] hover:bg-[#0f5dc0] text-white"
+              disabled={loading || !isAuthenticated || loadingStatus}
+              className="bg-[#1877F2] hover:bg-[#0f5dc0] text-white text-xs px-4 py-2"
             >
               {t('facebookConnect')}
             </Button>

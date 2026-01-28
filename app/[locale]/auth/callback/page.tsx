@@ -22,6 +22,7 @@ export default function AuthCallbackPage() {
 
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState<string>('');
+  const processedCodeRef = React.useRef<string | null>(null);
 
   const { code, isLinkMode, providerError } = useMemo(() => {
     const oauthCode = searchParams.get('code');
@@ -48,8 +49,16 @@ export default function AuthCallbackPage() {
         return;
       }
 
+      // Prevent processing the same code twice
+      if (processedCodeRef.current === code) {
+        console.warn('[AuthCallback] Code already processed, skipping...');
+        return;
+      }
+
       try {
         setStatus('loading');
+        processedCodeRef.current = code;
+        
         if (isLinkMode) {
           if (!isAuthenticated) {
             throw new Error('You must be logged in to link your Facebook account');
@@ -66,7 +75,26 @@ export default function AuthCallbackPage() {
         }
       } catch (err: any) {
         setStatus('error');
-        setMessage(err?.message || t('socialLoginError'));
+        // Handle specific error messages
+        const errorMessage = err?.message || '';
+        console.error('[AuthCallback] Error details:', {
+          message: errorMessage,
+          status: err?.status,
+          data: err?.data,
+          responseText: err?.responseText
+        });
+        
+        if (errorMessage.includes('already linked to another user') || errorMessage.includes('already linked')) {
+          setMessage(t('facebookAlreadyLinked'));
+        } else if (errorMessage.includes('Failed to exchange Facebook code') || errorMessage.includes('status code 400')) {
+          // More specific error for Facebook code exchange failure
+          setMessage('Facebook authentication failed. The authorization code may have expired or been used already. Please try logging in again.');
+        } else {
+          setMessage(errorMessage || t('socialLoginError'));
+        }
+        
+        // Reset processed code on error so user can retry
+        processedCodeRef.current = null;
       }
     };
 

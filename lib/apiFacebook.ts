@@ -6,12 +6,23 @@ const API_BASE_URL = API_CONFIG.BASE_URL;
 
 const buildError = async (response: Response, fallback: string) => {
   try {
-    const data = await response.json();
-    const message = data?.message || data?.error || fallback;
+    const text = await response.text();
+    let data: any = {};
+    
+    try {
+      data = JSON.parse(text);
+    } catch {
+      // If response is not JSON, use text as message
+      data = { message: text || response.statusText || fallback };
+    }
+    
+    const message = data?.message || data?.error || data?.error_description || fallback;
     const error = new Error(message);
     (error as any).status = response.status;
+    (error as any).data = data;
+    (error as any).responseText = text;
     return error;
-  } catch {
+  } catch (err) {
     const error = new Error(response.statusText || fallback);
     (error as any).status = response.status;
     return error;
@@ -19,18 +30,30 @@ const buildError = async (response: Response, fallback: string) => {
 };
 
 export const facebookApi = {
-  // Generate Facebook OAuth URL for login or linking
-  getAuthUrl: (link = false): string => {
-    const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
+  // Get consistent redirect URI
+  getRedirectUri: (): string => {
     const frontendUrl =
       process.env.NEXT_PUBLIC_FRONTEND_URL ||
       (typeof window !== 'undefined' ? window.location.origin : '');
 
-    if (!appId || !frontendUrl) {
-      throw new Error('Facebook auth is disabled');
+    if (!frontendUrl) {
+      throw new Error('Frontend URL is not configured');
     }
 
-    const redirectUri = `${frontendUrl}/auth/callback`;
+    // Ensure no trailing slash and consistent format
+    const baseUrl = frontendUrl.replace(/\/$/, '');
+    return `${baseUrl}/auth/callback`;
+  },
+
+  // Generate Facebook OAuth URL for login or linking
+  getAuthUrl: (link = false): string => {
+    const appId = process.env.NEXT_PUBLIC_FACEBOOK_APP_ID;
+    
+    if (!appId) {
+      throw new Error('Facebook auth is disabled: App ID not configured');
+    }
+
+    const redirectUri = facebookApi.getRedirectUri();
     const scope = 'email,public_profile';
     const state = link ? 'link' : 'login';
 
@@ -56,15 +79,15 @@ export const facebookApi = {
       headers['x-device-id'] = deviceId;
     }
 
-    const frontendUrl =
-      process.env.NEXT_PUBLIC_FRONTEND_URL ||
-      (typeof window !== 'undefined' ? window.location.origin : '');
-    const redirectUri = frontendUrl ? `${frontendUrl}/auth/callback` : '';
+    // Use the same redirect URI as in getAuthUrl to ensure consistency
+    const redirectUri = facebookApi.getRedirectUri();
+
+    const requestBody = { code, link, redirectUri };
 
     const requestInit: RequestInit = {
       method: 'POST',
       headers,
-      body: JSON.stringify({ code, link, redirectUri }),
+      body: JSON.stringify(requestBody),
       cache: 'no-cache'
     };
 
@@ -73,7 +96,29 @@ export const facebookApi = {
       : await fetch(url, requestInit);
 
     if (!response.ok) {
-      throw await buildError(response, 'Facebook verification failed');
+      const error = await buildError(response, 'Facebook verification failed');
+      const errorData = (error as any).data || {};
+      const responseText = (error as any).responseText || '';
+      
+      // Log detailed error information
+      console.group('❌ [Facebook OAuth] Verification Failed');
+      console.error('Status:', response.status, response.statusText);
+      console.error('Message:', error.message);
+      console.error('Redirect URI:', redirectUri);
+      console.error('Request sent to backend:', {
+        url: `${API_BASE_URL}/auth/facebook/verify`,
+        redirectUri,
+        link,
+        codeLength: code?.length || 0,
+        hasCode: !!code
+      });
+      console.error('Backend response data:', errorData);
+      if (responseText) {
+        console.error('Backend response text:', responseText);
+      }
+      console.groupEnd();
+      
+      throw error;
     }
 
     // Link flow may return 204/200 without tokens
@@ -88,7 +133,7 @@ export const facebookApi = {
   // Get Facebook linking status for current user
   getStatus: async (): Promise<FacebookStatusResponse> => {
     const response = await fetchWithAuth(
-      `${API_BASE_URL}/auth/facebook/status`,
+      `${API_BASE_URL}/auth/social-accounts`,
       {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },

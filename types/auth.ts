@@ -140,10 +140,19 @@ export interface FacebookAuthResponse {
   };
 }
 
-export interface FacebookStatusResponse {
-  isLinked: boolean;
+export interface SocialAccount {
+  id: number;
+  provider: string;
   email?: string;
-  name?: string;
+  firstName?: string;
+  lastName?: string;
+  photo?: string;
+  createdAt: string;
+}
+
+export interface FacebookStatusResponse {
+  status: number;
+  data: SocialAccount[];
 }
 
 export interface SSOInitiateCheckResponse {

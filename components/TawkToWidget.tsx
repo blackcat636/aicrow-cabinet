@@ -24,6 +24,13 @@ export function TawkToWidget() {
   // Get IDs from env or use fallback values from embed script
   const propertyId = process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID || '69677baf020bfc1979148986';
   const widgetId = process.env.NEXT_PUBLIC_TAWK_WIDGET_ID || '1jeu3ma3k';
+  
+  // Allow disabling Tawk.to via environment variable
+  const isTawkEnabled = process.env.NEXT_PUBLIC_TAWK_ENABLED !== 'false';
+  
+  if (!isTawkEnabled || !propertyId || !widgetId) {
+    return null;
+  }
 
   // Apply visitor attributes when user data changes
   useEffect(() => {
@@ -102,6 +109,10 @@ export function TawkToWidget() {
             }
           }, 1000);
         }
+      }}
+      onError={(e) => {
+        // Silently handle Tawk.to loading errors to avoid console spam
+        console.warn('[TawkToWidget] Failed to load Tawk.to widget:', e);
       }}
     />
   );
