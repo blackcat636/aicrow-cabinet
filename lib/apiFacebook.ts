@@ -152,7 +152,7 @@ export const facebookApi = {
   // Unlink Facebook account for current user
   unlink: async (): Promise<void> => {
     const response = await fetchWithAuth(
-      `${API_BASE_URL}/auth/facebook/unlink`,
+      `${API_BASE_URL}/auth/social-accounts/facebook`,
       {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
