@@ -5,6 +5,8 @@ import { decodeToken } from '@/lib/auth-utils';
 import { authApi } from '@/lib/apiAuth';
 import { routing } from './i18n/routing';
 
+export const runtime = 'edge';
+
 const protectedRoutes = [
   '/workflows',
   '/executions',
