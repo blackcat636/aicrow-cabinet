@@ -158,6 +158,7 @@
     "workflows": "Workflows",
     "executions": "Executions",
     "balance": "Balance",
+    "billing": "Billing",
     "balanceLabel": "Balance",
     "integrations": "Integrations",
     "socialMedia": "Social Media",
@@ -672,6 +673,33 @@
       "Manual balance adjustment": "Manual balance adjustment"
     },
     "dateFormat": "MM/DD/YYYY"
+  },
+  "billing": {
+    "title": "Billing",
+    "description": "Your subscription status and available plans",
+    "currentPlan": "Current Plan",
+    "statusActive": "Active",
+    "statusExpired": "Expired / Inactive",
+    "validUntil": "Valid until",
+    "tokensLeft": "Tokens Left",
+    "selectPlanCta": "Please select a plan to continue",
+    "availablePlans": "Available Plans",
+    "tokensIncluded": "{count} tokens included",
+    "subscribe": "Subscribe",
+    "upgrade": "Upgrade",
+    "current": "Current",
+    "startTrial": "Start Trial",
+    "processing": "Processing...",
+    "loadError": "Failed to load billing",
+    "loadingError": "Loading Error",
+    "noPlans": "No plans available",
+    "purchaseSuccess": "Plan activated successfully",
+    "purchaseError": "Failed to purchase plan",
+    "purchaseErrorServer": "Server error. Please try again later or contact support.",
+    "trial": "Trial",
+    "convertToPaid": "Convert to paid",
+    "convertSuccess": "Trial converted to paid successfully",
+    "convertError": "Failed to convert trial to paid"
   },
   "integrations": {
     "telegram": {

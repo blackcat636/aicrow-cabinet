@@ -157,6 +157,7 @@
     "workflows": "Flujos de trabajo",
     "executions": "Ejecuciones",
     "balance": "Saldo",
+    "billing": "Facturación",
     "integrations": "Integraciones",
     "socialMedia": "Redes sociales",
     "profile": "Perfil",
@@ -670,6 +671,33 @@
     },
     "dateFormat": "MM/DD/AAAA"
   },
+  "billing": {
+    "title": "Facturación",
+    "description": "Estado de tu suscripción y planes disponibles",
+    "currentPlan": "Plan actual",
+    "statusActive": "Activo",
+    "statusExpired": "Expirado / Inactivo",
+    "validUntil": "Válido hasta",
+    "tokensLeft": "Tokens restantes",
+    "selectPlanCta": "Por favor, selecciona un plan para continuar",
+    "availablePlans": "Planes disponibles",
+    "tokensIncluded": "{count} tokens incluidos",
+    "subscribe": "Suscribirse",
+    "upgrade": "Actualizar",
+    "current": "Actual",
+    "startTrial": "Iniciar prueba",
+    "processing": "Procesando...",
+    "loadError": "Error al cargar facturación",
+    "loadingError": "Error de carga",
+    "noPlans": "No hay planes disponibles",
+    "purchaseSuccess": "Plan activado correctamente",
+    "purchaseError": "Error al comprar el plan",
+    "purchaseErrorServer": "Error del servidor. Intente más tarde o contacte con soporte.",
+    "trial": "Prueba",
+    "convertToPaid": "Pasar a pago",
+    "convertSuccess": "Prueba convertida a pago correctamente",
+    "convertError": "Error al convertir la prueba a pago"
+  },
   "integrations": {
     "telegram": {
       "title": "Integración de Telegram",
@@ -728,4 +756,3 @@
     "continueToExternalService": "Está iniciando sesión para continuar a un servicio externo{service}"
   }
 }
-

@@ -11,6 +11,7 @@ const protectedRoutes = [
   '/profile',
   '/dashboard',
   '/balance',
+  '/billing',
   '/integrations'
 ];
 const authRoutes = [
@@ -53,7 +54,7 @@ function createLocalizedUrl(
   // Preserve query parameters from original request
   const originalUrl = new URL(request.url);
   const searchParams = originalUrl.searchParams.toString();
-  
+
   if (
     locale === routing.defaultLocale &&
     routing.localePrefix === 'as-needed'
@@ -152,7 +153,11 @@ export async function middleware(request: NextRequest) {
 
   if (!pathHasLocale && !pathname.startsWith('/api')) {
     if (preferredLocale !== routing.defaultLocale) {
-      const localizedUrl = createLocalizedUrl(pathname, preferredLocale, request);
+      const localizedUrl = createLocalizedUrl(
+        pathname,
+        preferredLocale,
+        request
+      );
       return NextResponse.redirect(localizedUrl);
     }
 
@@ -180,7 +185,7 @@ export async function middleware(request: NextRequest) {
 
         // Preserve query params from original request
         const originalSearchParams = request.nextUrl.searchParams.toString();
-        
+
         if (redirectedLocale && redirectedLocale !== routing.defaultLocale) {
           const normalizedPath = normalizePathname(redirectedPath);
           const finalUrl = new URL(normalizedPath, request.url);

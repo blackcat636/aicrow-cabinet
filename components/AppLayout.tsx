@@ -194,6 +194,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
     workflows: pathname === '/workflows',
     executions: pathname === '/executions',
     balance: pathname === '/balance',
+    billing: pathname === '/billing',
     integrations: pathname.startsWith('/integrations'),
     telegram: pathname === '/integrations/telegram'
   }), [pathname]);
@@ -296,9 +297,9 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
             <Image src={aiPillsLogo} alt="AiPills logo" className="h-auto w-10" priority />
           </I18nLink>
           
-          {/* Navigation Items - Centered (desktop only) */}
-          <div className='absolute left-1/2 transform -translate-x-1/2 overflow-visible hidden md:block'>
-            <div className='relative flex items-center gap-2 lg:gap-4 overflow-visible'>
+          {/* Navigation Items - Centered (desktop only, from xl to avoid tablet overlap) */}
+          <div className='absolute left-1/2 transform -translate-x-1/2 overflow-visible hidden xl:block'>
+            <div className='relative flex items-center gap-2 xl:gap-4 overflow-visible'>
               <TopNavItem
                 href="/dashboard"
                 label={t('dashboard')}
@@ -347,18 +348,23 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 label={t('balance')}
                 isActive={activeStates.balance}
               />
+              <TopNavItem
+                href="/billing"
+                label={t('billing')}
+                isActive={activeStates.billing}
+              />
             </div>
           </div>
           
-          {/* Right Side - User */}
-          <div className='flex items-center gap-2 lg:gap-4 flex-shrink-0 ml-auto'>
+          {/* Right Side - User (desktop from xl; below xl only burger) */}
+          <div className='flex items-center gap-2 xl:gap-4 flex-shrink-0 ml-auto'>
             {/* Language Switcher - circular icon */}
-            <div className='hidden md:block'>
+            <div className='hidden xl:block'>
               <LanguageSwitcherMenu variant="desktop" />
             </div>
             
             {/* User Avatar with dropdown */}
-            <div className='hidden md:flex items-center gap-3 relative' ref={userMenuRef}>
+            <div className='hidden xl:flex items-center gap-3 relative' ref={userMenuRef}>
               <button
                 className='rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500'
                 onClick={(e) => {
@@ -435,7 +441,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 setIsUserMenuOpen(false);
                 toggleMobileMenu();
               }}
-              className='p-2 text-gray-300 hover:text-white transition-colors md:hidden'
+              className='p-2 text-gray-300 hover:text-white transition-colors xl:hidden'
               aria-label='Toggle menu'
               aria-expanded={isMobileMenuOpen}
             >
@@ -580,6 +586,19 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                       >
                         <BalanceIcon className='w-5 h-5 flex-shrink-0' />
                         <span className='text-lg font-medium'>{t('balance')}</span>
+                      </I18nLink>
+
+                      <I18nLink
+                        href='/billing'
+                        onClick={() => setIsMobileMenuOpen(false)}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                          activeStates.billing
+                            ? 'bg-gradient-to-r from-[#A500E1]/20 to-[#7B61FF]/20 text-white border border-purple-500/30'
+                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        }`}
+                      >
+                        <BalanceIcon className='w-5 h-5 flex-shrink-0' />
+                        <span className='text-lg font-medium'>{t('billing')}</span>
                       </I18nLink>
                     </nav>
 

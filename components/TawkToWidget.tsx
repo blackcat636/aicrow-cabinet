@@ -12,9 +12,12 @@ declare global {
         callback?: (error: any) => void
       ) => void;
       onLoad?: () => void;
-      [key: string]: any;
+      i18next?: () => { t: (key: string) => string; language: string; changeLanguage?: () => Promise<unknown> };
+      [key: string]: unknown;
     };
     Tawk_LoadStart?: Date;
+    /** Stub for Tawk embed when it expects i18next (app uses next-intl). */
+    i18next?: () => { t: (key: string) => string; language: string; changeLanguage?: () => Promise<unknown> };
   }
 }
 
@@ -27,7 +30,26 @@ export function TawkToWidget() {
   
   // Allow disabling Tawk.to via environment variable
   const isTawkEnabled = process.env.NEXT_PUBLIC_TAWK_ENABLED !== 'false';
-  
+
+  // Set i18next stub before Script loads so Tawk embed does not throw "i18next is not a function" (app uses next-intl).
+  if (typeof window !== 'undefined') {
+    const i18nextStub = () => ({
+      t: (key: string) => key,
+      language: 'en',
+      changeLanguage: () => Promise.resolve()
+    });
+    if (!window.Tawk_API) {
+      window.Tawk_API = {} as unknown as typeof window.Tawk_API;
+    }
+    const tawkApi = window.Tawk_API as Record<string, unknown>;
+    if (typeof tawkApi.i18next !== 'function') {
+      tawkApi.i18next = i18nextStub;
+    }
+    if (typeof window.i18next !== 'function') {
+      window.i18next = i18nextStub;
+    }
+  }
+
   if (!isTawkEnabled || !propertyId || !widgetId) {
     return null;
   }

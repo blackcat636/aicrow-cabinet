@@ -157,6 +157,7 @@
     "workflows": "Flux de travail",
     "executions": "Exécutions",
     "balance": "Solde",
+    "billing": "Facturation",
     "integrations": "Intégrations",
     "socialMedia": "Médias sociaux",
     "profile": "Profil",
@@ -669,6 +670,33 @@
       "Manual balance adjustment": "Ajustement manuel du solde"
     },
     "dateFormat": "JJ/MM/AAAA"
+  },
+  "billing": {
+    "title": "Facturation",
+    "description": "Statut de votre abonnement et plans disponibles",
+    "currentPlan": "Plan actuel",
+    "statusActive": "Actif",
+    "statusExpired": "Expiré / Inactif",
+    "validUntil": "Valide jusqu'au",
+    "tokensLeft": "Jetons restants",
+    "selectPlanCta": "Veuillez sélectionner un plan pour continuer",
+    "availablePlans": "Plans disponibles",
+    "tokensIncluded": "{count} jetons inclus",
+    "subscribe": "S'abonner",
+    "upgrade": "Mettre à niveau",
+    "current": "Actuel",
+    "startTrial": "Commencer l'essai",
+    "processing": "Traitement...",
+    "loadError": "Échec du chargement de la facturation",
+    "loadingError": "Erreur de chargement",
+    "noPlans": "Aucun plan disponible",
+    "purchaseSuccess": "Plan activé avec succès",
+    "purchaseError": "Échec de l'achat du plan",
+    "purchaseErrorServer": "Erreur serveur. Veuillez réessayer plus tard ou contacter le support.",
+    "trial": "Essai",
+    "convertToPaid": "Passer à la version payante",
+    "convertSuccess": "Essai converti en abonnement payant avec succès",
+    "convertError": "Échec de la conversion de l'essai en payant"
   },
   "integrations": {
     "telegram": {

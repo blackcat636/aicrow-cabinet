@@ -22,6 +22,14 @@ export const API_CONFIG = {
       USER_WORKFLOWS: '/automations/user/my-workflows',
       SCHEDULES: '/automations/user/schedules',
       EXECUTIONS: '/automations/user/executions'
+    },
+    SUBSCRIPTION: {
+      PLANS: '/subscription-plans',
+      PLAN_BY_ID: (id: number) => `/subscription-plans/${id}`,
+      MY_ACTIVE: '/subscription-plans/my/active',
+      PURCHASE: (id: number) => `/subscription-plans/${id}/purchase`,
+      TRIAL_CONVERT: (userPlanId: number) =>
+        `/subscription-plans/trial/${userPlanId}/convert`
     }
   },
 

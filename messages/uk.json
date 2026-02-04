@@ -158,6 +158,7 @@
     "workflows": "Робочі процеси",
     "executions": "Виконання",
     "balance": "Баланс",
+    "billing": "Оплата",
     "balanceLabel": "Баланс",
     "integrations": "Інтеграції",
     "closeMenu": "Закрити меню",
@@ -672,6 +673,33 @@
       "Manual balance adjustment": "Ручне коригування балансу"
     },
     "dateFormat": "ДД/ММ/РРРР"
+  },
+  "billing": {
+    "title": "Оплата та підписки",
+    "description": "Статус підписки та доступні плани",
+    "currentPlan": "Поточний план",
+    "statusActive": "Активна",
+    "statusExpired": "Закінчилась / Неактивна",
+    "validUntil": "Дійсна до",
+    "tokensLeft": "Залишилось токенів",
+    "selectPlanCta": "Будь ласка, оберіть план для продовження",
+    "availablePlans": "Доступні плани",
+    "tokensIncluded": "{count} токенів включено",
+    "subscribe": "Підписатися",
+    "upgrade": "Оновити",
+    "current": "Поточний",
+    "startTrial": "Почати пробний період",
+    "processing": "Обробка...",
+    "loadError": "Не вдалося завантажити дані оплати",
+    "loadingError": "Помилка завантаження",
+    "noPlans": "Немає доступних планів",
+    "purchaseSuccess": "План успішно активовано",
+    "purchaseError": "Не вдалося придбати план",
+    "purchaseErrorServer": "Помилка сервера. Спробуйте пізніше або зверніться до підтримки.",
+    "trial": "Пробний",
+    "convertToPaid": "Перейти на оплату",
+    "convertSuccess": "Пробний період успішно переведено на оплату",
+    "convertError": "Не вдалося перевести пробний період на оплату"
   },
   "integrations": {
     "telegram": {
