@@ -37,15 +37,21 @@ const formatPriceDisplay = (
   period: string | undefined,
   durationDays?: number
 ): string => {
-  const num = price == null ? NaN : typeof price === 'string' ? parseFloat(price) : price;
+  if (price == null) return '—';
+  const num = typeof price === 'string' ? parseFloat(price) : Number(price);
   if (Number.isNaN(num) || num < 0) return '—';
   if (num === 0) return 'Free';
-  const formatted = Number.isInteger(num) ? num.toLocaleString() : num.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  
+  // Simple number formatting without locale-specific formatting for edge runtime compatibility
+  const rounded = Math.round(num * 100) / 100;
+  const formatted = rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2);
+  const formattedWithCommas = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  
   const curr = (currency || '').trim() || 'USD';
-  if (period === 'monthly') return `${formatted} ${curr} / month`;
-  if (period === 'yearly') return `${formatted} ${curr} / year`;
-  if (durationDays != null && durationDays > 0) return `${formatted} ${curr} / ${durationDays} days`;
-  return `${formatted} ${curr}`;
+  if (period === 'monthly') return `${formattedWithCommas} ${curr} / month`;
+  if (period === 'yearly') return `${formattedWithCommas} ${curr} / year`;
+  if (durationDays != null && durationDays > 0) return `${formattedWithCommas} ${curr} / ${durationDays} days`;
+  return `${formattedWithCommas} ${curr}`;
 };
 
 export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
@@ -122,7 +128,7 @@ export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
                   </div>
                   {typeof tokensLeft === 'number' && (
                     <p className="text-sm text-gray-400">
-                      {t('tokensLeft')}: {tokensLeft.toLocaleString()}
+                      {t('tokensLeft')}: {tokensLeft.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                     </p>
                   )}
                 </>

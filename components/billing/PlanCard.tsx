@@ -28,12 +28,18 @@ const formatPriceDisplay = (
   period: string,
   durationDays: number
 ): string => {
-  const num = price == null ? NaN : typeof price === 'string' ? parseFloat(price) : Number(price);
+  if (price == null) return '—';
+  const num = typeof price === 'string' ? parseFloat(price) : Number(price);
   if (Number.isNaN(num) || num < 0) return '—';
   if (num === 0) return 'Free';
-  const formatted = Number.isInteger(num) ? num.toLocaleString() : num.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+  
+  // Simple number formatting without locale-specific formatting for edge runtime compatibility
+  const rounded = Math.round(num * 100) / 100;
+  const formatted = rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2);
+  const formattedWithCommas = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  
   const curr = (currency || '').trim() || 'USD';
-  return `${formatted} ${curr} ${formatPeriod(period, durationDays)}`;
+  return `${formattedWithCommas} ${curr} ${formatPeriod(period, durationDays)}`;
 };
 
 const getFeatureLabel = (f: PlanFeature): string => {
@@ -107,7 +113,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
               )}
             </div>
             {tokenLimit > 0 && (
-              <p className="text-sm text-gray-400">{t('tokensIncluded', { count: tokenLimit.toLocaleString() })}</p>
+              <p className="text-sm text-gray-400">{t('tokensIncluded', { count: tokenLimit.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') })}</p>
             )}
           </CardHeader>
           <CardContent className="flex-1 px-6 pt-0 pb-4">
