@@ -86,36 +86,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (isLoggingOutRef.current) {
           return;
         }
-        if (pathname === '/login' || pathname === '/signup') {
-          setIsAuthenticated(false);
-          setUser(null);
-          return;
-        }
-
         const at = getAccessToken();
         const rt = getRefreshToken();
+        
         if (!at && !rt) {
           setIsAuthenticated(false);
           setUser(null);
           setImpersonationInfo(null);
-          return;
-        }
-
-        const res = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
-        if (res.ok) {
-          const profile = await res.json();
-          setIsAuthenticated(true);
-          setUser(mapProfileToUser(profile));
-          setImpersonationInfo(getImpersonationMeta());
-        } else if (res.status === 401) {
-          const refreshRes = await fetch('/api/auth/refresh', { method: 'POST', cache: 'no-cache' });
-          if (refreshRes.ok) {
-            const profileRes = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
-            if (profileRes.ok) {
-              const profile = await profileRes.json();
-              setIsAuthenticated(true);
-              setUser(mapProfileToUser(profile));
-              setImpersonationInfo(getImpersonationMeta());
+        } else {
+          const res = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
+          if (res.ok) {
+            const profile = await res.json();
+            setIsAuthenticated(true);
+            setUser(mapProfileToUser(profile));
+            setImpersonationInfo(getImpersonationMeta());
+          } else if (res.status === 401) {
+            const refreshRes = await fetch('/api/auth/refresh', { method: 'POST', cache: 'no-cache' });
+            if (refreshRes.ok) {
+              const profileRes = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
+              if (profileRes.ok) {
+                const profile = await profileRes.json();
+                setIsAuthenticated(true);
+                setUser(mapProfileToUser(profile));
+                setImpersonationInfo(getImpersonationMeta());
+              } else {
+                removeTokens();
+                setIsAuthenticated(false);
+                setUser(null);
+                setImpersonationInfo(null);
+              }
             } else {
               removeTokens();
               setIsAuthenticated(false);
@@ -123,15 +122,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               setImpersonationInfo(null);
             }
           } else {
-            removeTokens();
             setIsAuthenticated(false);
             setUser(null);
             setImpersonationInfo(null);
           }
-        } else {
-          setIsAuthenticated(false);
-          setUser(null);
-          setImpersonationInfo(null);
         }
       } catch (error) {
         removeTokens();

@@ -22,9 +22,10 @@ export default function LoginPage() {
   const t = useTranslations('sso');
   const tCommon = useTranslations('common');
 
-  // Handle SSO callback - if code and state are present, this means redirect_uri was wrong
+  // Handle SSO callback - only show error if redirect_uri is missing AND code/state are present
+  // This is a valid SSO flow: external service -> login page with code/state for authentication
   useEffect(() => {
-    if (code && state) {
+    if (code && state && !redirectUri) {
       setSsoError(
         `${t('redirectUriPointsToLogin')} ${t('useCorrectRedirectUri')}`
       );
