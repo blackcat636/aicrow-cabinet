@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
 
 interface SSOCheckResponse {
   status: number;
@@ -18,7 +17,6 @@ interface SSOCheckResponse {
 export default function SSOInitiatePage() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const t = useTranslations('sso');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -29,7 +27,7 @@ export default function SSOInitiatePage() {
   useEffect(() => {
     const checkSSO = async () => {
       if (!redirectUri) {
-        setError(t('redirectUriNotSpecified'));
+        setError('redirect_uri not specified');
         setLoading(false);
         return;
       }
@@ -64,27 +62,27 @@ export default function SSOInitiatePage() {
         }
 
         if (response.status === 400) {
-          setError(data.message || t('invalidRedirectUriFormat'));
+          setError(data.message || 'Invalid redirect_uri format');
         } else {
-          setError(data.message || t('initiationError'));
+          setError(data.message || 'Error during SSO initiation');
         }
         setLoading(false);
       } catch (err) {
-        setError(t('initiationError'));
+        setError('Error during SSO initiation');
         setLoading(false);
       }
     };
 
     checkSSO();
-  }, [redirectUri, service, state, t]);
+  }, [redirectUri, service, state]);
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#141519]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mx-auto mb-4" />
-          <p className="text-gray-300">{t('initializing')}</p>
-          <p className="text-sm text-gray-500 mt-1">{t('pleaseWait')}</p>
+          <p className="text-gray-300">Initializing SSO...</p>
+          <p className="text-sm text-gray-500 mt-1">Please wait...</p>
         </div>
       </div>
     );
@@ -94,13 +92,13 @@ export default function SSOInitiatePage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#141519] p-4">
         <div className="max-w-md w-full bg-white/5 rounded-xl border border-red-500/30 p-6 text-center">
-          <h2 className="text-xl font-semibold text-red-400 mb-2">{t('failedToInitiate')}</h2>
+          <h2 className="text-xl font-semibold text-red-400 mb-2">Failed to initiate SSO</h2>
           <p className="text-gray-300 text-sm mb-4">{error}</p>
           <button
             onClick={() => router.push('/login')}
             className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
           >
-            {t('backToHome')}
+            Back to login
           </button>
         </div>
       </div>

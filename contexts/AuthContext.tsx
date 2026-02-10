@@ -250,24 +250,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       let loginUrl = '/api/auth/login';
-      const loginParams = new URLSearchParams();
       if (credentials.redirectUri) {
-        loginParams.set('redirect_uri', credentials.redirectUri);
-      }
-      if (credentials.service) {
-        loginParams.set('service', credentials.service);
-      }
-      if ([...loginParams.keys()].length) {
-        loginUrl += `?${loginParams.toString()}`;
+        const params = new URLSearchParams({
+          redirect_uri: credentials.redirectUri
+        });
+        if (credentials.service) params.set('service', credentials.service);
+        if (credentials.state) params.set('state', credentials.state);
+        loginUrl += `?${params.toString()}`;
       }
 
       const response = await fetch(loginUrl, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
-        cache: 'no-cache'
+        cache: 'no-cache',
+        credentials: 'include'
       });
 
       if (response.redirected && response.url) {
@@ -283,7 +280,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       const data = await response.json();
 
-      if (data?.data?.redirectUrl) {
+      if (data.data?.redirectUrl) {
         window.location.href = data.data.redirectUrl;
         return;
       }

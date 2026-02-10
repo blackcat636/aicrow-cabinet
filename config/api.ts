@@ -11,8 +11,7 @@ export const API_CONFIG = {
       REFRESH: '/auth/refresh',
       LOGOUT: '/auth/logout',
       ME: '/auth/profile',
-      SSO_INITIATE_CHECK: '/auth/sso/initiate-check',
-      SSO_EXCHANGE: '/auth/sso/exchange'
+      SSO_INITIATE: '/auth/sso/initiate'
     },
     USERS: {
       PROFILE: '/users/profile'

@@ -1,86 +1,119 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { API_CONFIG } from '@/config/api';
+import { verifySSOCode, createServiceToken } from '@/lib/sso';
+import { isRedirectUriAllowed, SSO_CORS_ORIGINS } from '@/config/sso';
 
 export const runtime = 'edge';
 
-const API_URL = API_CONFIG.BASE_URL;
+function getCorsHeaders(origin: string | null): Record<string, string> {
+  const allowOrigin =
+    origin && SSO_CORS_ORIGINS.includes(origin) ? origin : SSO_CORS_ORIGINS[0];
+  return {
+    'Access-Control-Allow-Origin': allowOrigin,
+    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400'
+  };
+}
 
-// Handle CORS preflight requests
 export async function OPTIONS(request: NextRequest) {
   const origin = request.headers.get('origin');
-
   return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': origin || '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Max-Age': '86400'
-    }
+    status: 204,
+    headers: getCorsHeaders(origin)
   });
 }
 
+/**
+ * POST /auth/sso/exchange
+ * Exchange SSO code for service token (JWT, 90 days)
+ * CORS-enabled for cross-origin requests from external services.
+ * Body: { code: string, redirect_uri: string }
+ */
+const LOG_PREFIX = '[SSO Exchange]';
+
 export async function POST(request: NextRequest) {
-  const logPrefix = '[SSO Exchange API]';
   const origin = request.headers.get('origin');
 
   try {
     const body = await request.json();
-    const code: string | undefined = body?.code;
-    const redirectUri: string | undefined =
-      body?.redirect_uri || body?.redirectUri;
+    const code = body.code;
+    const redirectUri = body.redirect_uri || body.redirectUri;
 
     if (!code || !redirectUri) {
-      console.error(`${logPrefix} Missing required parameters:`, {
-        hasCode: !!code,
-        hasRedirectUri: !!redirectUri
+      console.warn(`${LOG_PREFIX} Missing params:`, {
+        code: !!code,
+        redirectUri: !!redirectUri
       });
-      return NextResponse.json(
+      const res = NextResponse.json(
         { error: 'code and redirect_uri are required' },
-        {
-          status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': origin || '*',
-            'Access-Control-Allow-Credentials': 'true'
-          }
-        }
+        { status: 400 }
       );
+      Object.entries(getCorsHeaders(origin)).forEach(([k, v]) =>
+        res.headers.set(k, v)
+      );
+      return res;
     }
 
-    const backendUrl = `${API_URL}${API_CONFIG.ENDPOINTS.AUTH.SSO_EXCHANGE}`;
-    const requestBody = {
-      code,
-      redirect_uri: redirectUri
+    if (!isRedirectUriAllowed(redirectUri)) {
+      console.warn(`${LOG_PREFIX} Redirect URI not allowed:`, redirectUri);
+      const res = NextResponse.json(
+        {
+          error: 'Invalid redirect URI. Service not found or URI not allowed.'
+        },
+        { status: 400 }
+      );
+      Object.entries(getCorsHeaders(origin)).forEach(([k, v]) =>
+        res.headers.set(k, v)
+      );
+      return res;
+    }
+
+    const payload = await verifySSOCode(code, redirectUri);
+    const serviceToken = await createServiceToken(
+      payload.userId,
+      payload.service
+    );
+
+    const responseData = {
+      status: 200,
+      serviceToken,
+      token: serviceToken,
+      data: {
+        serviceToken,
+        token: serviceToken,
+        userId: payload.userId,
+        serviceName: payload.service
+      }
     };
 
-    const response = await fetch(backendUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(requestBody)
-    });
-
-    const data = await response.json();
-
-    return NextResponse.json(data, {
-      status: response.status,
-      headers: {
-        'Access-Control-Allow-Origin': origin || '*',
-        'Access-Control-Allow-Credentials': 'true'
-      }
-    });
-  } catch (error: any) {
-    console.error(`${logPrefix} Error:`, error);
-    return NextResponse.json(
-      { error: 'Internal server error', message: error?.message },
-      {
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': origin || '*',
-          'Access-Control-Allow-Credentials': 'true'
-        }
-      }
+    const res = NextResponse.json(responseData);
+    Object.entries(getCorsHeaders(origin)).forEach(([k, v]) =>
+      res.headers.set(k, v)
     );
+    return res;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    const status =
+      message.includes('redirect_uri mismatch') ||
+      message.includes('Invalid code')
+        ? 400
+        : 500;
+    console.error(`${LOG_PREFIX} Error:`, {
+      message,
+      status,
+      stack: error instanceof Error ? error.stack : undefined
+    });
+    const res = NextResponse.json(
+      {
+        error:
+          status === 400 ? 'Invalid or expired code' : 'Internal server error'
+      },
+      { status }
+    );
+    Object.entries(getCorsHeaders(origin)).forEach(([k, v]) =>
+      res.headers.set(k, v)
+    );
+    return res;
   }
 }

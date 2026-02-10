@@ -741,21 +741,9 @@
     "pleaseWait": "Будь ласка, зачекайте...",
     "redirectUriNotSpecified": "redirect_uri не вказано",
     "invalidRedirectUriFormat": "Невірний формат redirect_uri",
-    "redirectingToService": "Перенаправлення до сервісу...",
-    "authenticationRequired": "Необхідна автентифікація. Перенаправлення на логін...",
     "failedToInitiate": "Не вдалося ініціювати SSO",
     "initiationError": "Помилка під час ініціації SSO",
-    "whatToDo": "Що робити:",
-    "checkRedirectUriExternal": "Перевірте, що redirect_uri вказує на зовнішній сервіс (callback URL)",
-    "redirectUriExample": "Приклад правильного redirect_uri: https://external-service.com/callback або /callback",
-    "dontUseInternalRoutes": "Не використовуйте внутрішні маршрути: /login, /signup, /dashboard",
-    "checkRedirectUriInUrl": "Перевірте, що redirect_uri передається в URL",
-    "correctUrlExample": "Приклад правильного URL: /auth/sso/initiate?redirect_uri=https://external-service.com/callback&service=my-service",
-    "externalServiceCheck": "Якщо ви використовуєте зовнішній сервіс, переконайтеся, що він передає redirect_uri параметр",
     "backToHome": "Повернутися на головну",
-    "tryAgain": "Спробуйте ще раз або поверніться на головну.",
-    "redirectUriPointsToLogin": "Помилка: redirect_uri вказує на сторінку логіну замість зовнішнього сервісу.",
-    "useCorrectRedirectUri": "Будь ласка, використовуйте правильний redirect_uri (наприклад, /callback або URL зовнішнього сервісу).",
     "continueToExternalService": "Ви входите, щоб продовжити в зовнішній сервіс{service}"
   }
 }

@@ -17,11 +17,8 @@ const protectedRoutes = [
 const authRoutes = [
   '/login',
   '/signup',
-  '/auth/callback',
-  '/sso/initiate',
-  '/auth/sso/initiate'
+  '/auth/callback'
 ];
-const ssoRoutes = ['/sso/initiate', '/auth/sso/initiate'];
 
 const intlMiddleware = createMiddleware({
   ...routing,
@@ -79,7 +76,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/favicon') ||
-    pathname === '/auth/sso/exchange'
+    pathname.startsWith('/auth/sso/') ||
+    pathname.startsWith('/sso/')
   ) {
     return NextResponse.next();
   }
@@ -258,7 +256,6 @@ export async function middleware(request: NextRequest) {
     normalizedPathname.startsWith(route)
   );
   const isAuthRoute = authRoutes.some((route) => normalizedPathname === route);
-  const isSSORoute = ssoRoutes.some((route) => normalizedPathname === route);
 
   const { accessToken, refreshToken, deviceId } = getTokens(request);
 
@@ -266,10 +263,9 @@ export async function middleware(request: NextRequest) {
     try {
       const response = await authApi.refreshToken(refreshToken, deviceId);
       if (response.status === 200 && response.data) {
-        const nextResponse =
-          isAuthRoute && !isSSORoute
-            ? NextResponse.redirect(new URL('/dashboard', request.url))
-            : NextResponse.next();
+        const nextResponse = isAuthRoute
+          ? NextResponse.redirect(new URL('/dashboard', request.url))
+          : NextResponse.next();
 
         const nowSec = Math.floor(Date.now() / 1000);
         const accessExp = decodeToken(response.data.accessToken)?.exp;
@@ -374,7 +370,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAccessTokenValid) {
-    if (isAuthRoute && !isSSORoute) {
+    if (isAuthRoute) {
       return NextResponse.redirect(
         createLocalizedUrl('/dashboard', currentLocale, request)
       );
