@@ -10,11 +10,26 @@ import {
   type SSOConfig
 } from '@/lib/ssoConfig';
 
-// Fallback CORS origins when API is unavailable (from env only)
+// Fallback when API is unavailable (from env only)
 const FALLBACK_CORS =
   process.env.SSO_CORS_ORIGINS?.split(',')
     .map((o) => o.trim())
     .filter(Boolean) || [];
+
+const FALLBACK_REDIRECT_URIS =
+  process.env.SSO_REDIRECT_URIS?.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean) || [];
+
+function isRedirectUriInFallback(redirectUri: string, _service?: string): boolean {
+  if (FALLBACK_REDIRECT_URIS.length === 0) return false;
+  const normalize = (u: string) => u.replace(/\/$/, '') || u;
+  const normalized = normalize(redirectUri);
+  return FALLBACK_REDIRECT_URIS.some(
+    (u) =>
+      normalized === normalize(u) || normalized.startsWith(normalize(u) + '/')
+  );
+}
 
 /**
  * Get CORS origins from API. Falls back to SSO_CORS_ORIGINS env if API fails.
@@ -30,12 +45,17 @@ export async function getCorsOrigins(): Promise<string[]> {
 
 /**
  * Check if redirect_uri is allowed (fetches config from backend API).
+ * Falls back to SSO_REDIRECT_URIS env when API is unavailable.
  */
 export async function isRedirectUriAllowed(
   redirectUri: string,
   service?: string
 ): Promise<boolean> {
-  return isRedirectUriAllowedFromApi(redirectUri, service);
+  try {
+    return await isRedirectUriAllowedFromApi(redirectUri, service);
+  } catch {
+    return isRedirectUriInFallback(redirectUri, service);
+  }
 }
 
 export type { SSOConfig };

@@ -371,6 +371,13 @@ export async function middleware(request: NextRequest) {
 
   if (isAccessTokenValid) {
     if (isAuthRoute) {
+      // SSO flow: logged-in user on /login with redirect_uri should complete SSO
+      const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
+      if (redirectUri) {
+        return NextResponse.redirect(
+          createLocalizedUrl('/sso/initiate', currentLocale, request)
+        );
+      }
       return NextResponse.redirect(
         createLocalizedUrl('/dashboard', currentLocale, request)
       );
