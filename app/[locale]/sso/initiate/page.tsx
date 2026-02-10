@@ -70,12 +70,21 @@ export default function SSOInitiatePage() {
 
         const data = await res.json();
 
-        if (data?.status === 200 && data?.data?.redirectUrl) {
+        // Redirect when authenticated: backend may return redirectUrl in data.data or at top level
+        const redirectUrl =
+          data?.data?.redirectUrl ?? data?.redirectUrl;
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[SSO Initiate] Response:', {
+            status: data?.status,
+            hasRedirectUrl: !!redirectUrl,
+            hasLoginUrl: !!data?.data?.loginUrl
+          });
+        }
+        if (data?.status === 200 && redirectUrl) {
           setStatus('redirecting');
           setMessage(t('redirectingToService'));
-          // Small delay to ensure the user sees the status before redirect
           setTimeout(() => {
-            window.location.href = data.data.redirectUrl;
+            window.location.href = redirectUrl;
           }, 100);
           return;
         }

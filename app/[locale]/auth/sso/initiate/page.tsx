@@ -61,11 +61,14 @@ export default function SSOInitiatePage() {
         });
         const data = await res.json();
 
-        if (data?.status === 200 && data?.data?.redirectUrl) {
+        // Redirect when authenticated: backend may return redirectUrl in data.data or at top level
+        const redirectUrl =
+          data?.data?.redirectUrl ?? data?.redirectUrl;
+        if (data?.status === 200 && redirectUrl) {
           setStatus('redirecting');
           setMessage(t('redirectingToService'));
           setTimeout(() => {
-            window.location.href = data.data.redirectUrl;
+            window.location.href = redirectUrl;
           }, 100);
           return;
         }
