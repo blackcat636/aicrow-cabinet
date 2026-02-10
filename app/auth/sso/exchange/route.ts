@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySSOCode, createServiceToken } from '@/lib/sso';
-import { isRedirectUriAllowed, SSO_CORS_ORIGINS } from '@/config/sso';
+import { isRedirectUriAllowed, getCorsOrigins } from '@/config/sso';
 
 export const runtime = 'edge';
 
-function getCorsHeaders(origin: string | null): Record<string, string> {
+async function getCorsHeaders(origin: string | null): Promise<Record<string, string>> {
+  const corsOrigins = await getCorsOrigins();
   const allowOrigin =
-    origin && SSO_CORS_ORIGINS.includes(origin) ? origin : SSO_CORS_ORIGINS[0];
+    origin && corsOrigins.includes(origin) ? origin : corsOrigins[0] || '*';
   return {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Credentials': 'true',
@@ -18,9 +19,10 @@ function getCorsHeaders(origin: string | null): Record<string, string> {
 
 export async function OPTIONS(request: NextRequest) {
   const origin = request.headers.get('origin');
+  const headers = await getCorsHeaders(origin);
   return new NextResponse(null, {
     status: 204,
-    headers: getCorsHeaders(origin)
+    headers
   });
 }
 
@@ -45,27 +47,26 @@ export async function POST(request: NextRequest) {
         code: !!code,
         redirectUri: !!redirectUri
       });
+      const corsHeaders = await getCorsHeaders(origin);
       const res = NextResponse.json(
         { error: 'code and redirect_uri are required' },
         { status: 400 }
       );
-      Object.entries(getCorsHeaders(origin)).forEach(([k, v]) =>
-        res.headers.set(k, v)
-      );
+      Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v));
       return res;
     }
 
-    if (!isRedirectUriAllowed(redirectUri)) {
+    const allowed = await isRedirectUriAllowed(redirectUri);
+    if (!allowed) {
       console.warn(`${LOG_PREFIX} Redirect URI not allowed:`, redirectUri);
+      const corsHeaders = await getCorsHeaders(origin);
       const res = NextResponse.json(
         {
           error: 'Invalid redirect URI. Service not found or URI not allowed.'
         },
         { status: 400 }
       );
-      Object.entries(getCorsHeaders(origin)).forEach(([k, v]) =>
-        res.headers.set(k, v)
-      );
+      Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v));
       return res;
     }
 
@@ -87,10 +88,9 @@ export async function POST(request: NextRequest) {
       }
     };
 
+    const corsHeaders = await getCorsHeaders(origin);
     const res = NextResponse.json(responseData);
-    Object.entries(getCorsHeaders(origin)).forEach(([k, v]) =>
-      res.headers.set(k, v)
-    );
+    Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v));
     return res;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
@@ -104,6 +104,7 @@ export async function POST(request: NextRequest) {
       status,
       stack: error instanceof Error ? error.stack : undefined
     });
+    const corsHeaders = await getCorsHeaders(origin);
     const res = NextResponse.json(
       {
         error:
@@ -111,9 +112,7 @@ export async function POST(request: NextRequest) {
       },
       { status }
     );
-    Object.entries(getCorsHeaders(origin)).forEach(([k, v]) =>
-      res.headers.set(k, v)
-    );
+    Object.entries(corsHeaders).forEach(([k, v]) => res.headers.set(k, v));
     return res;
   }
 }

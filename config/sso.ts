@@ -1,51 +1,41 @@
 /**
- * CORS: allowed origins for SSO exchange (cross-origin requests from external services)
+ * SSO config - delegating to backend API.
+ * All allowed redirect URIs and CORS origins are fetched from external URL (SSO_CONFIG_URL).
+ * No hardcoded whitelist.
  */
-export const SSO_CORS_ORIGINS: string[] = [
-  'http://localhost:3001',
-  'http://127.0.0.1:3001',
-  'https://contentzavod.example.com',
-  ...(process.env.SSO_CORS_ORIGINS?.split(',').map((o) => o.trim()).filter(Boolean) || [])
-];
+
+import {
+  getSSOConfig,
+  isRedirectUriAllowedFromApi,
+  type SSOConfig
+} from '@/lib/ssoConfig';
+
+// Fallback CORS origins when API is unavailable (from env only)
+const FALLBACK_CORS =
+  process.env.SSO_CORS_ORIGINS?.split(',')
+    .map((o) => o.trim())
+    .filter(Boolean) || [];
 
 /**
- * SSO External Services Registry
- * Service name -> allowed redirect URIs (whitelist)
+ * Get CORS origins from API. Falls back to SSO_CORS_ORIGINS env if API fails.
  */
-export const SSO_SERVICES: Record<string, string[]> = {
-  ExternalClient: [
-    'http://localhost:3001/callback',
-    'http://localhost:3001/',
-    'http://127.0.0.1:3001/callback',
-    'http://127.0.0.1:3001/'
-  ],
-  ContentZavod: [
-    'https://contentzavod.example.com/callback'
-  ]
-};
+export async function getCorsOrigins(): Promise<string[]> {
+  try {
+    const config = await getSSOConfig();
+    return config.corsOrigins.length > 0 ? config.corsOrigins : FALLBACK_CORS;
+  } catch {
+    return FALLBACK_CORS;
+  }
+}
 
 /**
- * Check if redirect_uri is allowed for the given service (or any service if service is empty)
+ * Check if redirect_uri is allowed (fetches config from backend API).
  */
-export function isRedirectUriAllowed(
+export async function isRedirectUriAllowed(
   redirectUri: string,
   service?: string
-): boolean {
-  const normalize = (u: string) => u.replace(/\/$/, '') || u;
-  const normalized = normalize(redirectUri);
-
-  if (service) {
-    const uris = SSO_SERVICES[service];
-    if (!uris) return false;
-    return uris.some(
-      (u) => normalized === normalize(u) || normalized.startsWith(normalize(u) + '/')
-    );
-  }
-
-  for (const uris of Object.values(SSO_SERVICES)) {
-    if (uris.some((u) => normalized === normalize(u) || normalized.startsWith(normalize(u) + '/'))) {
-      return true;
-    }
-  }
-  return false;
+): Promise<boolean> {
+  return isRedirectUriAllowedFromApi(redirectUri, service);
 }
+
+export type { SSOConfig };

@@ -264,12 +264,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(credentials),
         cache: 'no-cache',
-        credentials: 'include'
+        credentials: 'include',
+        redirect: 'manual'
       });
 
-      if (response.redirected && response.url) {
-        window.location.href = response.url;
-        return;
+      // 302 redirect from backend (SSO flow)
+      if (response.status === 302) {
+        const location = response.headers.get('Location');
+        if (location) {
+          window.location.href = location;
+          return;
+        }
       }
 
       if (!response.ok) {
@@ -279,11 +284,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-
-      if (data.data?.redirectUrl) {
-        window.location.href = data.data.redirectUrl;
-        return;
-      }
 
       if (data.user) {
         setIsAuthenticated(true);

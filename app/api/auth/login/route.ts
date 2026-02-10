@@ -72,7 +72,8 @@ export async function POST(request: NextRequest) {
     }
 
     // SSO flow: redirect_uri present and credentials valid
-    if (redirectUri && isRedirectUriAllowed(redirectUri, service)) {
+    const ssoAllowed = redirectUri && (await isRedirectUriAllowed(redirectUri, service));
+    if (ssoAllowed) {
       try {
         const userId = data.data.user?.id != null
           ? (typeof data.data.user.id === 'string'
@@ -89,13 +90,7 @@ export async function POST(request: NextRequest) {
         ssoRedirectUrl.searchParams.set('code', code);
         ssoRedirectUrl.searchParams.set('state', state);
 
-        const nextResponse = NextResponse.json(
-          {
-            status: 200,
-            data: { redirectUrl: ssoRedirectUrl.toString() }
-          },
-          { status: 200 }
-        );
+        const nextResponse = NextResponse.redirect(ssoRedirectUrl.toString(), 302);
         setAuthCookies(nextResponse, data);
         return nextResponse;
       } catch (ssoError) {

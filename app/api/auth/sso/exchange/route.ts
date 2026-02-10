@@ -22,7 +22,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!isRedirectUriAllowed(redirectUri)) {
+    const allowed = await isRedirectUriAllowed(redirectUri);
+    if (!allowed) {
       return NextResponse.json(
         { error: 'Invalid redirect URI. Service not found or URI not allowed.' },
         { status: 400 }
