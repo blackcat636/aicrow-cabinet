@@ -11,7 +11,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_CONFIG } from '@/config/api';
 import { getTokens } from '@/lib/auth';
-import { normalizeRedirectUri } from '@/config/site';
 
 export const runtime = 'edge';
 
@@ -21,29 +20,13 @@ export async function GET(request: NextRequest) {
   const logPrefix = '[SSO Initiate Check API]';
   
   try {
-    let redirectUri = request.nextUrl.searchParams.get('redirect_uri');
+    const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
     const service = request.nextUrl.searchParams.get('service');
     const requestOrigin = request.headers.get('origin') || request.url;
-    const referer = request.headers.get('referer');
     
     if (!redirectUri) {
       return NextResponse.json(
         { error: 'redirect_uri is required' },
-        { status: 400 }
-      );
-    }
-
-    // Normalize redirect_uri - replace localhost with correct environment URL
-    const originalRedirectUri = redirectUri;
-    try {
-      redirectUri = normalizeRedirectUri(redirectUri, requestOrigin);
-    } catch (error: any) {
-      console.error(`${logPrefix} Failed to normalize redirect_uri:`, error);
-      return NextResponse.json(
-        { 
-          error: error?.message || 'Invalid redirect_uri',
-          message: error?.message || 'redirect_uri не може вказувати на внутрішні маршрути'
-        },
         { status: 400 }
       );
     }

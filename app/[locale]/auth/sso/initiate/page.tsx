@@ -14,7 +14,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/routing';
-import { normalizeRedirectUri } from '@/config/site';
 import { useTranslations } from 'next-intl';
 
 type Status = 'loading' | 'redirecting' | 'error';
@@ -30,7 +29,6 @@ export default function SSOInitiatePage() {
   const [message, setMessage] = useState<string>(t('initializing'));
   const [isMounted, setIsMounted] = useState(false);
 
-  // Ensure we're on client side before normalizing redirect_uri
   useEffect(() => {
     setIsMounted(true);
   }, []);
@@ -38,28 +36,13 @@ export default function SSOInitiatePage() {
   useEffect(() => {
     if (!isMounted) return;
 
-    let redirectUri = searchParams.get('redirect_uri');
+    const redirectUri = searchParams.get('redirect_uri');
     const service = searchParams.get('service') || undefined;
-    const allParams = Object.fromEntries(searchParams.entries());
 
     if (!redirectUri) {
       setStatus('error');
       setMessage(t('redirectUriNotSpecified'));
       console.error('[SSO Initiate Page /auth/sso/initiate] Missing redirect_uri in URL');
-      return;
-    }
-
-    // Normalize redirect_uri - convert relative paths to absolute URLs
-    // This allows using paths like "/callback" which will be automatically
-    // converted to the correct URL based on the current environment
-    // Only normalize on client side to avoid hydration mismatch
-    const originalRedirectUri = redirectUri;
-    try {
-      redirectUri = normalizeRedirectUri(redirectUri);
-    } catch (error: any) {
-      setStatus('error');
-      setMessage(error?.message || t('invalidRedirectUriFormat'));
-      console.error('[SSO Initiate Page /auth/sso/initiate] Normalization error:', error);
       return;
     }
 
