@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { API_CONFIG } from '@/config/api';
 import { decodeToken } from '@/lib/auth-utils';
 import { createSSOCode, generateState } from '@/lib/sso';
-import { isRedirectUriAllowed } from '@/config/sso';
+import { isRedirectUriAllowed } from '@/lib/ssoConfig';
 
 export const runtime = 'edge';
 
@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
 
     // SSO flow: redirect_uri present and credentials valid
     const ssoAllowed = redirectUri && (await isRedirectUriAllowed(redirectUri, service));
+    console.log(`${logPrefix} SSO check:`, { redirectUri, service, ssoAllowed });
     if (ssoAllowed) {
       try {
         const userId = data.data.user?.id != null
@@ -90,6 +91,7 @@ export async function POST(request: NextRequest) {
         ssoRedirectUrl.searchParams.set('code', code);
         ssoRedirectUrl.searchParams.set('state', state);
 
+        console.log(`${logPrefix} SSO redirect 302 to:`, ssoRedirectUrl.toString());
         const nextResponse = NextResponse.redirect(ssoRedirectUrl.toString(), 302);
         setAuthCookies(nextResponse, data);
         return nextResponse;

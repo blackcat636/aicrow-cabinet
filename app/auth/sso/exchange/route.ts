@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySSOCode, createServiceToken } from '@/lib/sso';
-import { isRedirectUriAllowed, getCorsOrigins } from '@/config/sso';
+import { isRedirectUriAllowed, getCorsOrigins } from '@/lib/ssoConfig';
 
 export const runtime = 'edge';
 
@@ -42,6 +42,8 @@ export async function POST(request: NextRequest) {
     const code = body.code;
     const redirectUri = body.redirect_uri || body.redirectUri;
 
+    console.log(`${LOG_PREFIX} Request:`, { hasCode: !!code, redirectUri });
+
     if (!code || !redirectUri) {
       console.warn(`${LOG_PREFIX} Missing params:`, {
         code: !!code,
@@ -75,6 +77,8 @@ export async function POST(request: NextRequest) {
       payload.userId,
       payload.service
     );
+
+    console.log(`${LOG_PREFIX} Success:`, { userId: payload.userId, service: payload.service });
 
     const responseData = {
       status: 200,

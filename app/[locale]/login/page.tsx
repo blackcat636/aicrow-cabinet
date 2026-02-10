@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from '@/i18n/routing';
 import { useSearchParams } from 'next/navigation';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { LanguageSwitcherCompact } from '@/components/LanguageSwitcherCompact';
+import { useTranslations } from 'next-intl';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -14,7 +15,21 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const redirectUri = searchParams?.get('redirect_uri') || undefined;
   const service = searchParams?.get('service') || undefined;
-  const state = searchParams?.get('state') || undefined;
+  const code = searchParams?.get('code');
+  const state = searchParams?.get('state');
+  
+  const [ssoError, setSsoError] = useState<string | null>(null);
+  const t = useTranslations('sso');
+  const tCommon = useTranslations('common');
+
+  // Handle SSO callback - if code and state are present, this means redirect_uri was wrong
+  useEffect(() => {
+    if (code && state) {
+      setSsoError(
+        `${t('redirectUriPointsToLogin')} ${t('useCorrectRedirectUri')}`
+      );
+    }
+  }, [code, state, redirectUri, service, t]);
 
   return (
     <div className="min-h-screen relative">
@@ -32,12 +47,24 @@ export default function LoginPage() {
       </div>
 
       <div className="relative z-20">
+        {ssoError && (
+          <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50 max-w-md w-full mx-4">
+            <div className="bg-red-900/90 border border-red-600 rounded-lg p-4 shadow-lg">
+              <p className="text-sm text-red-200">{ssoError}</p>
+              <button
+                onClick={() => setSsoError(null)}
+                className="mt-2 text-xs text-red-300 hover:text-red-100 underline"
+              >
+                {tCommon('close')}
+              </button>
+            </div>
+          </div>
+        )}
         <LoginForm
           variant="modal"
           isOpen={true}
           redirectUri={redirectUri}
           service={service}
-          state={state}
           onClose={() => router.push('/')}
           onSwitchToRegister={() => router.push('/signup')}
         />

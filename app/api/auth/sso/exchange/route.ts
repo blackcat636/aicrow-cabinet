@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifySSOCode, createServiceToken } from '@/lib/sso';
-import { isRedirectUriAllowed } from '@/config/sso';
+import { isRedirectUriAllowed } from '@/lib/ssoConfig';
 
 export const runtime = 'edge';
 

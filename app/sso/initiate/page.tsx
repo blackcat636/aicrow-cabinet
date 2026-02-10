@@ -39,28 +39,47 @@ function SSOInitiateContent() {
         if (service) params.set('service', service);
         if (state) params.set('state', state);
 
-        const response = await fetch(
-          `/api/auth/sso/initiate-check?${params.toString()}`,
-          {
-            method: 'GET',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            cache: 'no-cache'
-          }
-        );
+        const apiUrl = `/api/auth/sso/initiate-check?${params.toString()}`;
+        console.log('[SSO Initiate] Fetching:', apiUrl);
 
-        const data: SSOCheckResponse = await response.json();
+        const response = await fetch(apiUrl, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          cache: 'no-cache'
+        });
+
+        const responseText = await response.text();
+        console.log('[SSO Initiate] Response:', {
+          status: response.status,
+          statusText: response.statusText,
+          ok: response.ok,
+          bodyPreview: responseText.slice(0, 500)
+        });
+
+        let data: SSOCheckResponse;
+        try {
+          data = JSON.parse(responseText) as SSOCheckResponse;
+        } catch (parseErr) {
+          console.error('[SSO Initiate] JSON parse failed:', parseErr);
+          setError(`API returned invalid JSON (status ${response.status}). Check server logs.`);
+          setLoading(false);
+          return;
+        }
 
         if (data.status === 200 && data.data?.redirectUrl) {
+          console.log('[SSO Initiate] Redirecting to callback with code');
           window.location.href = data.data.redirectUrl;
           return;
         }
 
         if (data.status === 401 && data.data?.loginUrl) {
+          console.log('[SSO Initiate] Not authenticated, redirecting to login');
           window.location.href = data.data.loginUrl;
           return;
         }
 
+        console.warn('[SSO Initiate] Unexpected response:', { data, status: response.status });
         if (response.status === 400) {
           setError(data.message || 'Invalid redirect_uri format');
         } else {
@@ -68,7 +87,10 @@ function SSOInitiateContent() {
         }
         setLoading(false);
       } catch (err) {
-        setError('Error during SSO initiation');
+        const errMsg = err instanceof Error ? err.message : String(err);
+        const errStack = err instanceof Error ? err.stack : undefined;
+        console.error('[SSO Initiate] Fetch error:', errMsg, errStack);
+        setError(`Error during SSO initiation: ${errMsg}`);
         setLoading(false);
       }
     };
