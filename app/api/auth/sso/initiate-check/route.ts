@@ -1,118 +1,144 @@
+/**
+ * SSO Initiate Check API Route
+ * 
+ * This is an INTERNAL API endpoint called by the frontend SSO initiate page.
+ * External services should NOT call this directly - they should redirect to:
+ * {MAIN_FRONTEND_URL}/sso/initiate or {MAIN_FRONTEND_URL}/auth/sso/initiate
+ * 
+ * The backend URL is hidden from the user - they only see frontend URLs.
+ */
+
 import { NextRequest, NextResponse } from 'next/server';
-import { createSSOCode, generateState } from '@/lib/sso';
-import { isRedirectUriAllowed } from '@/lib/ssoConfig';
-import { decodeToken, type TokenPayload } from '@/lib/auth-utils';
+import { API_CONFIG } from '@/config/api';
+import { getTokens } from '@/lib/auth';
+import { normalizeRedirectUri } from '@/config/site';
 
 export const runtime = 'edge';
 
-const LOG_PREFIX = '[SSO Initiate-Check]';
+const API_URL = API_CONFIG.BASE_URL;
 
-/**
- * GET /api/auth/sso/initiate-check?redirect_uri=...&service=...&state=...
- * Checks if user is authenticated and redirect_uri is allowed.
- * - 200 + redirectUrl: user logged in, redirect to callback with code
- * - 401 + loginUrl: user not authenticated, redirect to login
- * - 400: invalid redirect_uri
- */
 export async function GET(request: NextRequest) {
-  const url = new URL(request.url);
-  const redirectUri = url.searchParams.get('redirect_uri');
-  const service = url.searchParams.get('service') || undefined;
-  const state = url.searchParams.get('state') || generateState();
-
-  console.log(`${LOG_PREFIX} Request:`, { redirectUri, service, state: state?.slice(0, 8) + '...' });
-
-  if (!redirectUri) {
-    console.warn(`${LOG_PREFIX} Missing redirect_uri`);
-    return NextResponse.json(
-      { status: 400, message: 'redirect_uri is required' },
-      { status: 400 }
-    );
-  }
-
+  const logPrefix = '[SSO Initiate Check API]';
+  
   try {
-    const allowed = await isRedirectUriAllowed(redirectUri, service);
-    console.log(`${LOG_PREFIX} redirect_uri allowed:`, allowed);
-
-    if (!allowed) {
+    let redirectUri = request.nextUrl.searchParams.get('redirect_uri');
+    const service = request.nextUrl.searchParams.get('service');
+    const requestOrigin = request.headers.get('origin') || request.url;
+    const referer = request.headers.get('referer');
+    
+    if (!redirectUri) {
       return NextResponse.json(
-        { status: 400, message: 'Redirect URI not allowed or service not configured' },
+        { error: 'redirect_uri is required' },
         { status: 400 }
       );
     }
-  } catch (err) {
-    console.error(`${LOG_PREFIX} isRedirectUriAllowed failed:`, err);
-    return NextResponse.json(
-      { status: 500, message: 'Failed to validate redirect URI' },
-      { status: 500 }
-    );
-  }
 
-  const accessToken = request.cookies.get('access_token')?.value;
-  const origin = url.origin;
-
-  if (!accessToken) {
-    console.log(`${LOG_PREFIX} No access_token cookie, redirecting to login`);
-    const loginUrl = new URL('/login', origin);
-    loginUrl.searchParams.set('redirect_uri', redirectUri);
-    if (service) loginUrl.searchParams.set('service', service);
-    loginUrl.searchParams.set('state', state);
-
-    return NextResponse.json({
-      status: 401,
-      data: { loginUrl: loginUrl.toString() }
-    });
-  }
-
-  let decoded: TokenPayload | null = null;
-  try {
-    decoded = decodeToken(accessToken);
-    const exp = decoded?.exp;
-    const now = Math.floor(Date.now() / 1000);
-    if (!exp || exp <= now) {
-      console.log(`${LOG_PREFIX} access_token expired (exp=${exp}, now=${now})`);
-      const loginUrl = new URL('/login', origin);
-      loginUrl.searchParams.set('redirect_uri', redirectUri);
-      if (service) loginUrl.searchParams.set('service', service);
-      loginUrl.searchParams.set('state', state);
-
-      return NextResponse.json({
-        status: 401,
-        data: { loginUrl: loginUrl.toString() }
-      });
+    // Normalize redirect_uri - replace localhost with correct environment URL
+    const originalRedirectUri = redirectUri;
+    try {
+      redirectUri = normalizeRedirectUri(redirectUri, requestOrigin);
+    } catch (error: any) {
+      console.error(`${logPrefix} Failed to normalize redirect_uri:`, error);
+      return NextResponse.json(
+        { 
+          error: error?.message || 'Invalid redirect_uri',
+          message: error?.message || 'redirect_uri не може вказувати на внутрішні маршрути'
+        },
+        { status: 400 }
+      );
     }
-  } catch (decodeErr) {
-    console.warn(`${LOG_PREFIX} access_token decode failed:`, decodeErr);
-    const loginUrl = new URL('/login', origin);
-    loginUrl.searchParams.set('redirect_uri', redirectUri);
-    if (service) loginUrl.searchParams.set('service', service);
-    loginUrl.searchParams.set('state', state);
 
-    return NextResponse.json({
-      status: 401,
-      data: { loginUrl: loginUrl.toString() }
+    const { accessToken } = getTokens(request);
+    
+    const url = new URL(
+      `${API_URL}${API_CONFIG.ENDPOINTS.AUTH.SSO_INITIATE_CHECK}`
+    );
+    url.searchParams.set('redirect_uri', redirectUri);
+    if (service) {
+      url.searchParams.set('service', service);
+    }
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json'
+    };
+
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers
     });
-  }
 
-  try {
-    const userId = decoded?.sub != null
-      ? (typeof decoded.sub === 'string' ? parseInt(decoded.sub, 10) : decoded.sub)
-      : undefined;
-    const code = await createSSOCode(accessToken, redirectUri, service, userId);
+    const data = await response.json();
 
-    const redirectUrl = new URL(redirectUri);
-    redirectUrl.searchParams.set('code', code);
-    redirectUrl.searchParams.set('state', state);
+    // Normalize loginUrl - replace backend URL with frontend URL
+    // Backend might return loginUrl pointing to backend, but we need frontend URL
+    if (data?.data?.loginUrl) {
+      try {
+        const loginUrlObj = new URL(data.data.loginUrl);
+        const originalLoginUrl = data.data.loginUrl;
+        
+        // If loginUrl points to backend domain, replace with frontend domain
+        if (loginUrlObj.origin === API_URL || loginUrlObj.hostname.includes('api.')) {
+          // Get frontend origin from request
+          let frontendOrigin: string;
+          try {
+            if (requestOrigin) {
+              const originUrl = new URL(requestOrigin);
+              frontendOrigin = originUrl.origin;
+            } else {
+              const requestUrl = new URL(request.url);
+              frontendOrigin = requestUrl.origin;
+            }
+          } catch {
+            // Fallback to request URL origin
+            const requestUrl = new URL(request.url);
+            frontendOrigin = requestUrl.origin;
+          }
+          
+          // Preserve ALL query parameters and hash
+          const path = loginUrlObj.pathname + loginUrlObj.search + loginUrlObj.hash;
+          data.data.loginUrl = `${frontendOrigin}${path}`;
+          
+        } else {
+          // Even if loginUrl points to frontend, ensure redirect_uri and service are present
+          // If they're missing, add them from the original request
+          const loginUrlParams = new URLSearchParams(loginUrlObj.search);
+          if (!loginUrlParams.has('redirect_uri') && redirectUri) {
+            loginUrlParams.set('redirect_uri', redirectUri);
+            loginUrlObj.search = loginUrlParams.toString();
+            data.data.loginUrl = loginUrlObj.toString();
+          }
+          if (!loginUrlParams.has('service') && service) {
+            loginUrlParams.set('service', service);
+            loginUrlObj.search = loginUrlParams.toString();
+            data.data.loginUrl = loginUrlObj.toString();
+          }
+        }
+      } catch (error) {
+      }
+    }
 
-    console.log(`${LOG_PREFIX} Success: redirecting to callback`);
-    return NextResponse.json({
-      status: 200,
-      data: { redirectUrl: redirectUrl.toString() }
-    });
-  } catch (err) {
-    console.error(`${LOG_PREFIX} createSSOCode failed:`, err);
+    // Normalize redirectUrl as well (in case backend returns backend URL)
+    if (data?.data?.redirectUrl) {
+      try {
+        const redirectUrlObj = new URL(data.data.redirectUrl);
+        // If redirectUrl points to backend domain, it's probably wrong
+        if (redirectUrlObj.origin === API_URL || redirectUrlObj.hostname.includes('api.')) {
+          console.warn(`${logPrefix} RedirectUrl points to backend, this might be wrong:`, data.data.redirectUrl);
+        }
+      } catch (error) {
+        // Not a URL, skip
+      }
+    }
+
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error(`${logPrefix} Error:`, error);
     return NextResponse.json(
-      { status: 500, message: 'Failed to create SSO code' },
+      { error: 'Internal server error' },
       { status: 500 }
     );
   }

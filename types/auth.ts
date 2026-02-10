@@ -4,7 +4,6 @@ export interface LoginRequest {
   deviceId?: string;
   redirectUri?: string;
   service?: string;
-  state?: string;
 }
 
 export interface RegisterRequest {
@@ -123,15 +122,6 @@ export interface ConfirmEmailChangeRequest {
   code: string;
 }
 
-export interface SSOInitiateResponse {
-  status: number;
-  data: {
-    code: string;
-    state: string;
-  };
-  message?: string;
-}
-
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginRequest) => Promise<void>;
   register: (userData: RegisterRequest) => Promise<void>;
@@ -163,4 +153,30 @@ export interface SocialAccount {
 export interface FacebookStatusResponse {
   status: number;
   data: SocialAccount[];
+}
+
+export interface SSOInitiateCheckResponse {
+  status: number;
+  data: {
+    redirectUrl?: string;
+    code?: string;
+    state?: string;
+    loginUrl?: string;
+  };
+  message?: string;
+}
+
+export interface SSOExchangeRequest {
+  code: string;
+  redirectUri: string;
+}
+
+export interface SSOExchangeResponse {
+  status: number;
+  data: {
+    serviceToken: string;
+    userId: number;
+    serviceName?: string;
+  };
+  message?: string;
 }

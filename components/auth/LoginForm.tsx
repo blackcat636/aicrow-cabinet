@@ -10,13 +10,13 @@ import { useTranslations } from 'next-intl';
 import { FacebookLoginButton } from './FacebookLoginButton';
 
 interface LoginFormProps {
+  // When variant is 'modal', uses isOpen/onClose overlay; when 'embedded', always renders inline
   variant?: 'modal' | 'embedded';
   isOpen?: boolean;
   onClose?: () => void;
   onSwitchToRegister: () => void;
   redirectUri?: string;
   service?: string;
-  state?: string;
   className?: string;
 }
 
@@ -27,7 +27,6 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   onSwitchToRegister,
   redirectUri,
   service,
-  state,
   className
 }) => {
   const t = useTranslations('auth');
@@ -67,12 +66,12 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
     try {
       clearError();
-      await login({
-        ...formData,
+      const loginCredentials = {
+        ...(formData as LoginRequest),
         redirectUri,
-        service,
-        state
-      } as LoginRequest);
+        service
+      };
+      await login(loginCredentials);
       if (isModal && onClose) {
         onClose();
       }
@@ -106,6 +105,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
         {/* Form */}
         <form onSubmit={handleSubmit} className={isModal ? "p-6 space-y-4" : "space-y-4"}>
+          {/* SSO notice */}
           {redirectUri && (
             <div className="p-3 bg-purple-900/20 border border-purple-500/40 rounded-lg text-sm text-purple-100">
               {tSso('continueToExternalService', { service: service ? `: ${service}` : '' })}

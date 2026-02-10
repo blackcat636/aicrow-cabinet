@@ -17,8 +17,11 @@ const protectedRoutes = [
 const authRoutes = [
   '/login',
   '/signup',
-  '/auth/callback'
+  '/auth/callback',
+  '/sso/initiate',
+  '/auth/sso/initiate'
 ];
+const ssoRoutes = ['/sso/initiate', '/auth/sso/initiate'];
 
 const intlMiddleware = createMiddleware({
   ...routing,
@@ -76,8 +79,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/favicon') ||
-    pathname.startsWith('/auth/sso/') ||
-    pathname.startsWith('/sso/')
+    pathname === '/auth/sso/exchange'
   ) {
     return NextResponse.next();
   }
@@ -256,6 +258,7 @@ export async function middleware(request: NextRequest) {
     normalizedPathname.startsWith(route)
   );
   const isAuthRoute = authRoutes.some((route) => normalizedPathname === route);
+  const isSSORoute = ssoRoutes.some((route) => normalizedPathname === route);
 
   const { accessToken, refreshToken, deviceId } = getTokens(request);
 
@@ -263,9 +266,10 @@ export async function middleware(request: NextRequest) {
     try {
       const response = await authApi.refreshToken(refreshToken, deviceId);
       if (response.status === 200 && response.data) {
-        const nextResponse = isAuthRoute
-          ? NextResponse.redirect(new URL('/dashboard', request.url))
-          : NextResponse.next();
+        const nextResponse =
+          isAuthRoute && !isSSORoute
+            ? NextResponse.redirect(new URL('/dashboard', request.url))
+            : NextResponse.next();
 
         const nowSec = Math.floor(Date.now() / 1000);
         const accessExp = decodeToken(response.data.accessToken)?.exp;
@@ -370,14 +374,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isAccessTokenValid) {
-    if (isAuthRoute) {
-      // SSO flow: logged-in user on /login with redirect_uri should complete SSO
-      const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
-      if (redirectUri) {
-        return NextResponse.redirect(
-          createLocalizedUrl('/sso/initiate', currentLocale, request)
-        );
-      }
+    if (isAuthRoute && !isSSORoute) {
       return NextResponse.redirect(
         createLocalizedUrl('/dashboard', currentLocale, request)
       );

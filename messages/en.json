@@ -741,9 +741,21 @@
     "pleaseWait": "Please wait...",
     "redirectUriNotSpecified": "redirect_uri not specified",
     "invalidRedirectUriFormat": "Invalid redirect_uri format",
+    "redirectingToService": "Redirecting to service...",
+    "authenticationRequired": "Authentication required. Redirecting to login...",
     "failedToInitiate": "Failed to initiate SSO",
     "initiationError": "Error during SSO initiation",
+    "whatToDo": "What to do:",
+    "checkRedirectUriExternal": "Check that redirect_uri points to an external service (callback URL)",
+    "redirectUriExample": "Example of correct redirect_uri: https://external-service.com/callback or /callback",
+    "dontUseInternalRoutes": "Do not use internal routes: /login, /signup, /dashboard",
+    "checkRedirectUriInUrl": "Check that redirect_uri is passed in the URL",
+    "correctUrlExample": "Example of correct URL: /auth/sso/initiate?redirect_uri=https://external-service.com/callback&service=my-service",
+    "externalServiceCheck": "If you are using an external service, make sure it passes the redirect_uri parameter",
     "backToHome": "Back to home",
+    "tryAgain": "Try again or return to home.",
+    "redirectUriPointsToLogin": "Error: redirect_uri points to the login page instead of an external service.",
+    "useCorrectRedirectUri": "Please use the correct redirect_uri (e.g., /callback or external service URL).",
     "continueToExternalService": "You are logging in to continue to an external service{service}"
   }
 }

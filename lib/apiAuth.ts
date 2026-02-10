@@ -8,7 +8,9 @@ import {
   ResendVerificationRequest,
   ChangeEmailRequest,
   ConfirmEmailChangeRequest,
-  ImpersonateResponse
+  ImpersonateResponse,
+  SSOInitiateCheckResponse,
+  SSOExchangeResponse
 } from '@/types/auth';
 import { API_CONFIG } from '@/config/api';
 
@@ -385,6 +387,74 @@ export const authApi = {
     } catch (error) {
       throw error;
     }
+  },
+
+  ssoInitiateCheck: async (
+    redirectUri: string,
+    service?: string,
+    accessToken?: string
+  ): Promise<SSOInitiateCheckResponse> => {
+    const url = new URL(
+      `${API_BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.SSO_INITIATE_CHECK}`
+    );
+    url.searchParams.set('redirect_uri', redirectUri);
+    if (service) {
+      url.searchParams.set('service', service);
+    }
+
+    const headers: HeadersInit = {
+      'Content-Type': 'application/json'
+    };
+
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers,
+      cache: 'no-cache'
+    });
+
+    const data = (await response.json()) as SSOInitiateCheckResponse;
+
+    if (!response.ok) {
+      const error = new Error(data?.message || 'SSO initiate check failed');
+      (error as any).status = response.status;
+      throw error;
+    }
+
+    return data;
+  },
+
+  ssoExchange: async (
+    code: string,
+    redirectUri: string
+  ): Promise<SSOExchangeResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}${API_CONFIG.ENDPOINTS.AUTH.SSO_EXCHANGE}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          code,
+          redirect_uri: redirectUri
+        }),
+        cache: 'no-cache'
+      }
+    );
+
+    const data = (await response.json()) as SSOExchangeResponse;
+
+    if (!response.ok) {
+      const error = new Error(data?.message || 'SSO exchange failed');
+      (error as any).status = response.status;
+      throw error;
+    }
+
+    return data;
   },
 
   changeEmail: async (newEmail: string): Promise<void> => {

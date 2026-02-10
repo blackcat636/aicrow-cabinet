@@ -1,58 +1,81 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_CONFIG } from '@/config/api';
 import { decodeToken } from '@/lib/auth-utils';
-import { createSSOCode, generateState } from '@/lib/sso';
-import { isRedirectUriAllowed } from '@/lib/ssoConfig';
 
 export const runtime = 'edge';
 
 const API_URL = API_CONFIG.BASE_URL;
 
-function setAuthCookies(response: NextResponse, data: any) {
-  const nowSec = Math.floor(Date.now() / 1000);
-  const accessExp = decodeToken(data.data.accessToken)?.exp;
-  const refreshExp = decodeToken(data.data.refreshToken)?.exp;
-  const accessMaxAge = accessExp ? Math.max(0, accessExp - nowSec) : 60 * 60;
-  const refreshMaxAge = refreshExp
-    ? Math.max(0, refreshExp - nowSec)
-    : 365 * 24 * 60 * 60;
-
-  response.cookies.set('access_token', data.data.accessToken, {
-    path: '/',
-    maxAge: accessMaxAge,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
-  });
-  response.cookies.set('refresh_token', data.data.refreshToken, {
-    path: '/',
-    maxAge: refreshMaxAge,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
-  });
-  response.cookies.set('device_id', data.data.deviceId, {
-    path: '/',
-    maxAge: 365 * 24 * 60 * 60,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict'
-  });
-}
-
 export async function POST(request: NextRequest) {
   const logPrefix = '[Login API]';
+
+  const getFrontendOrigin = (req: NextRequest, requestOrigin?: string): string => {
+    // Prefer explicit Origin header, fallback to request URL
+    if (requestOrigin) {
+      try {
+        const originUrl = new URL(requestOrigin);
+        return originUrl.origin;
+      } catch {
+        // ignore and fallback below
+      }
+    }
+    try {
+      const reqUrl = new URL(req.url);
+      return reqUrl.origin;
+    } catch {
+      return '';
+    }
+  };
 
   try {
     const body = await request.json();
     const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
-    const service = request.nextUrl.searchParams.get('service') || undefined;
-    const state = request.nextUrl.searchParams.get('state') || generateState();
+    const service = request.nextUrl.searchParams.get('service');
+    const requestOrigin = request.headers.get('origin') || undefined;
+    const frontendOrigin = getFrontendOrigin(request, requestOrigin);
 
-    const loginUrl = new URL(`${API_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`);
-    const response = await fetch(loginUrl.toString(), {
+    const url = new URL(`${API_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`);
+    if (redirectUri) {
+      url.searchParams.set('redirect_uri', redirectUri);
+    }
+    if (service) {
+      url.searchParams.set('service', service);
+    }
+
+    const response = await fetch(url.toString(), {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json'
+      },
       body: JSON.stringify(body),
       redirect: 'manual'
     });
+
+    // Handle backend redirect responses explicitly (e.g., SSO flow)
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('location');
+      if (location) {
+        let targetLocation = location;
+        try {
+          const locUrl = new URL(location);
+          // If backend redirects to its own (api) origin, rewrite to frontend origin
+          if (locUrl.origin === API_URL || locUrl.hostname.includes('api.')) {
+            const path = locUrl.pathname + locUrl.search + locUrl.hash;
+            targetLocation = `${frontendOrigin}${path}`;
+          }
+        } catch {
+          // keep original if parsing fails
+        }
+        // Return JSON instead of redirect to avoid CORS/opaqueredirect issues on fetch.
+        return NextResponse.json(
+          {
+            status: response.status,
+            data: { redirectUrl: targetLocation }
+          },
+          { status: 200 }
+        );
+      }
+    }
 
     const data = await response.json();
 
@@ -64,49 +87,76 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (data.status !== 200 || !data.data) {
+    // If backend returns redirectUrl in payload (SSO flow)
+    if (data?.data?.redirectUrl) {
+      let targetLocation = data.data.redirectUrl;
+      try {
+        const locUrl = new URL(data.data.redirectUrl);
+        if (locUrl.origin === API_URL || locUrl.hostname.includes('api.')) {
+          const path = locUrl.pathname + locUrl.search + locUrl.hash;
+          targetLocation = `${frontendOrigin}${path}`;
+        }
+      } catch {
+        // keep original if parsing fails
+      }
+      // Same approach: return JSON to let client navigate, avoiding cross-origin redirect in fetch.
       return NextResponse.json(
-        { error: 'Invalid response format' },
-        { status: 400 }
+        {
+          status: 200,
+          data: { redirectUrl: targetLocation }
+        },
+        { status: 200 }
       );
     }
 
-    // SSO flow: redirect_uri present and credentials valid
-    const ssoAllowed = redirectUri && (await isRedirectUriAllowed(redirectUri, service));
-    console.log(`${logPrefix} SSO check:`, { redirectUri, service, ssoAllowed });
-    if (ssoAllowed) {
-      try {
-        const userId = data.data.user?.id != null
-          ? (typeof data.data.user.id === 'string'
-              ? parseInt(data.data.user.id, 10)
-              : data.data.user.id)
-          : undefined;
-        const code = await createSSOCode(
-          data.data.accessToken,
-          redirectUri,
-          service,
-          userId
-        );
-        const ssoRedirectUrl = new URL(redirectUri);
-        ssoRedirectUrl.searchParams.set('code', code);
-        ssoRedirectUrl.searchParams.set('state', state);
+    if (data.status === 200 && data.data) {
+      // Set tokens in cookies
+      const nextResponse = NextResponse.json(
+        {
+          user: data.data.user,
+          message: 'Login successful'
+        },
+        { status: 200 }
+      );
 
-        console.log(`${logPrefix} SSO redirect 302 to:`, ssoRedirectUrl.toString());
-        const nextResponse = NextResponse.redirect(ssoRedirectUrl.toString(), 302);
-        setAuthCookies(nextResponse, data);
-        return nextResponse;
-      } catch (ssoError) {
-        console.error(`${logPrefix} SSO code generation failed:`, ssoError);
-      }
+      const nowSec = Math.floor(Date.now() / 1000);
+      const accessExp = decodeToken(data.data.accessToken)?.exp;
+      const refreshExp = decodeToken(data.data.refreshToken)?.exp;
+      const accessMaxAge = accessExp
+        ? Math.max(0, accessExp - nowSec)
+        : 60 * 60;
+      const refreshMaxAge = refreshExp
+        ? Math.max(0, refreshExp - nowSec)
+        : 365 * 24 * 60 * 60;
+
+      nextResponse.cookies.set('access_token', data.data.accessToken, {
+        path: '/',
+        maxAge: accessMaxAge,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
+      nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
+        path: '/',
+        maxAge: refreshMaxAge,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
+      nextResponse.cookies.set('device_id', data.data.deviceId, {
+        path: '/',
+        maxAge: 365 * 24 * 60 * 60,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+
+      return nextResponse;
     }
 
-    // Normal login
-    const nextResponse = NextResponse.json(
-      { user: data.data.user, message: 'Login successful' },
-      { status: 200 }
+    return NextResponse.json(
+      { error: 'Invalid response format' },
+      { status: 400 }
     );
-    setAuthCookies(nextResponse, data);
-    return nextResponse;
   } catch (error) {
     return NextResponse.json(
       { error: 'Internal server error' },

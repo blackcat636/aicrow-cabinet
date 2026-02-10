@@ -1,17 +1,14 @@
 'use client';
 
 /**
- * SSO Initiate Page - Frontend entry point for SSO flow
+ * SSO Initiate Page (Alternative route) - Frontend entry point for SSO flow
  * 
  * IMPORTANT: This is a FRONTEND route, not a backend API endpoint.
- * External services should redirect to: {MAIN_FRONTEND_URL}/sso/initiate?redirect_uri=...
+ * External services should redirect to: {MAIN_FRONTEND_URL}/auth/sso/initiate?redirect_uri=...
  * NOT to: {MAIN_BACKEND_URL}/api/auth/sso/initiate
  * 
- * Flow:
- * 1. External service redirects user to this frontend page
- * 2. This page calls internal API /api/auth/sso/initiate-check (backend URL hidden from user)
- * 3. If authenticated: redirects to external service with SSO code
- * 4. If not authenticated: redirects to login page
+ * This is an alternative route to /sso/initiate for compatibility.
+ * Same functionality as /sso/initiate.
  */
 
 import { useEffect, useState } from 'react';
@@ -43,10 +40,12 @@ export default function SSOInitiatePage() {
 
     let redirectUri = searchParams.get('redirect_uri');
     const service = searchParams.get('service') || undefined;
+    const allParams = Object.fromEntries(searchParams.entries());
 
     if (!redirectUri) {
       setStatus('error');
       setMessage(t('redirectUriNotSpecified'));
+      console.error('[SSO Initiate Page /auth/sso/initiate] Missing redirect_uri in URL');
       return;
     }
 
@@ -60,14 +59,9 @@ export default function SSOInitiatePage() {
     } catch (error: any) {
       setStatus('error');
       setMessage(error?.message || t('invalidRedirectUriFormat'));
+      console.error('[SSO Initiate Page /auth/sso/initiate] Normalization error:', error);
       return;
     }
-
-    const hasAccessTokenCookie =
-      typeof document !== 'undefined' &&
-      document.cookie
-        .split(';')
-        .some((cookie) => cookie.trim().startsWith('access_token='));
 
     const initiate = async () => {
       try {
@@ -82,13 +76,11 @@ export default function SSOInitiatePage() {
           cache: 'no-store',
           credentials: 'include'
         });
-
         const data = await res.json();
 
         if (data?.status === 200 && data?.data?.redirectUrl) {
           setStatus('redirecting');
           setMessage(t('redirectingToService'));
-          // Small delay to ensure the user sees the status before redirect
           setTimeout(() => {
             window.location.href = data.data.redirectUrl;
           }, 100);
@@ -98,7 +90,6 @@ export default function SSOInitiatePage() {
         if (data?.status === 401 && data?.data?.loginUrl) {
           setStatus('redirecting');
           setMessage(t('authenticationRequired'));
-          // Small delay to ensure the user sees the status before redirect
           setTimeout(() => {
             window.location.href = data.data.loginUrl;
           }, 100);
@@ -107,9 +98,11 @@ export default function SSOInitiatePage() {
 
         setStatus('error');
         setMessage(data?.message || t('failedToInitiate'));
+        console.error('[SSO Initiate Page /auth/sso/initiate] Unexpected response:', data);
       } catch (error) {
         setStatus('error');
         setMessage(t('initiationError'));
+        console.error('[SSO Initiate Page /auth/sso/initiate] Fetch error:', error);
       }
     };
 
@@ -134,9 +127,9 @@ export default function SSOInitiatePage() {
             <div className="text-xs text-gray-400">
               <p className="font-semibold mb-1">{t('whatToDo')}</p>
               <ul className="list-disc list-inside space-y-1 ml-2">
-                <li>{t('checkRedirectUriExternal')}</li>
-                <li>{t('redirectUriExample')}</li>
-                <li>{t('dontUseInternalRoutes')}</li>
+                <li>{t('checkRedirectUriInUrl')}</li>
+                <li>{t('correctUrlExample')}</li>
+                <li>{t('externalServiceCheck')}</li>
               </ul>
             </div>
             <div className="mt-3 pt-3 border-t border-white/10">

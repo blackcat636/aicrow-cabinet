@@ -86,35 +86,36 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (isLoggingOutRef.current) {
           return;
         }
+        if (pathname === '/login' || pathname === '/signup') {
+          setIsAuthenticated(false);
+          setUser(null);
+          return;
+        }
+
         const at = getAccessToken();
         const rt = getRefreshToken();
-        
         if (!at && !rt) {
           setIsAuthenticated(false);
           setUser(null);
           setImpersonationInfo(null);
-        } else {
-          const res = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
-          if (res.ok) {
-            const profile = await res.json();
-            setIsAuthenticated(true);
-            setUser(mapProfileToUser(profile));
-            setImpersonationInfo(getImpersonationMeta());
-          } else if (res.status === 401) {
-            const refreshRes = await fetch('/api/auth/refresh', { method: 'POST', cache: 'no-cache' });
-            if (refreshRes.ok) {
-              const profileRes = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
-              if (profileRes.ok) {
-                const profile = await profileRes.json();
-                setIsAuthenticated(true);
-                setUser(mapProfileToUser(profile));
-                setImpersonationInfo(getImpersonationMeta());
-              } else {
-                removeTokens();
-                setIsAuthenticated(false);
-                setUser(null);
-                setImpersonationInfo(null);
-              }
+          return;
+        }
+
+        const res = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
+        if (res.ok) {
+          const profile = await res.json();
+          setIsAuthenticated(true);
+          setUser(mapProfileToUser(profile));
+          setImpersonationInfo(getImpersonationMeta());
+        } else if (res.status === 401) {
+          const refreshRes = await fetch('/api/auth/refresh', { method: 'POST', cache: 'no-cache' });
+          if (refreshRes.ok) {
+            const profileRes = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
+            if (profileRes.ok) {
+              const profile = await profileRes.json();
+              setIsAuthenticated(true);
+              setUser(mapProfileToUser(profile));
+              setImpersonationInfo(getImpersonationMeta());
             } else {
               removeTokens();
               setIsAuthenticated(false);
@@ -122,10 +123,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               setImpersonationInfo(null);
             }
           } else {
+            removeTokens();
             setIsAuthenticated(false);
             setUser(null);
             setImpersonationInfo(null);
           }
+        } else {
+          setIsAuthenticated(false);
+          setUser(null);
+          setImpersonationInfo(null);
         }
       } catch (error) {
         removeTokens();
@@ -250,31 +256,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
     try {
       let loginUrl = '/api/auth/login';
+      const loginParams = new URLSearchParams();
       if (credentials.redirectUri) {
-        const params = new URLSearchParams({
-          redirect_uri: credentials.redirectUri
-        });
-        if (credentials.service) params.set('service', credentials.service);
-        if (credentials.state) params.set('state', credentials.state);
-        loginUrl += `?${params.toString()}`;
+        loginParams.set('redirect_uri', credentials.redirectUri);
+      }
+      if (credentials.service) {
+        loginParams.set('service', credentials.service);
+      }
+      if ([...loginParams.keys()].length) {
+        loginUrl += `?${loginParams.toString()}`;
       }
 
       const response = await fetch(loginUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(credentials),
-        cache: 'no-cache',
-        credentials: 'include',
-        redirect: 'manual'
+        cache: 'no-cache'
       });
 
-      // 302 redirect from backend (SSO flow)
-      if (response.status === 302) {
-        const location = response.headers.get('Location');
-        if (location) {
-          window.location.href = location;
-          return;
-        }
+      if (response.redirected && response.url) {
+        window.location.href = response.url;
+        return;
       }
 
       if (!response.ok) {
@@ -284,6 +288,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
+
+      if (data?.data?.redirectUrl) {
+        window.location.href = data.data.redirectUrl;
+        return;
+      }
 
       if (data.user) {
         setIsAuthenticated(true);
