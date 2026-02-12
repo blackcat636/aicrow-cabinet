@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
     const service = request.nextUrl.searchParams.get('service');
     const requestOrigin = request.headers.get('origin') || request.url;
-    
+
     if (!redirectUri) {
       return NextResponse.json(
         { error: 'redirect_uri is required' },

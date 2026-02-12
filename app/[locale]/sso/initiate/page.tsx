@@ -73,13 +73,6 @@ export default function SSOInitiatePage() {
         // Redirect when authenticated: backend may return redirectUrl in data.data or at top level
         const redirectUrl =
           data?.data?.redirectUrl ?? data?.redirectUrl;
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[SSO Initiate] Response:', {
-            status: data?.status,
-            hasRedirectUrl: !!redirectUrl,
-            hasLoginUrl: !!data?.data?.loginUrl
-          });
-        }
         if (data?.status === 200 && redirectUrl) {
           setStatus('redirecting');
           setMessage(t('redirectingToService'));

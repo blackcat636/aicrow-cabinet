@@ -42,7 +42,6 @@ export default function SSOInitiatePage() {
     if (!redirectUri) {
       setStatus('error');
       setMessage(t('redirectUriNotSpecified'));
-      console.error('[SSO Initiate Page /auth/sso/initiate] Missing redirect_uri in URL');
       return;
     }
 

@@ -77,12 +77,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const data = await response.json();
+    let data: Record<string, unknown> = {};
+    try {
+      data = await response.json();
+    } catch {
+      data = {};
+    }
 
     if (!response.ok) {
-      console.error(`${logPrefix} Login failed:`, data.message);
+      const errorMessage = (data?.error as string) || (data?.message as string) || 'Login failed';
+      console.error(`${logPrefix} Login failed:`, errorMessage, data);
       return NextResponse.json(
-        { error: data.message || 'Login failed' },
+        { error: errorMessage },
         { status: response.status }
       );
     }
