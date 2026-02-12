@@ -9,30 +9,10 @@ const API_URL = API_CONFIG.BASE_URL;
 export async function POST(request: NextRequest) {
   const logPrefix = '[Login API]';
 
-  const getFrontendOrigin = (req: NextRequest, requestOrigin?: string): string => {
-    // Prefer explicit Origin header, fallback to request URL
-    if (requestOrigin) {
-      try {
-        const originUrl = new URL(requestOrigin);
-        return originUrl.origin;
-      } catch {
-        // ignore and fallback below
-      }
-    }
-    try {
-      const reqUrl = new URL(req.url);
-      return reqUrl.origin;
-    } catch {
-      return '';
-    }
-  };
-
   try {
     const body = await request.json();
     const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
     const service = request.nextUrl.searchParams.get('service');
-    const requestOrigin = request.headers.get('origin') || undefined;
-    const frontendOrigin = getFrontendOrigin(request, requestOrigin);
 
     const url = new URL(`${API_URL}${API_CONFIG.ENDPOINTS.AUTH.LOGIN}`);
     if (redirectUri) {
@@ -51,27 +31,12 @@ export async function POST(request: NextRequest) {
       redirect: 'manual'
     });
 
-    // Handle backend redirect responses explicitly (e.g., SSO flow)
+    // Handle backend redirect responses - pass through as-is
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location');
       if (location) {
-        let targetLocation = location;
-        try {
-          const locUrl = new URL(location);
-          // If backend redirects to its own (api) origin, rewrite to frontend origin
-          if (locUrl.origin === API_URL || locUrl.hostname.includes('api.')) {
-            const path = locUrl.pathname + locUrl.search + locUrl.hash;
-            targetLocation = `${frontendOrigin}${path}`;
-          }
-        } catch {
-          // keep original if parsing fails
-        }
-        // Return JSON instead of redirect to avoid CORS/opaqueredirect issues on fetch.
         return NextResponse.json(
-          {
-            status: response.status,
-            data: { redirectUrl: targetLocation }
-          },
+          { status: response.status, data: { redirectUrl: location } },
           { status: 200 }
         );
       }
@@ -108,22 +73,8 @@ export async function POST(request: NextRequest) {
 
     // If backend returns redirectUrl in payload (SSO flow)
     if (data?.data?.redirectUrl) {
-      let targetLocation = data.data.redirectUrl;
-      try {
-        const locUrl = new URL(data.data.redirectUrl);
-        if (locUrl.origin === API_URL || locUrl.hostname.includes('api.')) {
-          const path = locUrl.pathname + locUrl.search + locUrl.hash;
-          targetLocation = `${frontendOrigin}${path}`;
-        }
-      } catch {
-        // keep original if parsing fails
-      }
-      // Same approach: return JSON to let client navigate, avoiding cross-origin redirect in fetch.
       return NextResponse.json(
-        {
-          status: 200,
-          data: { redirectUrl: targetLocation }
-        },
+        { status: 200, data: { redirectUrl: data.data.redirectUrl } },
         { status: 200 }
       );
     }
