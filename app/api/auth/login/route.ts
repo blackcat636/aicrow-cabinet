@@ -77,15 +77,28 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    let data: Record<string, unknown> = {};
+    interface LoginResponse {
+      data?: {
+        redirectUrl?: string;
+        user?: unknown;
+        accessToken?: string;
+        refreshToken?: string;
+        deviceId?: string;
+      };
+      status?: number;
+      error?: string;
+      message?: string;
+    }
+
+    let data: LoginResponse = {};
     try {
-      data = await response.json();
+      data = (await response.json()) as LoginResponse;
     } catch {
       data = {};
     }
 
     if (!response.ok) {
-      const errorMessage = (data?.error as string) || (data?.message as string) || 'Login failed';
+      const errorMessage = data?.error || data?.message || 'Login failed';
       console.error(`${logPrefix} Login failed:`, errorMessage, data);
       return NextResponse.json(
         { error: errorMessage },
@@ -115,19 +128,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (data.status === 200 && data.data) {
+    const responseData = data.data;
+    if (data.status === 200 && responseData?.accessToken && responseData?.refreshToken && responseData?.deviceId) {
       // Set tokens in cookies
       const nextResponse = NextResponse.json(
         {
-          user: data.data.user,
+          user: responseData.user,
           message: 'Login successful'
         },
         { status: 200 }
       );
 
       const nowSec = Math.floor(Date.now() / 1000);
-      const accessExp = decodeToken(data.data.accessToken)?.exp;
-      const refreshExp = decodeToken(data.data.refreshToken)?.exp;
+      const accessExp = decodeToken(responseData.accessToken)?.exp;
+      const refreshExp = decodeToken(responseData.refreshToken)?.exp;
       const accessMaxAge = accessExp
         ? Math.max(0, accessExp - nowSec)
         : 60 * 60;
@@ -135,21 +149,21 @@ export async function POST(request: NextRequest) {
         ? Math.max(0, refreshExp - nowSec)
         : 365 * 24 * 60 * 60;
 
-      nextResponse.cookies.set('access_token', data.data.accessToken, {
+      nextResponse.cookies.set('access_token', responseData.accessToken, {
         path: '/',
         maxAge: accessMaxAge,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
 
-      nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
+      nextResponse.cookies.set('refresh_token', responseData.refreshToken, {
         path: '/',
         maxAge: refreshMaxAge,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict'
       });
 
-      nextResponse.cookies.set('device_id', data.data.deviceId, {
+      nextResponse.cookies.set('device_id', responseData.deviceId, {
         path: '/',
         maxAge: 365 * 24 * 60 * 60,
         secure: process.env.NODE_ENV === 'production',
