@@ -288,7 +288,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       const data = await response.json();
-      console.log('[AuthContext] login response data:', JSON.stringify(data, null, 2));
 
       if (data?.data?.redirectUrl) {
         window.location.href = data.data.redirectUrl;

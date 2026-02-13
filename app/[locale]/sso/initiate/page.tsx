@@ -73,6 +73,7 @@ export default function SSOInitiatePage() {
         // Redirect when authenticated: backend may return redirectUrl in data.data or at top level
         const redirectUrl =
           data?.data?.redirectUrl ?? data?.redirectUrl;
+
         if (data?.status === 200 && redirectUrl) {
           setStatus('redirecting');
           setMessage(t('redirectingToService'));
