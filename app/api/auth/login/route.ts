@@ -57,7 +57,9 @@ export async function POST(request: NextRequest) {
     // Handle backend redirect responses explicitly (e.g., SSO flow)
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location');
-      console.log(`${logPrefix} RAW location from backend:`, location);
+      console.log(`${logPrefix} RAW backend location:`, location);
+      console.log(`${logPrefix} API_URL value:`, API_URL);
+      console.log(`${logPrefix} frontendOrigin:`, frontendOrigin);
       if (location) {
         let targetLocation = location;
         try {
