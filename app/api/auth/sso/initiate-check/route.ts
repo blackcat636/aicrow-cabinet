@@ -108,10 +108,7 @@ export async function GET(request: NextRequest) {
       try {
         const redirectUrlObj = new URL(data.data.redirectUrl);
         // If redirectUrl points to backend domain, it's probably wrong
-        if (
-          redirectUrlObj.origin === API_URL ||
-          redirectUrlObj.hostname.includes('api.')
-        ) {
+        if (redirectUrlObj.origin === API_URL) {
           console.warn(
             `${logPrefix} RedirectUrl points to backend, this might be wrong:`,
             data.data.redirectUrl
