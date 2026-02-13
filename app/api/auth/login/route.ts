@@ -4,7 +4,7 @@ import { decodeToken } from '@/lib/auth-utils';
 
 export const runtime = 'edge';
 
-const API_URL = API_CONFIG.BASE_URL;
+const API_URL = API_CONFIG.BASE_URL.replace(/\/$/, '');
 
 export async function POST(request: NextRequest) {
   const logPrefix = '[Login API]';
@@ -61,39 +61,23 @@ export async function POST(request: NextRequest) {
         let targetLocation = location;
         try {
           const locUrl = new URL(location);
-          // If backend redirects to its own (api) origin, rewrite to frontend origin
-          if (locUrl.origin === API_URL) {
-            const path = locUrl.pathname + locUrl.search + locUrl.hash;
-            targetLocation = `${frontendOrigin}${path}`;
-          }
-        } catch {
-          // keep original if parsing fails
-        }
-        console.log(`${logPrefix} FINAL targetLocation:`, targetLocation);
-        return NextResponse.json(
-          {
-            status: response.status,
-            data: { redirectUrl: targetLocation },
-            _debug: {
-              rawLocation: location,
-              apiUrl: API_URL,
-              frontendOrigin: frontendOrigin,
-              locationOrigin: (() => {
-                try {
-                  return new URL(location).origin;
-                } catch {
-                  return 'parse error';
-                }
-              })(),
-              conditionMatched: (() => {
-                try {
-                  return new URL(location).origin === API_URL;
-                } catch {
-                  return false;
-                }
-              })()
+          const normalizedApiUrl = API_URL.replace(/\/$/, '');
+          if (locUrl.origin === normalizedApiUrl) {
+            // бекенд повернув свій домен — замінюємо на redirectUri що прийшов від клієнта
+            if (redirectUri) {
+              const redirectUriObj = new URL(redirectUri);
+              const targetOrigin = redirectUriObj.origin;
+              const path = locUrl.pathname + locUrl.search + locUrl.hash;
+              targetLocation = `${targetOrigin}${path}`;
+            } else {
+              const path = locUrl.pathname + locUrl.search + locUrl.hash;
+              targetLocation = `${frontendOrigin}${path}`;
             }
-          },
+          }
+        } catch {}
+
+        return NextResponse.json(
+          { status: response.status, data: { redirectUrl: targetLocation } },
           { status: 200 }
         );
       }
