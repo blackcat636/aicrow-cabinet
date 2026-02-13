@@ -1,10 +1,10 @@
 /**
  * SSO Initiate Check API Route
- * 
+ *
  * This is an INTERNAL API endpoint called by the frontend SSO initiate page.
  * External services should NOT call this directly - they should redirect to:
  * {MAIN_FRONTEND_URL}/sso/initiate or {MAIN_FRONTEND_URL}/auth/sso/initiate
- * 
+ *
  * The backend URL is hidden from the user - they only see frontend URLs.
  */
 
@@ -18,7 +18,7 @@ const API_URL = API_CONFIG.BASE_URL;
 
 export async function GET(request: NextRequest) {
   const logPrefix = '[SSO Initiate Check API]';
-  
+
   try {
     const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
     const service = request.nextUrl.searchParams.get('service');
@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { accessToken } = getTokens(request);
-    
+
     const url = new URL(
       `${API_URL}${API_CONFIG.ENDPOINTS.AUTH.SSO_INITIATE_CHECK}`
     );
@@ -62,9 +62,12 @@ export async function GET(request: NextRequest) {
       try {
         const loginUrlObj = new URL(data.data.loginUrl);
         const originalLoginUrl = data.data.loginUrl;
-        
+
         // If loginUrl points to backend domain, replace with frontend domain
-        if (loginUrlObj.origin === API_URL || loginUrlObj.hostname.includes('api.')) {
+        if (
+          loginUrlObj.origin === API_URL ||
+          loginUrlObj.hostname.includes('api.')
+        ) {
           // Get frontend origin from request
           let frontendOrigin: string;
           try {
@@ -80,11 +83,11 @@ export async function GET(request: NextRequest) {
             const requestUrl = new URL(request.url);
             frontendOrigin = requestUrl.origin;
           }
-          
+
           // Preserve ALL query parameters and hash
-          const path = loginUrlObj.pathname + loginUrlObj.search + loginUrlObj.hash;
+          const path =
+            loginUrlObj.pathname + loginUrlObj.search + loginUrlObj.hash;
           data.data.loginUrl = `${frontendOrigin}${path}`;
-          
         } else {
           // Even if loginUrl points to frontend, ensure redirect_uri and service are present
           // If they're missing, add them from the original request
@@ -100,8 +103,7 @@ export async function GET(request: NextRequest) {
             data.data.loginUrl = loginUrlObj.toString();
           }
         }
-      } catch (error) {
-      }
+      } catch (error) {}
     }
 
     // Normalize redirectUrl as well (in case backend returns backend URL)
@@ -109,8 +111,14 @@ export async function GET(request: NextRequest) {
       try {
         const redirectUrlObj = new URL(data.data.redirectUrl);
         // If redirectUrl points to backend domain, it's probably wrong
-        if (redirectUrlObj.origin === API_URL || redirectUrlObj.hostname.includes('api.')) {
-          console.warn(`${logPrefix} RedirectUrl points to backend, this might be wrong:`, data.data.redirectUrl);
+        if (
+          redirectUrlObj.origin === API_URL ||
+          redirectUrlObj.hostname.includes('api.')
+        ) {
+          console.warn(
+            `${logPrefix} RedirectUrl points to backend, this might be wrong:`,
+            data.data.redirectUrl
+          );
         }
       } catch (error) {
         // Not a URL, skip
