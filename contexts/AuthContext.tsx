@@ -282,18 +282,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       if (!response.ok) {
-        let errorData: { error?: string; message?: string } = {};
-        try {
-          errorData = await response.json();
-        } catch {
-          // Response might not be JSON
-        }
-        const errorMessage = errorData?.error || errorData?.message || response.statusText || 'Login failed';
-        console.error('[AuthContext] Login failed:', errorMessage, errorData);
-        throw new Error(errorMessage);
+        const errorData = await response.json();
+        console.error('[AuthContext] Login failed:', errorData);
+        throw new Error(errorData.error || 'Login failed');
       }
 
       const data = await response.json();
+      console.log('[AuthContext] login response data:', JSON.stringify(data, null, 2));
 
       if (data?.data?.redirectUrl) {
         window.location.href = data.data.redirectUrl;
