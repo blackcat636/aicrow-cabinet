@@ -64,10 +64,7 @@ export async function GET(request: NextRequest) {
         const originalLoginUrl = data.data.loginUrl;
 
         // If loginUrl points to backend domain, replace with frontend domain
-        if (
-          loginUrlObj.origin === API_URL ||
-          loginUrlObj.hostname.includes('api.')
-        ) {
+        if (loginUrlObj.origin === API_URL) {
           // Get frontend origin from request
           let frontendOrigin: string;
           try {
