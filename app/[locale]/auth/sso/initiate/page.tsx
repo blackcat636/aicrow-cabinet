@@ -51,7 +51,7 @@ export default function SSOInitiatePage() {
           params.set('service', service);
         }
 
-        const res = await fetch(`/api/auth/sso/initiate-check?${params.toString()}`, {
+        const res = await fetch(`/api/auth/sso/initiate?${params.toString()}`, {
           method: 'GET',
           cache: 'no-store',
           credentials: 'include'

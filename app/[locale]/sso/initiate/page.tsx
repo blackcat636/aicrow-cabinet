@@ -9,7 +9,7 @@
  * 
  * Flow:
  * 1. External service redirects user to this frontend page
- * 2. This page calls internal API /api/auth/sso/initiate-check (backend URL hidden from user)
+ * 2. This page calls internal API /api/auth/sso/initiate (backend URL hidden from user)
  * 3. If authenticated: redirects to external service with SSO code
  * 4. If not authenticated: redirects to login page
  */
@@ -54,7 +54,7 @@ export default function SSOInitiatePage() {
           params.set('service', service);
         }
 
-        const res = await fetch(`/api/auth/sso/initiate-check?${params.toString()}`, {
+        const res = await fetch(`/api/auth/sso/initiate?${params.toString()}`, {
           method: 'GET',
           cache: 'no-store',
           credentials: 'include'
