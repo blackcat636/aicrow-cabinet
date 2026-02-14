@@ -5,6 +5,42 @@ import { decodeToken } from '@/lib/auth-utils';
 export const runtime = 'edge';
 
 const API_URL = API_CONFIG.BASE_URL.replace(/\/$/, '');
+const isAbsoluteHttpUrl = (value: string): boolean => {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
+const resolveRedirectTarget = (
+  location: string,
+  frontendOrigin: string,
+  redirectUri?: string | null
+): string => {
+  try {
+    const locUrl = new URL(location, API_URL);
+    if (locUrl.origin !== API_URL) {
+      return locUrl.toString();
+    }
+
+    const path = locUrl.pathname + locUrl.search + locUrl.hash;
+    const hasSsoCodeOrState =
+      locUrl.searchParams.has('code') || locUrl.searchParams.has('state');
+
+    // For SSO callback redirects, prefer callback origin from redirect_uri.
+    if (hasSsoCodeOrState && redirectUri && isAbsoluteHttpUrl(redirectUri)) {
+      const redirectUriObj = new URL(redirectUri);
+      return `${redirectUriObj.origin}${path}`;
+    }
+
+    // For auth pages and other internal redirects, keep frontend origin.
+    return `${frontendOrigin}${path}`;
+  } catch {
+    return location;
+  }
+};
 
 export async function POST(request: NextRequest) {
   const getFrontendOrigin = (
@@ -56,18 +92,11 @@ export async function POST(request: NextRequest) {
     if (response.status >= 300 && response.status < 400) {
       const location = response.headers.get('location');
       if (location) {
-        let targetLocation = location;
-        try {
-          const locUrl = new URL(location, API_URL);
-          if (locUrl.origin === API_URL) {
-            // Keep backend-issued path/query, but never trust client redirect_uri for origin rewrite.
-            const path = locUrl.pathname + locUrl.search + locUrl.hash;
-            targetLocation = `${frontendOrigin}${path}`;
-          } else {
-            targetLocation = locUrl.toString();
-          }
-        } catch {}
-
+        const targetLocation = resolveRedirectTarget(
+          location,
+          frontendOrigin,
+          redirectUri
+        );
         return NextResponse.json(
           { status: response.status, data: { redirectUrl: targetLocation } },
           { status: 200 }
@@ -85,16 +114,11 @@ export async function POST(request: NextRequest) {
 
     // If backend returns redirectUrl in payload (SSO flow)
     if (data?.data?.redirectUrl) {
-      let targetLocation = data.data.redirectUrl;
-      try {
-        const locUrl = new URL(data.data.redirectUrl);
-        if (locUrl.origin === API_URL) {
-          const path = locUrl.pathname + locUrl.search + locUrl.hash;
-          targetLocation = `${frontendOrigin}${path}`;
-        }
-      } catch {
-        // keep original if parsing fails
-      }
+      const targetLocation = resolveRedirectTarget(
+        data.data.redirectUrl,
+        frontendOrigin,
+        redirectUri
+      );
       return NextResponse.json(
         {
           status: 200,
