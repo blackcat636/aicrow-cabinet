@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         let targetLocation = location;
         try {
           const locUrl = new URL(location);
-          const normalizedApiUrl = API_URL.replace(/\/$/, '');
+          const normalizedApiUrl = API_URL;
           if (locUrl.origin === normalizedApiUrl) {
             // бекенд повернув свій домен — замінюємо на redirectUri що прийшов від клієнта
             if (redirectUri) {
