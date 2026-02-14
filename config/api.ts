@@ -17,6 +17,15 @@ export const API_CONFIG = {
     USERS: {
       PROFILE: '/users/profile'
     },
+    EXTERNAL_SERVICES: {
+      MY_SERVICES: '/users/me/external-services',
+      SERVICE_SESSIONS: (serviceId: number) =>
+        `/users/me/external-services/${serviceId}/sessions`,
+      REVOKE_SERVICE: (serviceId: number) =>
+        `/users/me/external-services/${serviceId}`,
+      REVOKE_SESSION: (serviceId: number, sessionId: number) =>
+        `/users/me/external-services/${serviceId}/sessions/${sessionId}`
+    },
     WORKFLOWS: {
       BASE: '/automations/user/workflows',
       USER_WORKFLOWS: '/automations/user/my-workflows',
@@ -28,6 +37,7 @@ export const API_CONFIG = {
       PLAN_BY_ID: (id: number) => `/subscription-plans/${id}`,
       MY_ACTIVE: '/subscription-plans/my/active',
       PURCHASE: (id: number) => `/subscription-plans/${id}/purchase`,
+      CHECKOUT: (id: number) => `/subscription-plans/${id}/checkout`,
       TRIAL_CONVERT: (userPlanId: number) =>
         `/subscription-plans/trial/${userPlanId}/convert`
     }

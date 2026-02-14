@@ -17,8 +17,6 @@ export const runtime = 'edge';
 const API_URL = API_CONFIG.BASE_URL;
 
 export async function GET(request: NextRequest) {
-  const logPrefix = '[SSO Initiate Check API]';
-
   try {
     const redirectUri = request.nextUrl.searchParams.get('redirect_uri');
     const service = request.nextUrl.searchParams.get('service');
@@ -61,7 +59,6 @@ export async function GET(request: NextRequest) {
     if (data?.data?.loginUrl) {
       try {
         const loginUrlObj = new URL(data.data.loginUrl);
-        const originalLoginUrl = data.data.loginUrl;
 
         // If loginUrl points to backend domain, replace with frontend domain
         if (loginUrlObj.origin === API_URL) {
@@ -107,13 +104,7 @@ export async function GET(request: NextRequest) {
     if (data?.data?.redirectUrl) {
       try {
         const redirectUrlObj = new URL(data.data.redirectUrl);
-        // If redirectUrl points to backend domain, it's probably wrong
-        if (redirectUrlObj.origin === API_URL) {
-          console.warn(
-            `${logPrefix} RedirectUrl points to backend, this might be wrong:`,
-            data.data.redirectUrl
-          );
-        }
+        void redirectUrlObj;
       } catch (error) {
         // Not a URL, skip
       }
@@ -121,7 +112,6 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
-    console.error(`${logPrefix} Error:`, error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -7,8 +7,6 @@ export const runtime = 'edge';
 const API_URL = API_CONFIG.BASE_URL.replace(/\/$/, '');
 
 export async function POST(request: NextRequest) {
-  const logPrefix = '[Login API]';
-
   const getFrontendOrigin = (
     req: NextRequest,
     requestOrigin?: string
@@ -60,19 +58,13 @@ export async function POST(request: NextRequest) {
       if (location) {
         let targetLocation = location;
         try {
-          const locUrl = new URL(location);
-          const normalizedApiUrl = API_URL;
-          if (locUrl.origin === normalizedApiUrl) {
-            // бекенд повернув свій домен — замінюємо на redirectUri що прийшов від клієнта
-            if (redirectUri) {
-              const redirectUriObj = new URL(redirectUri);
-              const targetOrigin = redirectUriObj.origin;
-              const path = locUrl.pathname + locUrl.search + locUrl.hash;
-              targetLocation = `${targetOrigin}${path}`;
-            } else {
-              const path = locUrl.pathname + locUrl.search + locUrl.hash;
-              targetLocation = `${frontendOrigin}${path}`;
-            }
+          const locUrl = new URL(location, API_URL);
+          if (locUrl.origin === API_URL) {
+            // Keep backend-issued path/query, but never trust client redirect_uri for origin rewrite.
+            const path = locUrl.pathname + locUrl.search + locUrl.hash;
+            targetLocation = `${frontendOrigin}${path}`;
+          } else {
+            targetLocation = locUrl.toString();
           }
         } catch {}
 
@@ -84,9 +76,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-
     if (!response.ok) {
-      console.error(`${logPrefix} Login failed:`, data.message);
       return NextResponse.json(
         { error: data.message || 'Login failed' },
         { status: response.status }
@@ -105,7 +95,6 @@ export async function POST(request: NextRequest) {
       } catch {
         // keep original if parsing fails
       }
-      // Same approach: return JSON to let client navigate, avoiding cross-origin redirect in fetch.
       return NextResponse.json(
         {
           status: 200,

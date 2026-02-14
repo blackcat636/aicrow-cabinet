@@ -17,6 +17,7 @@ import { telegramApi } from '@/lib/apiTelegram';
 import { TelegramStatusResponse } from '@/types/telegram';
 import { useRouter } from '@/i18n/routing';
 import { FacebookIntegration } from '@/components/profile/FacebookIntegration';
+import { ExternalServicesIntegration } from '@/components/profile/ExternalServicesIntegration';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -476,6 +477,14 @@ export default function ProfilePage() {
 
               {/* Facebook Integration */}
               <FacebookIntegration />
+
+              {/* External SSO Services */}
+              <div className="p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
+                <div className="text-sm font-medium text-gray-200 mb-3">
+                  {t('externalServicesTitle')}
+                </div>
+                <ExternalServicesIntegration />
+              </div>
             </div>
 
           </div>

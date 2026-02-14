@@ -13,7 +13,6 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 
 type Status = 'loading' | 'redirecting' | 'error';
@@ -24,7 +23,6 @@ export const runtime = 'edge';
 export default function SSOInitiatePage() {
   const t = useTranslations('sso');
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState<string>(t('initializing'));
   const [isMounted, setIsMounted] = useState(false);
@@ -63,7 +61,7 @@ export default function SSOInitiatePage() {
         // Redirect when authenticated: backend may return redirectUrl in data.data or at top level
         const redirectUrl =
           data?.data?.redirectUrl ?? data?.redirectUrl;
-        if (data?.status === 200 && redirectUrl) {
+        if (res.ok && redirectUrl) {
           setStatus('redirecting');
           setMessage(t('redirectingToService'));
           setTimeout(() => {
@@ -72,7 +70,7 @@ export default function SSOInitiatePage() {
           return;
         }
 
-        if (data?.status === 401 && data?.data?.loginUrl) {
+        if ((res.status === 401 || data?.status === 401) && data?.data?.loginUrl) {
           setStatus('redirecting');
           setMessage(t('authenticationRequired'));
           setTimeout(() => {
@@ -83,16 +81,14 @@ export default function SSOInitiatePage() {
 
         setStatus('error');
         setMessage(data?.message || t('failedToInitiate'));
-        console.error('[SSO Initiate Page /auth/sso/initiate] Unexpected response:', data);
       } catch (error) {
         setStatus('error');
         setMessage(t('initiationError'));
-        console.error('[SSO Initiate Page /auth/sso/initiate] Fetch error:', error);
       }
     };
 
     void initiate();
-  }, [router, searchParams, isMounted]);
+  }, [searchParams, isMounted, t]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-black text-white">

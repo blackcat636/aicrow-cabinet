@@ -16,7 +16,6 @@
 
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
 
 type Status = 'loading' | 'redirecting' | 'error';
@@ -27,7 +26,6 @@ export const runtime = 'edge';
 export default function SSOInitiatePage() {
   const t = useTranslations('sso');
   const searchParams = useSearchParams();
-  const router = useRouter();
   const [status, setStatus] = useState<Status>('loading');
   const [message, setMessage] = useState<string>(t('initializing'));
   const [isMounted, setIsMounted] = useState(false);
@@ -47,12 +45,6 @@ export default function SSOInitiatePage() {
       setMessage(t('redirectUriNotSpecified'));
       return;
     }
-
-    const hasAccessTokenCookie =
-      typeof document !== 'undefined' &&
-      document.cookie
-        .split(';')
-        .some((cookie) => cookie.trim().startsWith('access_token='));
 
     const initiate = async () => {
       try {
@@ -74,7 +66,7 @@ export default function SSOInitiatePage() {
         const redirectUrl =
           data?.data?.redirectUrl ?? data?.redirectUrl;
 
-        if (data?.status === 200 && redirectUrl) {
+        if (res.ok && redirectUrl) {
           setStatus('redirecting');
           setMessage(t('redirectingToService'));
           setTimeout(() => {
@@ -83,7 +75,7 @@ export default function SSOInitiatePage() {
           return;
         }
 
-        if (data?.status === 401 && data?.data?.loginUrl) {
+        if ((res.status === 401 || data?.status === 401) && data?.data?.loginUrl) {
           setStatus('redirecting');
           setMessage(t('authenticationRequired'));
           // Small delay to ensure the user sees the status before redirect
@@ -102,7 +94,7 @@ export default function SSOInitiatePage() {
     };
 
     void initiate();
-  }, [router, searchParams, isMounted]);
+  }, [searchParams, isMounted, t]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-black text-white">
