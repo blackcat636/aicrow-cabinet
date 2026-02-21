@@ -13,6 +13,7 @@ import {
   XIcon,
   ChevronRightIcon,
   ChevronDownIcon,
+  DashBoardIcon,
   WorkflowsIcon,
   ExecutionIcon,
   BalanceIcon,
@@ -21,8 +22,10 @@ import {
 import { UserImpersonationModal } from '@/components/admin/UserImpersonationModal';
 import { ImpersonationBanner } from '@/components/admin/ImpersonationBanner';
 import { LanguageSwitcherMenu } from '@/components/LanguageSwitcherMenu';
+import { Sidebar } from '@/components/navigation';
 import { toast } from 'sonner';
 import { getImpersonationMeta } from '@/lib/auth';
+import { LogoutConfirmDialog } from '@/components/ui/LogoutConfirmDialog';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -108,7 +111,7 @@ const TopNavItem: React.FC<{
           ref={labelRef}
           className={`transition-all duration-300 ${
             isActive 
-              ? 'font-bold bg-gradient-to-r from-[#A500E1] to-[#7B61FF] bg-clip-text text-transparent' 
+              ? 'font-bold bg-[var(--color-main)] bg-clip-text text-transparent' 
               : 'font-medium text-gray-300'
           }`}
         >
@@ -132,7 +135,7 @@ const TopNavItem: React.FC<{
       </span>
 
       {isActive && (
-        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#A500E1] to-[#7B61FF]"></span>
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[var(--color-main)]"></span>
       )}
     </I18nLink>
   );
@@ -141,7 +144,7 @@ const TopNavItem: React.FC<{
 TopNavItem.displayName = 'TopNavItem';
 
 export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
-  const { user, logout, impersonationInfo, impersonateUser, stopImpersonation } = useAuth();
+  const { user, logout, impersonationInfo, impersonateUser, stopImpersonation, isLoading: authLoading } = useAuth();
   const t = useTranslations('nav');
   const tProfile = useTranslations('profile');
   const tImpersonation = useTranslations('impersonation');
@@ -151,6 +154,8 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const [showImpersonationModal, setShowImpersonationModal] = useState(false);
   const [_isImpersonating, setIsImpersonating] = useState(false);
   const [isStoppingImpersonation, setIsStoppingImpersonation] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [logoutLoading, setLogoutLoading] = useState(false);
   
   // Ensure pathname is only used on client side
   // usePathname from next-intl may fail during static export, so we use window.location
@@ -199,11 +204,12 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
     telegram: pathname === '/integrations/telegram'
   }), [pathname]);
 
-  // Memoize user initials to prevent recalculation
-  const userInitials = useMemo(() => 
-    getInitials(user?.firstName, user?.lastName, user?.username),
-    [user?.firstName, user?.lastName, user?.username]
+  // Memoize user initials to prevent recalculation; show loading placeholder while auth is resolving
+  const userInitials = useMemo(() =>
+    authLoading ? '…' : getInitials(user?.firstName, user?.lastName, user?.username),
+    [authLoading, user?.firstName, user?.lastName, user?.username]
   );
+  const userDisplayName = authLoading ? '…' : (user?.username || (user ? '' : 'User'));
 
   const isAdmin = (() => {
     const role = (user?.role || '').toLowerCase();
@@ -215,9 +221,13 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   // Memoize logout handler
   const handleLogout = useCallback(async () => {
     try {
+      setLogoutLoading(true);
       await logout();
     } catch (error) {
       console.error('Logout error:', error);
+    } finally {
+      setLogoutLoading(false);
+      setShowLogoutConfirm(false);
     }
   }, [logout]);
 
@@ -286,420 +296,349 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside, true);
   }, [isUserMenuOpen]);
 
+  // Handle social media click
+  const handleSocialMediaClick = useCallback(async () => {
+    try {
+      const { userApi } = await import('@/lib/apiUser');
+      const { toast } = await import('sonner');
+      const result = await userApi.updateSocialUp();
+      if (result.access_url) {
+        window.open(result.access_url, '_blank', 'noopener,noreferrer');
+        toast.success(tProfile('socialUpSuccess'));
+      }
+    } catch (error: any) {
+      const { toast } = await import('sonner');
+      if (error.status === 503) {
+        toast.error(tProfile('socialUpError503'));
+      } else {
+        toast.error(tProfile('socialUpError'));
+      }
+    }
+  }, [tProfile]);
+
   return (
     <>
-    <div className='h-screen bg-black overflow-hidden'>
-      {/* Global Top Navbar */}
-      <nav className='w-full px-4 lg:px-8 py-4 bg-[#141519] shadow-2xl shadow-purple-500/10 relative overflow-visible z-50'>
-        <div className='flex items-center justify-between relative'>
-          {/* Logo */}
-          <I18nLink href='/' className='hover:opacity-90 flex-shrink-0'>
-            <Image src={aiPillsLogo} alt="AiPills logo" className="h-auto w-10" priority />
+    <div className='h-screen bg-black overflow-hidden flex flex-col'>
+      <div className='hidden md:flex h-[78px] w-full bg-[var(--color-secondary-1)] border-b border-[var(--color-secondary-4)]'>
+        <div className='h-full w-[240px] bg-[var(--color-secondary-2)] border-r border-[var(--color-secondary-4)] px-[40px] flex items-center'>
+          <I18nLink href='/' className='hover:opacity-90 flex items-center gap-2'>
+            <Image src={aiPillsLogo} alt="AiPills logo" className="h-[44px] w-[25px]" priority />
+            <span className="text-[var(--color-secondary-10)] figma-body-1-medium">
+              AI Pills
+            </span>
           </I18nLink>
-          
-          {/* Navigation Items - Centered (desktop only, from xl to avoid tablet overlap) */}
-          <div className='absolute left-1/2 transform -translate-x-1/2 overflow-visible hidden xl:block'>
-            <div className='relative flex items-center gap-2 xl:gap-4 overflow-visible'>
-              <TopNavItem
-                href="/dashboard"
-                label={t('dashboard')}
-                isActive={activeStates.dashboard}
-              />
-              <TopNavItem
-                href="/workflows"
-                label={t('workflows')}
-                isActive={activeStates.workflows}
-              />
-
-              {/* Social Media Menu Item */}
-              <TopNavItem
-                href="#"
-                label={t('socialMedia')}
-                isActive={false}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  try {
-                    const { userApi } = await import('@/lib/apiUser');
-                    const { toast } = await import('sonner');
-                    const result = await userApi.updateSocialUp();
-                    if (result.access_url) {
-                      window.open(result.access_url, '_blank', 'noopener,noreferrer');
-                      toast.success(tProfile('socialUpSuccess'));
-                    }
-                  } catch (error: any) {
-                    const { toast } = await import('sonner');
-                    // Show specific message for 503 Service Unavailable
-                    if (error.status === 503) {
-                      toast.error(tProfile('socialUpError503'));
-                    } else {
-                      toast.error(tProfile('socialUpError'));
-                    }
-                  }
-                }}
-              />
-
-              <TopNavItem
-                href="/executions"
-                label={t('executions')}
-                isActive={activeStates.executions}
-              />
-              <TopNavItem
-                href="/balance"
-                label={t('balance')}
-                isActive={activeStates.balance}
-              />
-              <TopNavItem
-                href="/billing"
-                label={t('billing')}
-                isActive={activeStates.billing}
-              />
-            </div>
+        </div>
+        <div className='flex-1 h-full px-[40px] flex items-center justify-end'>
+          <div className='flex items-center gap-[24px]'>
+            <LanguageSwitcherMenu variant="desktop" />
+            <button
+              type='button'
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                setIsUserMenuOpen((prev) => !prev);
+              }}
+              className='rounded-full focus:outline-none'
+              aria-label={t('profile')}
+              aria-expanded={isUserMenuOpen}
+            >
+              <Avatar className='w-12 h-12'>
+                <AvatarImage src={user?.photo || undefined} alt={authLoading ? '' : (user?.username || 'User')} />
+                <AvatarFallback className={`text-lg ${authLoading ? 'bg-[var(--color-secondary-3)] animate-pulse' : 'bg-purple-600 text-white'}`}>
+                  {userInitials}
+                </AvatarFallback>
+              </Avatar>
+            </button>
           </div>
-          
-          {/* Right Side - User (desktop from xl; below xl only burger) */}
-          <div className='flex items-center gap-2 xl:gap-4 flex-shrink-0 ml-auto'>
-            {/* Language Switcher - circular icon */}
-            <div className='hidden xl:block'>
-              <LanguageSwitcherMenu variant="desktop" />
-            </div>
-            
-            {/* User Avatar with dropdown */}
-            <div className='hidden xl:flex items-center gap-3 relative' ref={userMenuRef}>
-              <button
-                className='rounded-full focus:outline-none focus:ring-2 focus:ring-purple-500'
-                onClick={(e) => {
-                  e.preventDefault();
-                  setIsMobileMenuOpen(false);
-                  setIsUserMenuOpen(prev => !prev);
-                }}
-                aria-haspopup='menu'
-                aria-expanded={isUserMenuOpen}
-              >
-                <Avatar className='w-10 h-10 cursor-pointer hover:ring-2 hover:ring-purple-500 transition-all'>
-                  <AvatarImage 
-                    src={user?.photo || undefined} 
-                    alt={user?.username || 'User'} 
-                  />
-                  <AvatarFallback className='bg-purple-600 text-white'>
-                    {userInitials}
-                  </AvatarFallback>
-                </Avatar>
-              </button>
+        </div>
+      </div>
 
-              <div className='flex flex-col leading-tight'>
-                <span className='text-sm font-semibold text-white'>
-                  {`${(user?.firstName || '').trim()} ${(user?.lastName || '').trim()}`.trim() || user?.username || 'User'}
-                </span>
-                <span className='text-xs text-gray-400'>
-                  {user?.email}
-                </span>
-              </div>
+      <div className='flex flex-1 overflow-hidden'>
+      {/* Sidebar - Desktop */}
+      <div className='hidden md:block'>
+        <Sidebar 
+          currentPath={pathname}
+          onSocialMediaClick={handleSocialMediaClick}
+          showHeader={false}
+        />
+      </div>
 
-              {/* Dropdown */}
-              <div
-                className={`absolute right-0 top-full mt-2 w-44 bg-[#141519] border border-gray-700 rounded-lg shadow-xl z-[100] overflow-visible transition-all duration-200 ease-out ${isUserMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-2 pointer-events-none'}`}
-                role='menu'
-                aria-hidden={!isUserMenuOpen}
-                {...(!isUserMenuOpen && { tabIndex: -1, 'aria-disabled': true })}
-              >
-                <I18nLink
-                  href='/profile'
-                  className='block px-4 py-2 text-sm text-gray-300 hover:bg-white/10 hover:text-white'
-                  onClick={() => setIsUserMenuOpen(false)}
-                >
-                  {t('profile')}
-                </I18nLink>
-                {isAdmin && !isImpersonated && (
-                  <button
-                    onClick={handleOpenImpersonation}
-                    className='w-full text-left px-4 py-2 text-sm text-purple-400 hover:text-purple-300 hover:bg-white/10'
-                  >
-                    {tImpersonation('loginMenu')}
-                  </button>
-                )}
-                {isImpersonated && (
-                  <button
-                    onClick={handleStopImpersonation}
-                    className='w-full text-left px-4 py-2 text-sm text-amber-300 hover:text-amber-200 hover:bg-white/10 disabled:opacity-60'
-                    disabled={isStoppingImpersonation}
-                  >
-                    {isStoppingImpersonation ? tImpersonation('exiting') : tImpersonation('exit')}
-                  </button>
-                )}
-                <div className='my-1 h-px bg-white/10' role='separator' />
-                <button
-                  onClick={() => { setIsUserMenuOpen(false); handleLogout(); }}
-                  className='w-full text-left px-4 py-2 text-sm text-red-500 hover:text-red-400'
-                >
-                  {t('logout')}
-                </button>
-              </div>
-            </div>
-            
+      {/* Main Content Area */}
+      <div className='flex-1 flex flex-col overflow-hidden'>
+        {/* Mobile Header */}
+        <div className='md:hidden relative h-[71px] bg-[var(--color-secondary-1)] border-b border-[var(--color-secondary-4)]'>
+          <div className='absolute left-4 top-1/2 -translate-y-1/2'>
             <button
               onClick={() => {
                 setIsUserMenuOpen(false);
                 toggleMobileMenu();
               }}
-              className='p-2 text-gray-300 hover:text-white transition-colors xl:hidden'
+              className='text-[var(--color-secondary-10)]'
               aria-label='Toggle menu'
               aria-expanded={isMobileMenuOpen}
             >
-              {isMobileMenuOpen ? (
-                <XIcon className='w-6 h-6' />
-              ) : (
-                <MenuIcon className='w-6 h-6' />
-              )}
+              <MenuIcon className='w-6 h-6' />
             </button>
-            {/* Fullscreen burger menu overlay */}
-            {isMobileMenuOpen && (
-              <div
-                className='fixed inset-0 z-[100] bg-[#0b0c10]/80 backdrop-blur-sm animate-in fade-in duration-200'
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                <div
-                  className='absolute inset-0 bg-[#141519]/95 animate-in slide-in-from-right duration-300'
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className='h-full w-full flex flex-col overflow-y-auto'>
-                    {/* Header with close button */}
-                    <div className='flex items-center justify-between p-4 border-b border-white/10'>
-                      <h2 className='text-lg font-semibold text-white'>Menu</h2>
-                      <button
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        aria-label={t('closeMenu') || 'Close menu'}
-                        className='p-2 text-gray-300 hover:text-white transition-colors rounded-lg hover:bg-white/10'
-                      >
-                        <XIcon className='w-6 h-6' />
-                      </button>
-                    </div>
+          </div>
 
-                    {/* User Profile Section */}
-                    <div className='p-4 border-b border-white/10 space-y-2'>
-                      <I18nLink
-                        href='/profile'
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className='flex items-center gap-3 p-3 rounded-lg transition-colors hover:bg-white/5'
-                      >
-                        <Avatar className='w-12 h-12 flex-shrink-0'>
-                          <AvatarImage 
-                            src={user?.photo || undefined} 
-                            alt={user?.username || 'User'} 
-                          />
-                          <AvatarFallback className='bg-purple-600 text-white text-lg'>
-                            {userInitials}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className='flex flex-col flex-1 min-w-0'>
-                          <span className='text-base font-semibold text-white truncate'>
-                            {`${(user?.firstName || '').trim()} ${(user?.lastName || '').trim()}`.trim() || user?.username || 'User'}
-                          </span>
-                          <span className='text-sm text-gray-400 truncate'>
-                            {user?.email}
-                          </span>
-                        </div>
-                        <ChevronRightIcon className='w-5 h-5 text-gray-400 flex-shrink-0' />
-                      </I18nLink>
-                      
-                      {/* Language Switcher - text menu item */}
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <LanguageSwitcherMenu variant="mobile" onClose={() => setIsMobileMenuOpen(false)} />
-                      </div>
-                    </div>
+          <div className='absolute left-12 top-1/2 -translate-y-1/2 flex items-center gap-[8px]'>
+            <I18nLink href='/' className='hover:opacity-90 flex items-center gap-[8px]'>
+              <Image src={aiPillsLogo} alt="AiPills logo" className="h-[38.85px] w-[22.38px]" priority />
+              <span className="text-[14.22px] font-medium leading-[1.4] tracking-[0.284px] text-[var(--color-secondary-10)]">
+                AI Pills
+              </span>
+            </I18nLink>
+          </div>
 
-                    {/* Navigation Items */}
-                    <nav className='flex-1 px-4 py-6 space-y-2'>
-                      <I18nLink
-                        href='/dashboard'
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                          activeStates.dashboard
-                            ? 'bg-gradient-to-r from-[#A500E1]/20 to-[#7B61FF]/20 text-white border border-purple-500/30'
-                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        <WorkflowsIcon className='w-5 h-5 flex-shrink-0' />
-                        <span className='text-lg font-medium'>{t('dashboard')}</span>
-                      </I18nLink>
-
-                      <I18nLink
-                        href='/workflows'
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                          activeStates.workflows
-                            ? 'bg-gradient-to-r from-[#A500E1]/20 to-[#7B61FF]/20 text-white border border-purple-500/30'
-                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        <WorkflowsIcon className='w-5 h-5 flex-shrink-0' />
-                        <span className='text-lg font-medium'>{t('workflows')}</span>
-                      </I18nLink>
-
-                      {/* Social Media */}
-                      <button
-                        onClick={async () => {
-                          setIsMobileMenuOpen(false);
-                          try {
-                            const { userApi } = await import('@/lib/apiUser');
-                            const { toast } = await import('sonner');
-                            const result = await userApi.updateSocialUp();
-                            if (result.access_url) {
-                              window.open(result.access_url, '_blank', 'noopener,noreferrer');
-                              toast.success(tProfile('socialUpSuccess'));
-                            }
-                          } catch (error: any) {
-                            const { toast } = await import('sonner');
-                            if (error.status === 503) {
-                              toast.error(tProfile('socialUpError503'));
-                            } else {
-                              toast.error(tProfile('socialUpError'));
-                            }
-                          }
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-gray-300 hover:bg-white/10 hover:text-white"
-                      >
-                        <SettingsNewIcon className='w-5 h-5 flex-shrink-0' />
-                        <span className='text-lg font-medium'>{t('socialMedia')}</span>
-                      </button>
-
-                      <I18nLink
-                        href='/executions'
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                          activeStates.executions
-                            ? 'bg-gradient-to-r from-[#A500E1]/20 to-[#7B61FF]/20 text-white border border-purple-500/30'
-                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        <ExecutionIcon className='w-5 h-5 flex-shrink-0' />
-                        <span className='text-lg font-medium'>{t('executions')}</span>
-                      </I18nLink>
-
-                      <I18nLink
-                        href='/balance'
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                          activeStates.balance
-                            ? 'bg-gradient-to-r from-[#A500E1]/20 to-[#7B61FF]/20 text-white border border-purple-500/30'
-                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        <BalanceIcon className='w-5 h-5 flex-shrink-0' />
-                        <span className='text-lg font-medium'>{t('balance')}</span>
-                      </I18nLink>
-
-                      <I18nLink
-                        href='/billing'
-                        onClick={() => setIsMobileMenuOpen(false)}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                          activeStates.billing
-                            ? 'bg-gradient-to-r from-[#A500E1]/20 to-[#7B61FF]/20 text-white border border-purple-500/30'
-                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        <BalanceIcon className='w-5 h-5 flex-shrink-0' />
-                        <span className='text-lg font-medium'>{t('billing')}</span>
-                      </I18nLink>
-                    </nav>
-
-                    {/* Footer Actions */}
-                    <div className='p-4 border-t border-white/10 space-y-2'>
-                      {isAdmin && !isImpersonated && (
-                        <button
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            handleOpenImpersonation();
-                          }}
-                          className='w-full flex items-center gap-3 px-4 py-3 rounded-lg text-purple-400 hover:text-purple-300 hover:bg-white/10 transition-colors'
-                        >
-                          <SettingsNewIcon className='w-5 h-5 flex-shrink-0' />
-                          <span className='text-lg font-medium'>{tImpersonation('loginMenu')}</span>
-                        </button>
-                      )}
-                      {isImpersonated && (
-                        <button
-                          onClick={() => {
-                            setIsMobileMenuOpen(false);
-                            handleStopImpersonation();
-                          }}
-                          disabled={isStoppingImpersonation}
-                          className='w-full flex items-center gap-3 px-4 py-3 rounded-lg text-amber-300 hover:text-amber-200 hover:bg-white/10 transition-colors disabled:opacity-60'
-                        >
-                          <SettingsNewIcon className='w-5 h-5 flex-shrink-0' />
-                          <span className='text-lg font-medium'>
-                            {isStoppingImpersonation ? tImpersonation('exiting') : tImpersonation('exit')}
-                          </span>
-                        </button>
-                      )}
-                      <button
-                        onClick={() => {
-                          setIsMobileMenuOpen(false);
-                          handleLogout();
-                        }}
-                        className='w-full flex items-center gap-3 px-4 py-3 rounded-lg bg-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/30 transition-colors border border-red-500/30'
-                      >
-                        <LogOutIcon className='w-5 h-5 flex-shrink-0' />
-                        <span className='text-lg font-medium'>{t('logout')}</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
+          <div className='absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-4'>
+            <LanguageSwitcherMenu variant="mobileHeader" />
+            <button
+              type='button'
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                setIsUserMenuOpen((prev) => !prev);
+              }}
+              className='rounded-full focus:outline-none'
+              aria-label={t('profile')}
+              aria-expanded={isUserMenuOpen}
+            >
+              <Avatar className='w-8 h-8'>
+                <AvatarImage src={user?.photo || undefined} alt={authLoading ? '' : (user?.username || 'User')} />
+                <AvatarFallback className={`text-base ${authLoading ? 'bg-[var(--color-secondary-3)] animate-pulse' : 'bg-[var(--color-main)] text-[var(--color-secondary-10)]'}`}>
+                  {userInitials}
+                </AvatarFallback>
+              </Avatar>
+            </button>
           </div>
         </div>
-      </nav>
-      <div className="sticky top-[88px] z-[45]">
-        <ImpersonationBanner
-          info={bannerInfo || null}
-          onExit={handleStopImpersonation}
-          loading={isStoppingImpersonation}
-        />
-      </div>
-      {/* Desktop Layout */}
-      <div className='hidden md:flex h-[calc(100vh-88px)] overflow-hidden'>
-        {/* Main Content with gradient background */}
-        <div className='flex-1 pt-8 pb-8 px-4 lg:px-8 h-full overflow-y-auto relative'>
-          {/* Dark purple gradient background - starts with navbar color and transitions smoothly */}
-          <div 
-            className="fixed inset-0 top-[88px] pointer-events-none"
-            style={{
-              background: 'linear-gradient(180deg, #141519 0%, #141519 20%, rgba(20, 21, 25, 0.995) 25%, rgba(25, 22, 35, 0.9) 32%, rgba(35, 28, 50, 0.75) 40%, rgba(45, 32, 65, 0.6) 48%, rgba(70, 40, 90, 0.5) 55%, rgba(101, 43, 155, 0.45) 62%, rgba(80, 35, 110, 0.55) 68%, rgba(65, 21, 100, 0.65) 75%, rgba(45, 15, 70, 0.8) 82%, rgba(35, 10, 55, 0.9) 88%, rgba(20, 7, 35, 0.95) 94%, rgba(15, 5, 25, 1) 100%)',
-              zIndex: 0,
-            }}
-          />
-          <div 
-            className="relative z-10 max-w-6xl mx-auto" 
-            style={{ 
-              minHeight: '600px',
-              containIntrinsicSize: '1152px 600px'
-            }}
+
+        {isUserMenuOpen && (
+          <div
+            ref={userMenuRef}
+            className='fixed right-4 md:right-8 top-[64px] md:top-[86px] z-[120] min-w-[188px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-2 shadow-[0px_0px_14px_0px_rgba(0,0,0,0.35)]'
           >
-            {children}
+            <I18nLink
+              href='/profile'
+              onClick={() => setIsUserMenuOpen(false)}
+              className='flex h-10 items-center rounded-[8px] px-3 text-[14px] font-medium text-[var(--color-secondary-10)] hover:bg-[var(--color-secondary-3)]'
+            >
+              {t('profile')}
+            </I18nLink>
+
+            {isAdmin && !isImpersonated && (
+              <button
+                type='button'
+                onClick={handleOpenImpersonation}
+                className='flex h-10 w-full items-center rounded-[8px] px-3 text-left text-[14px] font-medium text-[var(--color-secondary-10)] hover:bg-[var(--color-secondary-3)]'
+              >
+                {tImpersonation('loginMenu')}
+              </button>
+            )}
+
+            {isImpersonated && (
+              <button
+                type='button'
+                onClick={handleStopImpersonation}
+                className='flex h-10 w-full items-center rounded-[8px] px-3 text-left text-[14px] font-medium text-[var(--color-secondary-10)] hover:bg-[var(--color-secondary-3)]'
+              >
+                {tImpersonation('exit')}
+              </button>
+            )}
+
+          </div>
+        )}
+
+        {/* Mobile Side Menu Overlay */}
+        {isMobileMenuOpen && (
+          <div className='md:hidden fixed inset-x-0 top-[71px] bottom-0 z-[100]'>
+            <div className='absolute inset-0 bg-black/55' onClick={() => setIsMobileMenuOpen(false)} />
+            <aside className='absolute left-0 top-0 bottom-0 w-[240px] bg-[var(--color-secondary-2)] border-r border-[var(--color-secondary-4)] flex flex-col'>
+              <nav className='flex-1 pt-4'>
+                <I18nLink
+                  href='/dashboard'
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className='relative flex h-[56px] items-center px-[24px]'
+                >
+                  {activeStates.dashboard && (
+                    <div className='absolute -left-[1px] top-[4px] bottom-[2px] w-[5px] bg-[var(--color-secondary-10)] rounded-[10px]' />
+                  )}
+                  <div
+                    className={`absolute inset-0 ${
+                      activeStates.dashboard
+                        ? 'left-[24px] right-[24px] top-[2px] bottom-[2px] bg-[var(--color-secondary-3)] rounded-[10px]'
+                        : 'bg-transparent'
+                    }`}
+                  />
+                  <div className='relative z-10 flex items-center gap-3 px-[16px] py-[13px]'>
+                    <DashBoardIcon className={`${activeStates.dashboard ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'} w-5 h-5`} />
+                    <span className={`figma-body-2-medium ${activeStates.dashboard ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'}`}>
+                      {t('dashboard')}
+                    </span>
+                  </div>
+                </I18nLink>
+
+                <I18nLink
+                  href='/workflows'
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className='relative flex h-[56px] items-center px-[24px]'
+                >
+                  {activeStates.workflows && (
+                    <div className='absolute -left-[1px] top-[4px] bottom-[2px] w-[5px] bg-[var(--color-secondary-10)] rounded-[10px]' />
+                  )}
+                  <div
+                    className={`absolute inset-0 ${
+                      activeStates.workflows
+                        ? 'left-[24px] right-[24px] top-[2px] bottom-[2px] bg-[var(--color-secondary-3)] rounded-[10px]'
+                        : 'bg-transparent'
+                    }`}
+                  />
+                  <div className='relative z-10 flex items-center gap-3 px-[16px] py-[13px]'>
+                    <WorkflowsIcon className={`${activeStates.workflows ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'} w-5 h-5`} />
+                    <span className={`figma-body-2-medium ${activeStates.workflows ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'}`}>
+                      {t('workflows')}
+                    </span>
+                  </div>
+                </I18nLink>
+
+                <button
+                  onClick={async () => {
+                    setIsMobileMenuOpen(false);
+                    await handleSocialMediaClick();
+                  }}
+                  className='relative flex h-[56px] w-full items-center px-[24px]'
+                >
+                  <div className='absolute inset-0 bg-transparent' />
+                  <div className='relative z-10 flex items-center gap-3 px-[16px] py-[13px]'>
+                    <SettingsNewIcon className='w-5 h-5 text-[var(--color-secondary-5)]' />
+                    <span className='figma-body-2-medium text-[var(--color-secondary-5)]'>
+                      {t('socialMedia')}
+                    </span>
+                  </div>
+                </button>
+
+                <I18nLink
+                  href='/executions'
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className='relative flex h-[56px] items-center px-[24px]'
+                >
+                  {activeStates.executions && (
+                    <div className='absolute -left-[1px] top-[4px] bottom-[2px] w-[5px] bg-[var(--color-secondary-10)] rounded-[10px]' />
+                  )}
+                  <div
+                    className={`absolute inset-0 ${
+                      activeStates.executions
+                        ? 'left-[24px] right-[24px] top-[2px] bottom-[2px] bg-[var(--color-secondary-3)] rounded-[10px]'
+                        : 'bg-transparent'
+                    }`}
+                  />
+                  <div className='relative z-10 flex items-center gap-3 px-[16px] py-[13px]'>
+                    <ExecutionIcon className={`${activeStates.executions ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'} w-5 h-5`} />
+                    <span className={`figma-body-2-medium ${activeStates.executions ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'}`}>
+                      {t('executions')}
+                    </span>
+                  </div>
+                </I18nLink>
+
+                <I18nLink
+                  href='/balance'
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className='relative flex h-[56px] items-center px-[24px]'
+                >
+                  {activeStates.balance && (
+                    <div className='absolute -left-[1px] top-[4px] bottom-[2px] w-[5px] bg-[var(--color-secondary-10)] rounded-[10px]' />
+                  )}
+                  <div
+                    className={`absolute inset-0 ${
+                      activeStates.balance
+                        ? 'left-[24px] right-[24px] top-[2px] bottom-[2px] bg-[var(--color-secondary-3)] rounded-[10px]'
+                        : 'bg-transparent'
+                    }`}
+                  />
+                  <div className='relative z-10 flex items-center gap-3 px-[16px] py-[13px]'>
+                    <BalanceIcon className={`${activeStates.balance ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'} w-5 h-5`} />
+                    <span className={`figma-body-2-medium ${activeStates.balance ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'}`}>
+                      {t('balance')}
+                    </span>
+                  </div>
+                </I18nLink>
+
+                <I18nLink
+                  href='/billing'
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className='relative flex h-[56px] items-center px-[24px]'
+                >
+                  {activeStates.billing && (
+                    <div className='absolute -left-[1px] top-[4px] bottom-[2px] w-[5px] bg-[var(--color-secondary-10)] rounded-[10px]' />
+                  )}
+                  <div
+                    className={`absolute inset-0 ${
+                      activeStates.billing
+                        ? 'left-[24px] right-[24px] top-[2px] bottom-[2px] bg-[var(--color-secondary-3)] rounded-[10px]'
+                        : 'bg-transparent'
+                    }`}
+                  />
+                  <div className='relative z-10 flex items-center gap-3 px-[16px] py-[13px]'>
+                    <BalanceIcon className={`${activeStates.billing ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'} w-5 h-5`} />
+                    <span className={`figma-body-2-medium ${activeStates.billing ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'}`}>
+                      {t('billing')}
+                    </span>
+                  </div>
+                </I18nLink>
+              </nav>
+
+              <div className='border-t border-[var(--color-secondary-4)]'>
+                <button
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    setShowLogoutConfirm(true);
+                  }}
+                  className='relative w-full h-[56px] flex items-center px-[24px]'
+                >
+                  <div className='relative z-10 flex items-center gap-3 px-[16px] py-[13px]'>
+                    <LogOutIcon className='w-5 h-5 text-[var(--color-secondary-5)]' />
+                    <span className='figma-body-1-medium text-[var(--color-secondary-5)]'>{t('logout')}</span>
+                  </div>
+                </button>
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {/* Impersonation Banner */}
+        <div className="sticky top-0 z-[45]">
+          <ImpersonationBanner
+            info={bannerInfo || null}
+            onExit={handleStopImpersonation}
+            loading={isStoppingImpersonation}
+          />
+        </div>
+
+        {/* Desktop Layout */}
+        <div className='hidden md:flex flex-1 overflow-hidden'>
+          <div className='flex-1 pt-8 pb-8 px-4 lg:px-8 h-full overflow-y-auto bg-[var(--color-secondary-1)]'>
+            <div
+              className="max-w-[1262px] mx-auto"
+              style={{
+                minHeight: '600px',
+                containIntrinsicSize: '1262px 600px'
+              }}
+            >
+              {children}
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Mobile Layout */}
-      <div className='md:hidden h-[calc(100vh-88px)] overflow-hidden relative'>
-        {/* Dark purple gradient background for mobile */}
-        <div 
-          className="fixed inset-0 top-[88px] pointer-events-none"
-          style={{
-            background: 'linear-gradient(180deg, #141519 0%, #141519 10%, rgba(20, 21, 25, 0.98) 15%, rgba(50, 20, 80, 0.4) 25%, rgba(101, 43, 155, 0.5) 40%, rgba(65, 21, 100, 0.7) 55%, rgba(35, 10, 55, 0.9) 75%, rgba(15, 5, 25, 1) 100%)',
-            zIndex: 0,
-          }}
-        />
+        {/* Mobile Layout */}
+        <div className='md:hidden flex-1 overflow-hidden relative bg-[var(--color-secondary-1)]'>
         {/* Mobile Menu Overlay */}
         {false && (
           <div className="fixed inset-0 z-50 bg-black bg-opacity-50" onClick={closeMobileMenu}>
-            <div className="fixed left-0 top-0 h-full w-80 bg-[#141519] border-r border-gray-700 shadow-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="fixed left-0 top-0 h-full w-80 bg-[var(--color-secondary-2)] border-r border-gray-700 shadow-xl" onClick={(e) => e.stopPropagation()}>
               <div className="p-4 flex flex-col h-full">
                 {/* Welcome Header */}
                 <div className='mb-4'>
                   <h2 className='text-2xl font-semibold'>
                     <span className='text-[#85A0BD]'>Welcome,</span>{' '}
-                    <span className='text-white'>{user?.username || 'User'}</span>
+                    <span className='text-white'>{userDisplayName || 'User'}</span>
                   </h2>
                   <div className='mt-3 h-px bg-white/10'></div>
                 </div>
@@ -715,7 +654,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         onClick={closeMobileMenu}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
                           activeStates.dashboard
-                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
+                            ? 'bg-[var(--color-main)] text-white shadow-lg shadow-[var(--color-main)]/25'
                             : 'text-gray-300 hover:bg-white/10 hover:text-white'
                         }`}
                       >
@@ -727,7 +666,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         onClick={closeMobileMenu}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
                           activeStates.workflows
-                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
+                            ? 'bg-[var(--color-main)] text-white shadow-lg shadow-[var(--color-main)]/25'
                             : 'text-gray-300 hover:bg-white/10 hover:text-white'
                         }`}
                       >
@@ -768,7 +707,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         onClick={closeMobileMenu}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
                           activeStates.executions
-                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
+                            ? 'bg-[var(--color-main)] text-white shadow-lg shadow-[var(--color-main)]/25'
                             : 'text-gray-300 hover:bg-white/10 hover:text-white'
                         }`}
                       >
@@ -780,7 +719,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         onClick={closeMobileMenu}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
                           activeStates.balance
-                            ? 'bg-[#A500E1] text-white shadow-lg shadow-[#A500E1]/25'
+                            ? 'bg-[var(--color-main)] text-white shadow-lg shadow-[var(--color-main)]/25'
                             : 'text-gray-300 hover:bg-white/10 hover:text-white'
                         }`}
                       >
@@ -798,7 +737,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                       closeMobileMenu();
                       handleLogout();
                     }}
-                    className='w-full flex items-center gap-3 p-3 rounded-lg bg-[#A500E1] text-white hover:bg-[#8F00C7] transition-colors'
+                    className='w-full flex items-center gap-3 p-3 rounded-lg bg-[var(--color-main)] text-white hover:opacity-90 transition-colors'
                   >
                     <LogOutIcon className='w-5 h-5' />
                     <span className='font-medium'>Log-out</span>
@@ -815,10 +754,18 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
         </div>
       </div>
     </div>
+    </div>
+    </div>
     <UserImpersonationModal
       isOpen={showImpersonationModal}
       onClose={() => setShowImpersonationModal(false)}
       onImpersonate={handleImpersonate}
+    />
+    <LogoutConfirmDialog
+      isOpen={showLogoutConfirm}
+      onClose={() => setShowLogoutConfirm(false)}
+      onConfirm={handleLogout}
+      loading={logoutLoading}
     />
     </>
   );

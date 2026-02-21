@@ -87,10 +87,10 @@ export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
   const tokensLeft = activeData?.tokensLeft;
 
   return (
-    <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30">
+    <div className="p-[1px] rounded-lg bg-[var(--color-main)] overflow-hidden shadow-lg shadow-purple-500/30">
       <Card
         ref={cardRef}
-        className="relative w-full bg-[#141519] border-0 rounded-lg overflow-hidden group"
+        className="relative w-full bg-[var(--color-secondary-2)] border-0 rounded-lg overflow-hidden group"
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
@@ -143,7 +143,7 @@ export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
             </div>
             {hasActive && isTrial && userPlanId != null && onConvertTrial && (
               <Button
-                className="flex-shrink-0 bg-gradient-to-r from-[#A500E1] to-[#7B61FF] hover:opacity-90 text-white border-0"
+                className="flex-shrink-0 bg-[var(--color-main)] hover:opacity-90 text-white border-0"
                 onClick={() => onConvertTrial(userPlanId)}
                 disabled={isConverting}
               >

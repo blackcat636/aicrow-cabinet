@@ -120,3 +120,23 @@ export interface PurchasePlanResponse {
   };
   message?: string;
 }
+
+/**
+ * Stripe Checkout Session response (POST /subscription-plans/:id/checkout).
+ */
+export interface CheckoutSessionResponse {
+  status: number;
+  data: {
+    checkoutUrl: string;
+  };
+  message?: string;
+}
+
+/**
+ * Request body for creating Stripe Checkout Session.
+ */
+export interface CreateCheckoutSessionRequest {
+  useTrial?: boolean;
+  successUrl?: string;
+  cancelUrl?: string;
+}

@@ -8,6 +8,149 @@ export interface IconSvgProps {
   style?: React.CSSProperties;
 }
 
+export const CalendarDetailedIcon: React.FC<IconSvgProps> = ({
+  size = 20,
+  color = '#F7F7F7',
+  className,
+  ...props
+}) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 20 20"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    className={className}
+    {...props}
+  >
+    <path d="M6.66797 1.66699V4.16699" stroke={color} strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M13.332 1.66699V4.16699" stroke={color} strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M2.91797 7.5752H17.0846" stroke={color} strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M17.5 7.08366V14.167C17.5 16.667 16.25 18.3337 13.3333 18.3337H6.66667C3.75 18.3337 2.5 16.667 2.5 14.167V7.08366C2.5 4.58366 3.75 2.91699 6.66667 2.91699H13.3333C16.25 2.91699 17.5 4.58366 17.5 7.08366Z" stroke={color} strokeWidth="1.5" strokeMiterlimit="10" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M13.0801 11.4167H13.0875" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M13.0801 13.9167H13.0875" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M9.99803 11.4167H10.0055" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M9.99803 13.9167H10.0055" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M6.91209 11.4167H6.91957" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M6.91016 13.917H6.91764" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+);
+
+export const DownloadSquareIcon: React.FC<IconSvgProps> = ({
+  size = 42,
+  className,
+  ...props
+}) => {
+  const gradientId = React.useId();
+  const borderGradientId = React.useId();
+  const filterId = React.useId();
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 42 42"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      {...props}
+    >
+      <g filter={`url(#${filterId})`}>
+        <rect width="42" height="42" rx="7" fill={`url(#${gradientId})`} />
+        <rect width="42" height="42" rx="7" fill="black" fillOpacity="0.25" />
+        <rect
+          x="0.175"
+          y="0.175"
+          width="41.65"
+          height="41.65"
+          rx="6.825"
+          stroke={`url(#${borderGradientId})`}
+          strokeWidth="0.35"
+        />
+        <path
+          d="M18 31H24C29 31 31 29 31 24V18C31 13 29 11 24 11H18C13 11 11 13 11 18V24C11 29 13 31 18 31Z"
+          stroke="white"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M18 20.5098L21 23.5098L24 20.5098"
+          stroke="white"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M21 23.5098V15.5098"
+          stroke="white"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          d="M15 25.5098C18.89 26.8098 23.11 26.8098 27 25.5098"
+          stroke="white"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </g>
+      <defs>
+        <filter
+          id={filterId}
+          x="0"
+          y="0"
+          width="42"
+          height="43.4"
+          filterUnits="userSpaceOnUse"
+          colorInterpolationFilters="sRGB"
+        >
+          <feFlood floodOpacity="0" result="BackgroundImageFix" />
+          <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape" />
+          <feColorMatrix
+            in="SourceAlpha"
+            type="matrix"
+            values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"
+            result="hardAlpha"
+          />
+          <feOffset dy="1.4" />
+          <feGaussianBlur stdDeviation="1.05" />
+          <feComposite in2="hardAlpha" operator="arithmetic" k2="-1" k3="1" />
+          <feColorMatrix
+            type="matrix"
+            values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.6 0"
+          />
+          <feBlend mode="normal" in2="shape" result="effect1_innerShadow_28_2824" />
+        </filter>
+        <linearGradient
+          id={gradientId}
+          x1="1.05"
+          y1="0.874999"
+          x2="39.725"
+          y2="43.75"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="#E4F6E9" />
+          <stop offset="0.491919" stopColor="#66E181" />
+          <stop offset="1" stopColor="#56F76E" />
+        </linearGradient>
+        <linearGradient
+          id={borderGradientId}
+          x1="21"
+          y1="0"
+          x2="21"
+          y2="35.875"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop stopColor="white" stopOpacity="0.53" />
+          <stop offset="1" stopColor="white" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+};
+
 export const LogoIcon: React.FC<IconSvgProps> = ({
   fill = '#fff',
   ...props
@@ -874,41 +1017,31 @@ export const CheckCircleIcon: React.FC<IconSvgProps> = ({
 );
 
 export const XIcon = ({ size = 24, className = '' }: IconSvgProps) => {
-  // Check if className contains text-black to use black color, otherwise use red
-  const useBlack = className.includes('text-black');
-  const strokeColor = useBlack ? 'currentColor' : '#CC0000';
-  
   return (
-  <svg
-    width={size}
-    height={size}
-    viewBox='0 0 24 24'
-    fill='none'
-    xmlns='http://www.w3.org/2000/svg'
-    className={className}
-  >
-    <path
-      d='M7.86 2H16.14L22 7.86V16.14L16.14 22H7.86L2 16.14V7.86L7.86 2Z'
-      stroke={strokeColor}
-      strokeWidth='1.5'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-    />
-    <path
-      d='M15 9L9 15'
-      stroke={strokeColor}
-      strokeWidth='1.5'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-    />
-    <path
-      d='M9 9L15 15'
-      stroke={strokeColor}
-      strokeWidth='1.5'
-      strokeLinecap='round'
-      strokeLinejoin='round'
-    />
-  </svg>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 32 32"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+    >
+      <circle cx="16" cy="16" r="15.5" stroke="currentColor" />
+      <path
+        d="M10.667 21.3334L21.3337 10.6667"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M21.3337 21.3334L10.667 10.6667"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
   );
 };
 

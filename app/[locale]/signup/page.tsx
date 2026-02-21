@@ -12,21 +12,29 @@ export default function SignupPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen relative">
+    <div className="min-h-screen relative overflow-hidden bg-[#1A1A1A] md:bg-[var(--color-secondary-1)]">
+      {/* Mobile: subtle purple gradient from bottom; Desktop: original gradients (same as login) */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
         style={{
           background:
-            'linear-gradient(180deg, #141519 0%, #141519 20%, rgba(20, 21, 25, 0.995) 25%, rgba(25, 22, 35, 0.9) 32%, rgba(35, 28, 50, 0.75) 40%, rgba(45, 32, 65, 0.6) 48%, rgba(70, 40, 90, 0.5) 55%, rgba(101, 43, 155, 0.45) 62%, rgba(80, 35, 110, 0.55) 68%, rgba(65, 21, 100, 0.65) 75%, rgba(45, 15, 70, 0.8) 82%, rgba(35, 10, 55, 0.9) 88%, rgba(20, 7, 35, 0.95) 94%, rgba(15, 5, 25, 1) 100%)',
+            'radial-gradient(120% 80% at 50% 100%, rgba(141,46,226,0.4) 0%, rgba(141,46,226,0) 70%), linear-gradient(180deg, #1A1A1A 0%, #1A1A1A 100%)',
+        }}
+      />
+      <div
+        className="fixed inset-0 pointer-events-none z-0 hidden md:block"
+        style={{
+          background:
+            'radial-gradient(70% 80% at 100% 0%, rgba(141,46,226,0.65) 0%, rgba(141,46,226,0) 85%), radial-gradient(65% 75% at 0% 100%, rgba(141,46,226,0.55) 0%, rgba(141,46,226,0) 90%), linear-gradient(180deg, #0F0F10 0%, #0F0F10 100%)',
         }}
       />
 
-      {/* Language switcher in top right corner */}
-      <div className="fixed top-4 right-4 z-30">
+      {/* Language switcher: left on mobile, right on desktop (same as login) */}
+      <div className="fixed top-4 left-4 right-4 z-30 flex justify-start md:justify-end">
         <LanguageSwitcherCompact />
       </div>
 
-      <div className="relative z-20">
+      <div className="relative z-20 min-h-screen flex items-center justify-center p-0 md:px-4 md:py-8">
         <RegisterForm
           variant="modal"
           isOpen={true}

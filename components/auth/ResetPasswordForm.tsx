@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { authApi } from '@/lib/apiAuth';
-import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
+import { XIcon, EyeIcon, EyeOffIcon, ChevronLeftIcon } from '@/components/icons';
 import { useTranslations } from 'next-intl';
 
 interface ResetPasswordFormProps {
@@ -141,75 +141,98 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50">
-      <div className="bg-gray-900 rounded-lg max-w-md w-full border border-gray-700">
-        {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-white">
-            {step === 'email' && t('forgotPasswordTitle')}
-            {step === 'code' && t('enterVerificationCodeTitle')}
-            {step === 'password' && t('setNewPasswordTitle')}
-          </h2>
-          <button
-            onClick={handleClose}
-            className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-red-900/20"
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4 bg-black/60 md:bg-black/60">
+      {/* Mobile: full-screen, no card. Desktop: centered modal card */}
+      <div className="relative flex h-full w-full max-h-[100dvh] flex-col bg-[#1A1A1A] md:h-auto md:max-h-[none] md:w-full md:max-w-md md:rounded-[12px] md:border md:border-[var(--color-secondary-4)] md:bg-[#282828] md:shadow-xl overflow-hidden">
+        {/* Mobile: purple gradient blob at bottom (Figma) */}
+        <div
+          className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-[299px] h-[299px] rounded-[299px] bg-[#8D2EE2] blur-[139px] pointer-events-none md:hidden"
+          aria-hidden
+        />
+        {/* Title row: mobile step 1 – title left + close right; mobile step 2/3 – back | title (centered) | close; desktop – title centered, close absolute */}
+        <div
+          className={`relative flex flex-shrink-0 items-center px-6 pt-[64px] pb-4 md:justify-center md:pt-8 md:pb-2 ${
+            step === 'email' ? 'justify-between' : 'grid grid-cols-[auto_1fr_auto] gap-2 md:grid-cols-1'
+          }`}
+        >
+          {/* Left: back button (step 2/3) or zero-width placeholder (step 1 so grid aligns) */}
+          {step === 'code' || step === 'password' ? (
+            <button
+              type="button"
+              onClick={() => setStep(step === 'code' ? 'email' : 'code')}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[#757575] text-[#757575] hover:bg-white/10 hover:text-white hover:border-white transition-colors md:absolute md:left-4 md:top-4"
+              aria-label={t('back')}
+            >
+              <ChevronLeftIcon className="w-5 h-5" />
+            </button>
+          ) : (
+            <div className="w-0 overflow-hidden md:hidden" aria-hidden />
+          )}
+          {/* Center: title — step 2 mobile = two lines centered (Figma); else single line */}
+          <h2
+            className={`text-[26px] leading-[1.3] font-bold text-white md:text-[22px] md:font-semibold md:leading-tight ${
+              step === 'code' ? 'text-center md:text-center' : step === 'password' ? 'text-center md:text-center' : 'md:text-center'
+            }`}
           >
-            <XIcon className="w-5 h-5" />
+            {step === 'email' && t('resetPassword')}
+            {step === 'code' && (
+              <>
+                <span className="block md:hidden">{t('verificationCodeTitleLine1')}</span>
+                <span className="block md:hidden">{t('verificationCodeTitleLine2')}</span>
+                <span className="hidden md:inline">{t('verificationCode')}</span>
+              </>
+            )}
+            {step === 'password' && t('newPassword')}
+          </h2>
+          {/* Right: close */}
+          <button
+            type="button"
+            onClick={handleClose}
+            className="flex shrink-0 items-center justify-center p-0 text-[#757575] hover:text-white transition-colors md:absolute md:right-4 md:top-4"
+            aria-label="Close"
+          >
+            <XIcon className="w-8 h-8 shrink-0" />
           </button>
         </div>
 
-        {/* Step Indicator */}
-        <div className="px-6 pt-4 pb-2">
-          <div className="flex items-center gap-2">
-            <div className="flex-1 h-1 rounded bg-purple-600"></div>
-            <div className={`flex-1 h-1 rounded ${step === 'code' || step === 'password' ? 'bg-purple-600' : 'bg-gray-700'}`}></div>
-            <div className={`flex-1 h-1 rounded ${step === 'password' ? 'bg-purple-600' : 'bg-gray-700'}`}></div>
-          </div>
-          <div className="flex justify-between mt-2">
-            <span className="text-xs text-purple-400">{t('enterEmail')}</span>
-            <span className={`text-xs ${step === 'code' || step === 'password' ? 'text-purple-400' : 'text-gray-500'}`}>{t('enterCode')}</span>
-            <span className={`text-xs ${step === 'password' ? 'text-purple-400' : 'text-gray-500'}`}>{t('newPassword')}</span>
-          </div>
-        </div>
-
         {/* Form */}
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto px-6 pb-6 pt-0 md:flex-initial md:overflow-visible md:p-6 md:pt-4">
           {error && (
-            <div className="mb-4 p-3 bg-red-900/20 border border-red-600 rounded-lg">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="mb-4 rounded-[8px] border border-[#C42B2B] bg-[#C42B2B]/10 px-4 py-3 text-[14px] text-[#ff8d8d]">
+              {error}
             </div>
           )}
 
           {success && (
-            <div className="mb-4 p-3 bg-green-900/20 border border-green-600 rounded-lg">
-              <p className="text-sm text-green-400">{t('passwordResetSuccess')}</p>
+            <div className="mb-4 rounded-[8px] border border-green-600 bg-green-600/10 px-4 py-3 text-[14px] text-green-400">
+              {t('passwordResetSuccess')}
             </div>
           )}
 
           {step === 'email' && (
-            <form onSubmit={handleEmailSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t('emailAddress')} *
+            <form onSubmit={handleEmailSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label className="block text-[15px] leading-[1.4] font-normal text-[var(--color-secondary-7)]">
+                  {t('emailAddress')}
                 </label>
                 <input
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder={t('enterYourEmail')}
-                  className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.email ? 'border-red-500' : 'border-gray-600'
+                  className={`h-12 w-full rounded-[8px] border px-4 text-[16px] leading-[1.4] text-white placeholder:text-[var(--color-secondary-6)] focus:outline-none focus:border-[var(--color-secondary-5)] bg-[#1E1E1E] ${
+                    errors.email ? 'border-[#C42B2B]' : 'border-[var(--color-secondary-5)]'
                   }`}
                 />
                 {errors.email && (
-                  <p className="mt-1 text-sm text-red-400">{errors.email}</p>
+                  <p className="text-[12px] text-[#ff8d8d]">{errors.email}</p>
                 )}
               </div>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg shadow-purple-500/25"
+                className="h-12 w-full rounded-[8px] bg-[var(--color-main)] text-[17px] font-semibold text-white hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
               >
                 {isLoading ? t('sendingCode') : t('sendResetCode')}
               </button>
@@ -217,43 +240,35 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
           )}
 
           {step === 'code' && (
-            <form onSubmit={handleCodeSubmit} className="space-y-4">
-              <div className="mb-4 p-3 bg-blue-900/20 border border-blue-600 rounded-lg">
-                <p className="text-sm text-blue-400">
-                  {t('verificationCodeSentTo')} <strong>{email}</strong>
-                </p>
-              </div>
+            <form onSubmit={handleCodeSubmit} className="space-y-5">
+              {/* Figma: "Verification code has been sent" then email in bright white */}
+              <p className="text-[15px] leading-[1.5] text-[var(--color-secondary-7)]">
+                {t('verificationCodeSentTo')}{' '}
+                <span className="font-medium text-white">{email}</span>
+              </p>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t('verificationCode')} *
+              <div className="space-y-2">
+                <label className="block text-[15px] leading-[1.4] font-normal text-white">
+                  {t('verificationCode')}
                 </label>
                 <input
                   type="text"
                   value={code}
                   onChange={(e) => setCode(e.target.value)}
                   placeholder={t('enterVerificationCode')}
-                  className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.code ? 'border-red-500' : 'border-gray-600'
+                  className={`h-12 w-full rounded-[8px] border px-4 text-[16px] leading-[1.4] text-white placeholder:text-[var(--color-secondary-6)] bg-[#1E1E1E] focus:outline-none focus:border-[var(--color-secondary-5)] ${
+                    errors.code ? 'border-[#C42B2B]' : 'border-[var(--color-secondary-5)]'
                   }`}
                 />
                 {errors.code && (
-                  <p className="mt-1 text-sm text-red-400">{errors.code}</p>
+                  <p className="text-[12px] text-[#ff8d8d]">{errors.code}</p>
                 )}
               </div>
 
               <button
-                type="button"
-                onClick={() => setStep('email')}
-                className="w-full py-2 text-sm text-gray-400 hover:text-purple-400 font-medium transition-colors"
-              >
-                {t('back')}
-              </button>
-
-              <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg shadow-purple-500/25"
+                className="h-12 w-full rounded-[8px] bg-[var(--color-main)] text-[17px] font-semibold text-white hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
               >
                 {t('continue')}
               </button>
@@ -261,10 +276,10 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
           )}
 
           {step === 'password' && (
-            <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t('newPassword')} *
+            <form onSubmit={handlePasswordSubmit} className="space-y-5">
+              <div className="space-y-2">
+                <label className="block text-[15px] leading-[1.4] font-normal text-white">
+                  {t('newPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -272,62 +287,54 @@ export const ResetPasswordForm: React.FC<ResetPasswordFormProps> = ({
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder={t('enterNewPassword')}
-                    className={`w-full p-3 pr-10 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                      errors.newPassword ? 'border-red-500' : 'border-gray-600'
+                    className={`h-12 w-full rounded-[8px] border px-4 pr-11 text-[16px] leading-[1.4] text-white placeholder:text-[var(--color-secondary-6)] bg-[#1E1E1E] focus:outline-none focus:border-[var(--color-secondary-5)] ${
+                      errors.newPassword ? 'border-[#C42B2B]' : 'border-[var(--color-secondary-5)]'
                     }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-secondary-6)] hover:text-white transition-colors"
                   >
                     {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                   </button>
                 </div>
                 {errors.newPassword && (
-                  <p className="mt-1 text-sm text-red-400">{errors.newPassword}</p>
+                  <p className="text-[12px] text-[#ff8d8d]">{errors.newPassword}</p>
                 )}
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t('confirmNewPassword')} *
-                </label>
+              <div className="space-y-2">
                 <div className="relative">
                   <input
                     type={showConfirmPassword ? 'text' : 'password'}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder={t('confirmNewPasswordPlaceholder')}
-                    className={`w-full p-3 pr-10 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                      errors.confirmPassword ? 'border-red-500' : 'border-gray-600'
+                    className={`h-12 w-full rounded-[8px] border px-4 pr-11 text-[16px] leading-[1.4] text-white placeholder:text-[var(--color-secondary-6)] bg-[#1E1E1E] focus:outline-none focus:border-[var(--color-secondary-5)] ${
+                      errors.confirmPassword ? 'border-[#C42B2B]' : 'border-[var(--color-secondary-5)]'
                     }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-secondary-6)] hover:text-white transition-colors"
                   >
                     {showConfirmPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                   </button>
                 </div>
                 {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>
+                  <p className="text-[12px] text-[#ff8d8d]">{errors.confirmPassword}</p>
                 )}
+                <p className="text-[14px] leading-[1.5] text-[var(--color-secondary-6)]">
+                  {t('passwordLength')}
+                </p>
               </div>
-
-              <button
-                type="button"
-                onClick={() => setStep('code')}
-                className="w-full py-2 text-sm text-gray-400 hover:text-purple-400 font-medium transition-colors"
-              >
-                {t('back')}
-              </button>
 
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg shadow-purple-500/25"
+                className="h-12 w-full rounded-[8px] bg-[var(--color-main)] text-[17px] font-semibold text-white hover:opacity-95 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity"
               >
                 {isLoading ? t('resettingPassword') : t('resetPassword')}
               </button>

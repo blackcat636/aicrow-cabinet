@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginRequest } from '@/types/auth';
 import { getDeviceId } from '@/lib/auth';
-import { XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
+import { EyeIcon, EyeOffIcon } from '@/components/icons';
 import { ResetPasswordForm } from './ResetPasswordForm';
 import { useTranslations } from 'next-intl';
 import { FacebookLoginButton } from './FacebookLoginButton';
@@ -91,20 +91,130 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const isModal = variant === 'modal';
   if (isModal && !isOpen) return null;
 
+  if (isModal) {
+    return (
+      <>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4">
+          {/* Mobile (Figma 1-3905): full-screen, no card. Desktop: centered card */}
+          <div className="relative flex h-full w-full max-h-[100dvh] flex-col md:h-auto md:max-h-[none] md:w-full md:max-w-[540px] md:rounded-[20px] md:border md:border-[var(--color-secondary-4)] md:bg-[var(--color-secondary-2)] md:pt-12 md:pb-6 md:px-[72px]">
+            <div className="flex flex-1 flex-col overflow-y-auto md:flex-initial md:overflow-visible">
+              {/* Header: "Log In" centered */}
+              <div className="flex flex-shrink-0 items-center justify-center px-6 pt-[64px] pb-4 md:pt-0 md:contents">
+                <h2 className="text-[26px] leading-[1.3] font-bold text-white md:text-center md:text-[32px] md:leading-[1.4] md:tracking-[0.64px] md:font-semibold">
+                  {t('signIn')}
+                </h2>
+              </div>
+
+              <div className="">
+              <form onSubmit={handleSubmit} className="mt-2 space-y-5 mx-auto w-full max-w-[400px] px-6 pb-6 md:px-0 md:pb-0md:mt-8 md:space-y-6">
+                {redirectUri && (
+                  <div className="rounded-[8px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-1)] px-4 py-3 text-[14px] text-[var(--color-secondary-8)]">
+                    {tSso('continueToExternalService', { service: service ? `: ${service}` : '' })}
+                  </div>
+                )}
+
+                {error && (
+                  <div className="rounded-[8px] border border-[#C42B2B] bg-[#C42B2B]/10 px-4 py-3 text-[14px] text-[#ff8d8d]">
+                    {error}
+                  </div>
+                )}
+
+                <div className="space-y-2">
+                  <label className="block text-[15px] leading-[1.4] font-normal text-white md:font-medium md:text-[16px] md:tracking-[0.32px] md:text-[var(--color-secondary-8)]">
+                    {t('emailAddress')}
+                  </label>
+                  <input
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleInputChange('email', e.target.value)}
+                    placeholder={t('enterYourEmail')}
+                    className={`h-12 w-full rounded-[10px] border px-4 text-[16px] leading-[1.4] text-white placeholder:text-[#888888] focus:outline-none focus:border-[#888888] md:rounded-[8px] md:bg-transparent md:placeholder:text-[var(--color-secondary-6)] md:text-[var(--color-secondary-10)] ${
+                      errors.email ? 'border-[#C42B2B] bg-[#2C2C2C]' : 'border-[#666666] bg-[#2C2C2C] md:border-[var(--color-secondary-4)] md:bg-transparent'
+                    }`}
+                  />
+                  {errors.email && <p className="text-[12px] text-[#ff8d8d]">{errors.email}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-[15px] leading-[1.4] font-normal text-white md:font-medium md:text-[16px] md:tracking-[0.32px] md:text-[var(--color-secondary-8)]">
+                    {t('password')}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={formData.password}
+                      onChange={(e) => handleInputChange('password', e.target.value)}
+                      placeholder={t('enterYourPassword')}
+                      className={`h-12 w-full rounded-[10px] border px-4 pr-11 text-[16px] leading-[1.4] text-white placeholder:text-[#888888] focus:outline-none focus:border-[#888888] md:rounded-[8px] md:bg-transparent md:placeholder:text-[var(--color-secondary-6)] md:text-[var(--color-secondary-10)] ${
+                        errors.password ? 'border-[#C42B2B] bg-[#2C2C2C]' : 'border-[#666666] bg-[#2C2C2C] md:border-[var(--color-secondary-4)] md:bg-transparent'
+                      }`}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888888] hover:text-white md:text-[var(--color-secondary-6)] md:hover:text-[var(--color-secondary-10)]"
+                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  {errors.password && <p className="text-[12px] text-[#ff8d8d]">{errors.password}</p>}
+                  <div className="flex justify-start">
+                    <button
+                      type="button"
+                      onClick={() => setShowResetPassword(true)}
+                      className="text-[14px] leading-[1.5] font-normal text-[#424242] hover:opacity-90 md:font-medium md:tracking-[0.28px] md:text-[#424242] md:hover:text-[var(--color-secondary-8)]"
+                    >
+                      {t('forgotPassword')}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-1">
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="h-12 w-full rounded-[10px] bg-[var(--color-main)] text-[16px] leading-[1.4] font-semibold text-white hover:opacity-95 disabled:opacity-60 md:rounded-[8px]"
+                  >
+                    {isLoading ? t('signingIn') : t('signIn')}
+                  </button>
+                  <FacebookLoginButton className="h-12 w-full rounded-[10px] text-[16px] font-semibold justify-center bg-[#3B5998] hover:bg-[#334d82] md:rounded-[8px]" />
+                </div>
+              </form>
+              </div>
+
+            {/* Mobile: horizontal line (Secondary-4) just below Facebook button */}
+            <div className="mt-2 h-px w-full flex-shrink-0 bg-[var(--color-secondary-4)] md:hidden" style={{ background: 'var(--color-secondary-4, #363639)' }} aria-hidden />
+            <div className="flex-shrink-0 pt-5 px-6 -mx-6 w-full md:mt-6 md:pt-5 md:px-0 md:-mx-[72px] md:border-t md:border-[var(--color-secondary-4)]">
+              <p className="text-center text-[16px] leading-[1.4] text-[#424242] md:tracking-[0.32px]">
+                {t('dontHaveAccount')}{' '}
+                <button
+                  type="button"
+                  onClick={onSwitchToRegister}
+                  className="font-semibold text-[var(--color-main)] underline decoration-[var(--color-main)] underline-offset-2 hover:opacity-90 md:no-underline"
+                >
+                  {t('signUp')}
+                </button>
+              </p>
+            </div>
+            </div>
+          </div>
+        </div>
+
+        <ResetPasswordForm
+          isOpen={showResetPassword}
+          onClose={() => setShowResetPassword(false)}
+          initialEmail={formData.email}
+        />
+      </>
+    );
+  }
+
   return (
     <>
-    <div className={isModal ? "fixed inset-0 flex items-center justify-center p-4 z-50" : ""}>
-      <div className={(isModal ? "bg-transparent rounded-2xl max-w-md w-full border border-white/10 shadow-2xl shadow-purple-500/20" : "") + (className ? ` ${className}` : '')}>
-        {/* Header */}
-        {isModal && (
-          <div className="p-6 border-b border-white/10">
-            <h2 className="text-2xl font-bold text-white">{t('accountTitle')}</h2>
-            <p className="text-sm text-gray-300 mt-1">{t('welcomeMessage')}</p>
-          </div>
-        )}
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className={isModal ? "p-6 space-y-4" : "space-y-4"}>
+    <div className={className ?? ''}>
+      <div>
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* SSO notice */}
           {redirectUri && (
             <div className="p-3 bg-purple-900/20 border border-purple-500/40 rounded-lg text-sm text-purple-100">
@@ -221,33 +331,16 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </div>
           </div>
 
-          {/* Switch to Register (only in modal to avoid duplicates in embedded) */}
-          {isModal && (
-            <div className="text-center pt-4 border-t border-gray-700">
-              <p className="text-sm text-gray-300">
-                {t('dontHaveAccount')}{' '}
-                <button
-                  type="button"
-                  onClick={onSwitchToRegister}
-                  className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
-                >
-                  {t('signUp')}
-                </button>
-              </p>
-            </div>
-          )}
         </form>
       </div>
     </div>
 
     {/* Reset Password Form */}
-    {isModal && (
-      <ResetPasswordForm
-        isOpen={showResetPassword}
-        onClose={() => setShowResetPassword(false)}
-        initialEmail={formData.email}
-      />
-    )}
+    <ResetPasswordForm
+      isOpen={showResetPassword}
+      onClose={() => setShowResetPassword(false)}
+      initialEmail={formData.email}
+    />
     </>
   );
 };

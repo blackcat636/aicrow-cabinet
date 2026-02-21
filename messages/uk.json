@@ -225,6 +225,8 @@
     "verifyEmail": "Підтвердити електронну пошту",
     "verifyEmailDescription": "Будь ласка, введіть код підтвердження, відправлений на вашу електронну пошту",
     "verificationCode": "Код підтвердження",
+    "verificationCodeTitleLine1": "Код",
+    "verificationCodeTitleLine2": "підтвердження",
     "verificationCodeRequired": "Код підтвердження обов'язковий",
     "verifyEmailSuccess": "Електронну пошту успішно підтверджено",
     "verifyEmailError": "Не вдалося підтвердити електронну пошту",
@@ -238,6 +240,7 @@
     "enterYourEmail": "Введіть вашу електронну пошту",
     "enterYourPassword": "Введіть ваш пароль",
     "createAccount": "Створити обліковий запис",
+    "next": "Далі",
     "createAPassword": "Створіть пароль",
     "confirmYourPassword": "Підтвердіть ваш пароль",
     "creatingAccount": "Створення облікового запису...",
@@ -470,7 +473,13 @@
     "addedSuccessfully": "Робочий процес успішно додано!",
     "noWorkflowsYet": "Поки що немає робочих процесів",
     "getStarted": "Почніть, прикріпивши свій перший робочий процес для автоматизації ваших завдань.",
-    "loading": "Завантаження..."
+    "loading": "Завантаження...",
+    "sections": {
+      "video": "Відео",
+      "photo": "Фото",
+      "socialMedia": "Соцмережі",
+      "other": "Інше"
+    }
   },
   "executions": {
     "title": "Історія виконання",

@@ -15,7 +15,7 @@ const languages = [
 
 interface LanguageSwitcherMenuProps {
   onClose?: () => void;
-  variant?: 'desktop' | 'mobile';
+  variant?: 'desktop' | 'mobile' | 'mobileHeader';
 }
 
 export function LanguageSwitcherMenu({ onClose, variant = 'desktop' }: LanguageSwitcherMenuProps) {
@@ -28,7 +28,10 @@ export function LanguageSwitcherMenu({ onClose, variant = 'desktop' }: LanguageS
   const dropdownMenuRef = useRef<HTMLDivElement>(null);
 
   const isMobile = variant === 'mobile';
+  const isMobileHeader = variant === 'mobileHeader';
   const currentLanguage = languages.find(lang => lang.code === locale) || languages[0];
+  const dropdownLanguages = languages.filter((lang) => lang.code !== locale);
+  const desktopFlagClass = isMobileHeader ? 'w-6 h-4 flex-shrink-0' : 'w-6 h-4 flex-shrink-0';
 
   const handleLanguageChange = (newLocale: string) => {
     if (newLocale === locale) {
@@ -57,7 +60,7 @@ export function LanguageSwitcherMenu({ onClose, variant = 'desktop' }: LanguageS
   useEffect(() => {
     if (isOpen && buttonRef.current && dropdownMenuRef.current) {
       const rect = buttonRef.current.getBoundingClientRect();
-      const dropdownWidth = variant === 'mobile' ? 192 : 176; // w-48 = 192px, w-44 = 176px
+      const dropdownWidth = variant === 'mobile' ? 92 : 72;
       
       dropdownMenuRef.current.style.top = `${rect.bottom + window.scrollY + 8}px`;
       if (variant === 'mobile') {
@@ -105,15 +108,14 @@ export function LanguageSwitcherMenu({ onClose, variant = 'desktop' }: LanguageS
             e.stopPropagation();
             setIsOpen(!isOpen);
           }}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all text-gray-300 hover:bg-white/10 hover:text-white"
+          className="w-full flex items-center justify-between px-4 py-3 rounded-lg transition-all text-gray-300 hover:bg-white/10 hover:text-white"
           aria-label="Language"
         >
-          {currentLanguage.FlagIcon && React.createElement(currentLanguage.FlagIcon, { 
-            className: 'w-5 h-5 flex-shrink-0' 
+          {currentLanguage.FlagIcon && React.createElement(currentLanguage.FlagIcon, {
+            className: 'w-6 h-6 flex-shrink-0'
           })}
-          <span className='text-lg font-medium'>{currentLanguage.name}</span>
           <svg
-            className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ml-auto ${isOpen ? 'rotate-180' : ''}`}
+            className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${isOpen ? 'rotate-180' : ''}`}
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -131,12 +133,29 @@ export function LanguageSwitcherMenu({ onClose, variant = 'desktop' }: LanguageS
           ref={buttonRef}
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="w-8 h-8 rounded-full flex items-center justify-center bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 transition-all focus:outline-none focus:ring-2 focus:ring-purple-500"
+          className={`border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] flex items-center justify-between overflow-hidden transition-all focus:outline-none focus:ring-2 focus:ring-[var(--color-main)]/60 ${
+            isMobileHeader
+              ? 'h-[36px] w-[54px] rounded-[7.5px] px-[8.25px] py-[10.25px]'
+              : 'h-[48px] w-[72px] rounded-[10px] px-[10px] py-[14px]'
+          }`}
           aria-label="Language"
         >
-          {currentLanguage.FlagIcon && React.createElement(currentLanguage.FlagIcon, { 
-            className: 'w-5 h-4' 
+          {currentLanguage.FlagIcon && React.createElement(currentLanguage.FlagIcon, {
+            className: desktopFlagClass
           })}
+          <svg
+            className={`${isMobileHeader ? 'h-[9px] w-[9px]' : 'h-[14px] w-[14px]'} text-[var(--color-secondary-10)] transition-transform ${isOpen ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M19 9l-7 7-7-7"
+            />
+          </svg>
         </button>
       )}
 
@@ -157,14 +176,13 @@ export function LanguageSwitcherMenu({ onClose, variant = 'desktop' }: LanguageS
           {/* Dropdown */}
           <div
             ref={dropdownMenuRef}
-            className={`fixed ${isMobile ? 'z-[200]' : 'z-[102]'} bg-[#141519] border border-gray-700 rounded-lg shadow-xl overflow-hidden`}
+            className={`fixed ${isMobile ? 'z-[200]' : 'z-[102]'} bg-[var(--color-secondary-2)] border border-[var(--color-secondary-4)] ${isMobile ? 'rounded-lg' : 'rounded-[10px]'} shadow-xl overflow-hidden`}
             onClick={(e) => {
               e.stopPropagation();
             }}
           >
-            {languages.map((lang) => {
+            {dropdownLanguages.map((lang) => {
               const FlagComponent = lang.FlagIcon;
-              const isActive = lang.code === locale;
               
               return (
                 <button
@@ -175,29 +193,15 @@ export function LanguageSwitcherMenu({ onClose, variant = 'desktop' }: LanguageS
                     e.stopPropagation();
                     handleLanguageChange(lang.code);
                   }}
-                  className={`w-full flex items-center gap-3 px-4 py-2 text-sm transition-colors ${
-                    isActive
-                      ? 'bg-purple-600/20 text-white'
-                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                  className={`w-full flex items-center justify-center ${
+                    isMobile ? 'gap-2 px-3 py-2 text-sm' : 'h-[46px] px-0'
+                  } text-gray-300 transition-colors hover:bg-white/10 hover:text-white ${
+                    !isMobile ? 'border-b border-[var(--color-secondary-4)] last:border-b-0' : ''
                   }`}
                 >
-                  {FlagComponent && React.createElement(FlagComponent, { className: 'w-4 h-4 flex-shrink-0' })}
-                  <span className="flex-1 text-left">{lang.name}</span>
-                  {isActive && (
-                    <svg
-                      className="w-4 h-4 text-purple-400 flex-shrink-0"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                  )}
+                  {FlagComponent && React.createElement(FlagComponent, {
+                    className: isMobile ? 'w-5 h-5 flex-shrink-0' : 'w-6 h-4 flex-shrink-0'
+                  })}
                 </button>
               );
             })}

@@ -152,9 +152,9 @@ export const VerifyEmailForm: React.FC<VerifyEmailFormProps> = ({
           <h2 className="text-xl font-semibold text-white">{t('verifyEmail')}</h2>
           <button
             onClick={handleClose}
-            className="p-2 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-red-900/20"
+            className="p-2 rounded-full border border-[#757575] text-[#757575] hover:bg-white/10 hover:text-white hover:border-white transition-colors"
           >
-            <XIcon className="w-5 h-5" />
+            <XIcon className="w-5 h-5 shrink-0" />
           </button>
         </div>
 

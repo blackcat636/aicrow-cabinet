@@ -131,11 +131,11 @@ export const ExternalServicesIntegration: React.FC = () => {
 
   const content = useMemo(() => {
     if (loading) {
-      return <div className="text-sm text-gray-400">{t('integrationsLoading')}</div>;
+      return <div className="text-sm text-[var(--color-secondary-6)]">{t('integrationsLoading')}</div>;
     }
 
     if (!services.length) {
-      return <div className="text-sm text-gray-400">{t('externalServicesEmpty')}</div>;
+      return <div className="text-sm text-[var(--color-secondary-6)]">{t('externalServicesEmpty')}</div>;
     }
 
     return services.map((item) => {
@@ -145,18 +145,18 @@ export const ExternalServicesIntegration: React.FC = () => {
       const isLoadingSessions = loadingSessionsFor === serviceId;
 
       return (
-        <div key={serviceId} className="rounded-lg border border-gray-700/50 bg-gray-800/40 p-3 space-y-3">
+        <div key={serviceId} className="rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-3 space-y-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="text-sm font-semibold text-gray-100">{item.service.name}</div>
+              <div className="text-sm font-semibold text-[var(--color-secondary-10)]">{item.service.name}</div>
               {item.service.description && (
-                <div className="text-xs text-gray-400 mt-1">{item.service.description}</div>
+                <div className="text-xs text-[var(--color-secondary-6)] mt-1">{item.service.description}</div>
               )}
-              <div className="mt-2 text-xs text-gray-400 space-x-3">
+              <div className="mt-2 text-xs text-[var(--color-secondary-6)] space-x-3">
                 <span>{t('externalServicesActiveSessions')}: {item.activeSessionsCount}</span>
                 <span>{t('externalServicesPendingSessions')}: {item.pendingSessionsCount}</span>
               </div>
-              <div className="mt-1 text-xs text-gray-500">
+              <div className="mt-1 text-xs text-[var(--color-secondary-7)]">
                 {t('externalServicesLastUsed')}: {formatDate(item.lastUsedAt)}
               </div>
             </div>
@@ -181,23 +181,23 @@ export const ExternalServicesIntegration: React.FC = () => {
           </div>
 
           {isExpanded && (
-            <div className="space-y-2 border-t border-gray-700/50 pt-3">
+            <div className="space-y-2 border-t border-[var(--color-secondary-4)] pt-3">
               {isLoadingSessions ? (
-                <div className="text-xs text-gray-400">{t('integrationsLoading')}</div>
+                <div className="text-xs text-[var(--color-secondary-6)]">{t('integrationsLoading')}</div>
               ) : sessions.length === 0 ? (
-                <div className="text-xs text-gray-400">{t('externalServicesNoSessions')}</div>
+                <div className="text-xs text-[var(--color-secondary-6)]">{t('externalServicesNoSessions')}</div>
               ) : (
                 sessions.map((session) => (
                   <div
                     key={session.id}
-                    className="flex flex-col gap-2 rounded-md border border-gray-700/50 bg-black/30 px-3 py-2 md:flex-row md:items-center md:justify-between"
+                    className="flex flex-col gap-2 rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-3 py-2 md:flex-row md:items-center md:justify-between"
                   >
-                    <div className="text-xs text-gray-300">
+                    <div className="text-xs text-[var(--color-secondary-9)]">
                       <div className="font-medium">{session.deviceName || t('externalServicesUnknownDevice')}</div>
-                      <div className="text-gray-400">
+                      <div className="text-[var(--color-secondary-6)]">
                         {session.ipAddress || '—'} · {session.status}
                       </div>
-                      <div className="text-gray-500">
+                      <div className="text-[var(--color-secondary-7)]">
                         {t('externalServicesLastUsed')}: {formatDate(session.lastUsedAt)}
                       </div>
                     </div>

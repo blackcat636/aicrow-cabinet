@@ -99,11 +99,11 @@ export const BalanceCard: React.FC<BalanceCardProps> = React.memo(({ balanceData
 
   return (
     <div 
-      className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30"
+      className="p-[1px] rounded-lg bg-[var(--color-main)] overflow-hidden shadow-lg shadow-purple-500/30"
     >
       <Card 
         ref={cardRef}
-        className="relative w-full bg-[#141519] border-0 rounded-lg h-full overflow-hidden group"
+        className="relative w-full bg-[var(--color-secondary-2)] border-0 rounded-lg h-full overflow-hidden group"
         onMouseMove={handleMouseMove}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}

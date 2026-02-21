@@ -128,7 +128,7 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
     <>
       <div
         className={cn(
-          'flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700/50',
+          'flex items-center justify-between p-3 bg-[var(--color-secondary-2)] rounded-[10px] border border-[var(--color-secondary-4)]',
           className
         )}
       >
@@ -137,25 +137,25 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
             <FacebookIcon className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div className="text-sm font-medium text-gray-200">
+            <div className="text-sm font-medium text-[var(--color-secondary-10)]">
               {t('facebookIntegration')}
             </div>
             {loadingStatus ? (
-              <div className="text-xs text-gray-400">{t('integrationsLoading')}</div>
+              <div className="text-xs text-[var(--color-secondary-6)]">{t('integrationsLoading')}</div>
             ) : isLinked ? (
               <div className="text-xs text-green-400 flex flex-col gap-0.5">
                 <span>{t('integrationsConnected')}</span>
                 {facebookAccount?.email && (
-                  <span className="text-gray-400">{facebookAccount.email}</span>
+                  <span className="text-[var(--color-secondary-6)]">{facebookAccount.email}</span>
                 )}
                 {(facebookAccount?.firstName || facebookAccount?.lastName) && (
-                  <span className="text-gray-400">
+                  <span className="text-[var(--color-secondary-6)]">
                     {[facebookAccount.firstName, facebookAccount.lastName].filter(Boolean).join(' ')}
                   </span>
                 )}
               </div>
             ) : (
-              <div className="text-xs text-gray-400">{t('facebookNotConnected')}</div>
+              <div className="text-xs text-[var(--color-secondary-6)]">{t('facebookNotConnected')}</div>
             )}
           </div>
         </div>

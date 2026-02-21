@@ -2,7 +2,9 @@ import {
   AvailablePlansResponse,
   ActivePlanResponse,
   PurchasePlanRequest,
-  PurchasePlanResponse
+  PurchasePlanResponse,
+  CheckoutSessionResponse,
+  CreateCheckoutSessionRequest
 } from '@/types/subscription';
 import { API_CONFIG } from '@/config/api';
 import { fetchWithAuth } from '@/lib/auth';
@@ -80,6 +82,29 @@ export const subscriptionApi = {
 
     const result = (await response.json()) as ActivePlanResponse;
     return result.data ?? null;
+  },
+
+  /** POST /subscription-plans/:id/checkout — create Stripe Checkout Session, returns checkoutUrl for redirect. */
+  createCheckoutSession: async (
+    planId: number,
+    body: CreateCheckoutSessionRequest = {}
+  ): Promise<CheckoutSessionResponse> => {
+    const url = `${API_BASE_URL}${ENDPOINTS.CHECKOUT(planId)}`;
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      const errorMessage = await getJsonMessage(response);
+      const fallback = `Failed to create checkout session (${response.status})`;
+      const error = new Error(errorMessage || fallback);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as CheckoutSessionResponse;
   },
 
   /** POST /subscription-plans/:id/purchase — purchase a plan (optional useTrial). */

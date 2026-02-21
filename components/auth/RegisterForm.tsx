@@ -6,7 +6,7 @@ import { VerifyEmailForm } from "./VerifyEmailForm";
 
 import { useAuth } from "@/contexts/AuthContext";
 import { RegisterRequest } from "@/types/auth";
-import { XIcon, EyeIcon, EyeOffIcon } from "@/components/icons";
+import { EyeIcon, EyeOffIcon } from "@/components/icons";
 import { useTranslations } from 'next-intl';
 import { FacebookLoginButton } from "./FacebookLoginButton";
 
@@ -163,289 +163,240 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       />
 
       {!showVerifyEmail && (
-        <div
-          className={
-            isModal
-              ? "fixed inset-0 flex items-start sm:items-center justify-center p-0 sm:p-4 z-50 overflow-y-auto"
-              : ""
-          }
-        >
-          <div
-            className={
-              (isModal
-                ? "bg-[#141519]/95 backdrop-blur-sm rounded-none sm:rounded-2xl max-w-md w-full min-h-full sm:min-h-0 border-0 sm:border border-white/10 shadow-2xl shadow-purple-500/20 flex flex-col"
-                : "") + (className ? ` ${className}` : "")
-            }
-          >
-            {/* Header */}
-            {isModal && (
-              <div className="p-5 sm:p-6 border-b border-white/30 flex-shrink-0 bg-[#141519] relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-br from-purple-900/30 via-transparent to-transparent pointer-events-none"></div>
-                <div className="relative z-10">
-                  <h2 className="text-2xl sm:text-3xl font-bold text-white leading-tight">{t('accountTitle')}</h2>
-                  <p className="text-base sm:text-lg text-gray-100 mt-2 leading-relaxed">{t('welcomeMessage')}</p>
+        isModal ? (
+          /* Figma 1-3568: registration modal – same layout as login (mobile full-screen, desktop card) */
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4">
+            <div className="relative flex h-full w-full max-h-[100dvh] flex-col md:h-auto md:max-h-[none] md:w-full md:max-w-[540px] md:rounded-[20px] md:border md:border-[var(--color-secondary-4)] md:bg-[var(--color-secondary-2)] md:pt-12 md:pb-6 md:px-[72px]">
+              <div className="flex flex-1 flex-col overflow-y-auto md:flex-initial md:overflow-visible">
+                <div className="flex flex-shrink-0 items-center justify-center px-6 pt-[64px] pb-4 md:pt-0 md:contents">
+                  <h2 className="text-[26px] leading-[1.3] font-bold text-white md:text-center md:text-[32px] md:leading-[1.4] md:tracking-[0.64px] md:font-semibold">
+                    {t('signUp')}
+                  </h2>
+                </div>
+
+                <div className="mx-auto w-full max-w-[400px] px-6 pb-6 md:px-0 md:pb-0">
+                  <form onSubmit={handleSubmit} className="mt-2 space-y-5 md:mt-8 md:space-y-6">
+                    {error && (
+                      <div className="rounded-[8px] border border-[#C42B2B] bg-[#C42B2B]/10 px-4 py-3 text-[14px] text-[#ff8d8d]">
+                        {error}
+                      </div>
+                    )}
+
+                    <div className="space-y-2">
+                      <label className="block text-[15px] leading-[1.4] font-normal text-white md:font-medium md:text-[16px] md:tracking-[0.32px] md:text-[var(--color-secondary-8)]">
+                        {t('emailAddress')}
+                      </label>
+                      <input
+                        id="register-email"
+                        type="email"
+                        placeholder={t('enterYourEmail')}
+                        value={formData.email}
+                        onChange={(e) => handleInputChange("email", e.target.value)}
+                        className={`h-12 w-full rounded-[10px] border px-4 text-[16px] leading-[1.4] text-white placeholder:text-[#888888] focus:outline-none focus:border-[#888888] md:rounded-[8px] md:bg-transparent md:placeholder:text-[var(--color-secondary-6)] md:text-[var(--color-secondary-10)] ${
+                          errors.email ? "border-[#C42B2B] bg-[#2C2C2C]" : "border-[#666666] bg-[#2C2C2C] md:border-[var(--color-secondary-4)] md:bg-transparent"
+                        }`}
+                      />
+                      {errors.email && <p className="text-[12px] text-[#ff8d8d]">{errors.email}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="block text-[15px] leading-[1.4] font-normal text-white md:font-medium md:text-[16px] md:tracking-[0.32px] md:text-[var(--color-secondary-8)]">
+                        {t('password')}
+                      </label>
+                      <div className="relative">
+                        <input
+                          id="register-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder={t('createAPassword')}
+                          value={formData.password}
+                          onChange={(e) => handleInputChange("password", e.target.value)}
+                          className={`h-12 w-full rounded-[10px] border px-4 pr-11 text-[16px] leading-[1.4] text-white placeholder:text-[#888888] focus:outline-none focus:border-[#888888] md:rounded-[8px] md:bg-transparent md:placeholder:text-[var(--color-secondary-6)] md:text-[var(--color-secondary-10)] ${
+                            errors.password ? "border-[#C42B2B] bg-[#2C2C2C]" : "border-[#666666] bg-[#2C2C2C] md:border-[var(--color-secondary-4)] md:bg-transparent"
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888888] hover:text-white md:text-[var(--color-secondary-6)] md:hover:text-[var(--color-secondary-10)]"
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                        >
+                          {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      {errors.password && <p className="text-[12px] text-[#ff8d8d]">{errors.password}</p>}
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="relative">
+                        <input
+                          id="register-confirm-password"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder={t('confirmYourPassword')}
+                          value={formData.confirmPassword}
+                          onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                          className={`h-12 w-full rounded-[10px] border px-4 pr-11 text-[16px] leading-[1.4] text-white placeholder:text-[#888888] focus:outline-none focus:border-[#888888] md:rounded-[8px] md:bg-transparent md:placeholder:text-[var(--color-secondary-6)] md:text-[var(--color-secondary-10)] ${
+                            errors.confirmPassword ? "border-[#C42B2B] bg-[#2C2C2C]" : "border-[#666666] bg-[#2C2C2C] md:border-[var(--color-secondary-4)] md:bg-transparent"
+                          }`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888888] hover:text-white md:text-[var(--color-secondary-6)] md:hover:text-[var(--color-secondary-10)]"
+                          aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                        >
+                          {showConfirmPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
+                        </button>
+                      </div>
+                      {errors.confirmPassword && <p className="text-[12px] text-[#ff8d8d]">{errors.confirmPassword}</p>}
+                      <p className="text-[14px] leading-[1.5] text-[#424242]">
+                        {t('passwordLength')}
+                      </p>
+                    </div>
+
+                    <div className="space-y-3 pt-1">
+                      <button
+                        type="submit"
+                        disabled={isLoading}
+                        className="h-12 w-full rounded-[10px] bg-[var(--color-main)] text-[16px] leading-[1.4] font-semibold text-white hover:opacity-95 disabled:opacity-60 md:rounded-[8px]"
+                      >
+                        {isLoading ? t('signingUp') : t('next')}
+                      </button>
+                      <FacebookLoginButton className="h-12 w-full rounded-[10px] text-[16px] font-semibold justify-center bg-[#3B5998] hover:bg-[#334d82] md:rounded-[8px]" />
+                    </div>
+                  </form>
+                </div>
+
+                <div className="mt-2 h-px w-full flex-shrink-0 bg-[var(--color-secondary-4)] md:hidden" style={{ background: 'var(--color-secondary-4, #363639)' }} aria-hidden />
+                <div className="flex-shrink-0 pt-5 px-6 -mx-6 w-full md:mt-6 md:mb-[64px] md:pt-5 md:px-0 md:-mx-[72px] md:border-t md:border-[var(--color-secondary-4)]">
+                  <p className="text-center text-[16px] leading-[1.4] text-[#424242] md:tracking-[0.32px]">
+                    {t('alreadyHaveAccount')}{" "}
+                    <button
+                      type="button"
+                      onClick={() => { clearError(); onSwitchToLogin(); }}
+                      className="font-semibold text-[var(--color-main)] hover:opacity-90"
+                    >
+                      {t('signIn')}
+                    </button>
+                  </p>
                 </div>
               </div>
-            )}
-
-            {/* Step Indicator */}
-            {isModal && (
-              <div className="px-4 sm:px-6 pt-4 pb-2 flex-shrink-0">
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1 rounded bg-purple-600" />
-                  <div className="flex-1 h-1 rounded bg-gray-700" />
-                </div>
-                <div className="flex justify-between mt-2">
-                  <span className="text-xs text-purple-400">
-                    {t('createAccountStep')}
-                  </span>
-                  <span className="text-xs text-gray-500">{t('verifyEmailStep')}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Form */}
-            <form
-              className={isModal ? "p-4 sm:p-6 space-y-4 flex-1 overflow-y-auto" : "space-y-4"}
-              onSubmit={handleSubmit}
-            >
-              {/* Error Message */}
+            </div>
+          </div>
+        ) : (
+          /* Embedded variant: full form with all fields */
+          <div className={className ?? ""}>
+            <form className="space-y-4" onSubmit={handleSubmit}>
               {error && (
                 <div className="p-3 bg-red-900/20 border border-red-600 rounded-lg">
                   <p className="text-sm text-red-400">{error}</p>
                 </div>
               )}
-
-              {/* Email */}
               <div>
-                <label
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                  htmlFor="register-email"
-                >
-                  {t('emailAddress')} *
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="register-email">{t('emailAddress')} *</label>
                 <input
-                  className={`w-full p-3 bg-white/10 text-white placeholder-gray-300 border ${isModal ? "rounded-lg" : "rounded-full"} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.email ? "border-red-500" : "border-white/30"
-                  }`}
                   id="register-email"
-                  placeholder={t('enterYourEmail')}
                   type="email"
+                  placeholder={t('enterYourEmail')}
                   value={formData.email}
                   onChange={(e) => handleInputChange("email", e.target.value)}
+                  className={`w-full p-3 bg-white/10 text-white placeholder-gray-300 border rounded-lg focus:ring-2 focus:ring-purple-500 ${errors.email ? "border-red-500" : "border-white/30"}`}
                 />
-                {errors.email && (
-                  <p className="mt-1 text-sm text-red-400">{errors.email}</p>
-                )}
+                {errors.email && <p className="mt-1 text-sm text-red-400">{errors.email}</p>}
               </div>
-
-              {/* Password */}
               <div>
-                <label
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                  htmlFor="register-password"
-                >
-                  {t('password')} *
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="register-password">{t('password')} *</label>
                 <div className="relative">
                   <input
-                    className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border ${isModal ? "rounded-lg" : "rounded-full"} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                      errors.password ? "border-red-500" : "border-white/30"
-                    }`}
                     id="register-password"
-                    placeholder={t('createAPassword')}
                     type={showPassword ? "text" : "password"}
+                    placeholder={t('createAPassword')}
                     value={formData.password}
-                    onChange={(e) =>
-                      handleInputChange("password", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("password", e.target.value)}
+                    className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border rounded-lg focus:ring-2 focus:ring-purple-500 ${errors.password ? "border-red-500" : "border-white/30"}`}
                   />
-                  <button
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? (
-                      <EyeOffIcon className="w-5 h-5" />
-                    ) : (
-                      <EyeIcon className="w-5 h-5" />
-                    )}
+                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                    {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                   </button>
                 </div>
-                {errors.password && (
-                  <p className="mt-1 text-sm text-red-400">{errors.password}</p>
-                )}
-                <p className="mt-1 text-xs text-gray-400">
-                  {t('passwordLength')}
-                </p>
+                {errors.password && <p className="mt-1 text-sm text-red-400">{errors.password}</p>}
+                <p className="mt-1 text-xs text-gray-400">{t('passwordLength')}</p>
               </div>
-
-              {/* Confirm Password */}
               <div>
-                <label
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                  htmlFor="register-confirm-password"
-                >
-                  {t('confirmPassword')} *
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="register-confirm-password">{t('confirmPassword')} *</label>
                 <div className="relative">
                   <input
-                    className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border ${isModal ? "rounded-lg" : "rounded-full"} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                      errors.confirmPassword
-                        ? "border-red-500"
-                        : "border-white/30"
-                    }`}
                     id="register-confirm-password"
-                    placeholder={t('confirmYourPassword')}
                     type={showConfirmPassword ? "text" : "password"}
+                    placeholder={t('confirmYourPassword')}
                     value={formData.confirmPassword}
-                    onChange={(e) =>
-                      handleInputChange("confirmPassword", e.target.value)
-                    }
+                    onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
+                    className={`w-full p-3 pr-10 bg-white/10 text-white placeholder-gray-300 border rounded-lg focus:ring-2 focus:ring-purple-500 ${errors.confirmPassword ? "border-red-500" : "border-white/30"}`}
                   />
-                  <button
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOffIcon className="w-5 h-5" />
-                    ) : (
-                      <EyeIcon className="w-5 h-5" />
-                    )}
+                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white">
+                    {showConfirmPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                   </button>
                 </div>
-                {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-400">
-                    {errors.confirmPassword}
-                  </p>
-                )}
+                {errors.confirmPassword && <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>}
               </div>
-
-              {/* First Name */}
               <div>
-                <label
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                  htmlFor="register-first-name"
-                >
-                  {t('firstName') || 'First Name'}
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="register-first-name">{t('firstName')}</label>
                 <input
-                  className={`w-full p-3 bg-white/10 text-white placeholder-gray-300 border ${isModal ? "rounded-lg" : "rounded-full"} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.firstName ? "border-red-500" : "border-white/30"
-                  }`}
                   id="register-first-name"
-                  placeholder={t('enterFirstName') || 'Enter your first name'}
                   type="text"
+                  placeholder={t('enterFirstName')}
                   value={formData.firstName || ""}
                   onChange={(e) => handleInputChange("firstName", e.target.value)}
+                  className="w-full p-3 bg-white/10 text-white placeholder-gray-300 border border-white/30 rounded-lg focus:ring-2 focus:ring-purple-500"
                 />
-                {errors.firstName && (
-                  <p className="mt-1 text-sm text-red-400">{errors.firstName}</p>
-                )}
               </div>
-
-              {/* Last Name */}
               <div>
-                <label
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                  htmlFor="register-last-name"
-                >
-                  {t('lastName') || 'Last Name'}
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="register-last-name">{t('lastName')}</label>
                 <input
-                  className={`w-full p-3 bg-white/10 text-white placeholder-gray-300 border ${isModal ? "rounded-lg" : "rounded-full"} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.lastName ? "border-red-500" : "border-white/30"
-                  }`}
                   id="register-last-name"
-                  placeholder={t('enterLastName') || 'Enter your last name'}
                   type="text"
+                  placeholder={t('enterLastName')}
                   value={formData.lastName || ""}
                   onChange={(e) => handleInputChange("lastName", e.target.value)}
+                  className="w-full p-3 bg-white/10 text-white placeholder-gray-300 border border-white/30 rounded-lg focus:ring-2 focus:ring-purple-500"
                 />
-                {errors.lastName && (
-                  <p className="mt-1 text-sm text-red-400">{errors.lastName}</p>
-                )}
               </div>
-
-              {/* Phone */}
               <div>
-                <label
-                  className="block text-sm font-medium text-gray-300 mb-2"
-                  htmlFor="register-phone"
-                >
-                  {t('phone') || 'Phone'}
-                </label>
+                <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor="register-phone">{t('phone')}</label>
                 <input
-                  className={`w-full p-3 bg-white/10 text-white placeholder-gray-300 border ${isModal ? "rounded-lg" : "rounded-full"} border-white/20 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.phone ? "border-red-500" : "border-white/30"
-                  }`}
                   id="register-phone"
-                  placeholder={t('enterPhone') || 'Enter your phone number (e.g., +14161234567)'}
                   type="tel"
+                  placeholder={t('enterPhone')}
                   value={formData.phone || ""}
                   onChange={(e) => handleInputChange("phone", e.target.value)}
+                  className="w-full p-3 bg-white/10 text-white placeholder-gray-300 border border-white/30 rounded-lg focus:ring-2 focus:ring-purple-500"
                 />
-                {errors.phone && (
-                  <p className="mt-1 text-sm text-red-400">{errors.phone}</p>
-                )}
               </div>
-
-              {/* Actions */}
-              <div className="pt-4 flex justify-center">
+              <div className="pt-4">
                 <button
-                  className={`${isModal ? "w-full" : "w-auto"} inline-flex items-center justify-center px-8 py-2.5 bg-purple-600 text-white ${isModal ? "rounded-lg" : "rounded-full"} hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium shadow-lg shadow-purple-500/25`}
-                  disabled={isLoading}
                   type="submit"
+                  disabled={isLoading}
+                  className="w-full py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-medium"
                 >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
-                      {t('creatingAccount')}
-                    </div>
-                  ) : (
-                    t('createAccount')
-                  )}
+                  {isLoading ? t('signingUp') : t('createAccount')}
                 </button>
               </div>
-
-              {/* Social login separator */}
               <div className="flex items-center gap-3 pt-2">
                 <div className="h-px bg-white/10 flex-1" />
-                <span className="text-xs text-gray-400 uppercase tracking-wide">
-                  {t('or')}
-                </span>
+                <span className="text-xs text-gray-400 uppercase">{t('or')}</span>
                 <div className="h-px bg-white/10 flex-1" />
               </div>
-
-              {/* Facebook Register/Login */}
               <FacebookLoginButton />
-
-              {/* Switch to Login */}
-              <div
-                className={
-                  isModal
-                    ? "text-center pt-4 border-t border-gray-700"
-                    : "text-center pt-2"
-                }
-              >
+              <div className="text-center pt-4 border-t border-gray-700">
                 <p className="text-sm text-gray-300">
                   {t('alreadyHaveAccount')}{" "}
-                  <button
-                    className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
-                    type="button"
-                    onClick={() => {
-                      clearError();
-                      onSwitchToLogin();
-                    }}
-                  >
+                  <button type="button" onClick={() => { clearError(); onSwitchToLogin(); }} className="text-purple-400 hover:text-purple-300 font-medium">
                     {t('signIn')}
                   </button>
                 </p>
               </div>
             </form>
           </div>
-        </div>
+        )
       )}
     </>
   );

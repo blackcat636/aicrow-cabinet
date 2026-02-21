@@ -18,6 +18,7 @@ import { TelegramStatusResponse } from '@/types/telegram';
 import { useRouter } from '@/i18n/routing';
 import { FacebookIntegration } from '@/components/profile/FacebookIntegration';
 import { ExternalServicesIntegration } from '@/components/profile/ExternalServicesIntegration';
+import { CalendarDetailedIcon, ChevronLeftIcon } from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -55,6 +56,7 @@ export default function ProfilePage() {
   const [confirmAvatarClose, setConfirmAvatarClose] = useState(false);
   const [telegramStatus, setTelegramStatus] = useState<TelegramStatusResponse['data'] | null>(null);
   const [telegramLoading, setTelegramLoading] = useState(false);
+  const [nameEditor, setNameEditor] = useState<{ field: 'firstName' | 'lastName' | 'phone' | 'dateOfBirth'; value: string } | null>(null);
 
   // Resolve avatar src: supports default names, dicebear ids and direct URLs
   const resolveAvatarSrc = (value?: string | null): string | undefined => getAvatarUrl(value);
@@ -203,6 +205,74 @@ export default function ProfilePage() {
     loadProfile();
   };
 
+  const formatDateOfBirthForRow = (value?: string) => {
+    if (!value) return '—';
+    const parts = value.split('/');
+    if (parts.length !== 3) return value;
+    const [mm, dd, yyyy] = parts;
+    if (!mm || !dd || !yyyy) return value;
+    return `${dd}.${mm}.${yyyy}`;
+  };
+
+  const formatIsoToDot = (iso?: string) => {
+    if (!iso) return '';
+    const parts = iso.split('-');
+    if (parts.length !== 3) return iso;
+    const [yyyy, mm, dd] = parts;
+    if (!yyyy || !mm || !dd) return iso;
+    return `${dd}.${mm}.${yyyy}`;
+  };
+
+  const fromIsoDateToDisplay = (iso?: string) => {
+    if (!iso) return '';
+    const parts = iso.split('-');
+    if (parts.length !== 3) return iso;
+    const [yyyy, mm, dd] = parts;
+    if (!yyyy || !mm || !dd) return iso;
+    return `${mm}/${dd}/${yyyy}`;
+  };
+
+  const openNameEditor = (field: 'firstName' | 'lastName' | 'phone' | 'dateOfBirth') => {
+    if (field === 'dateOfBirth') {
+      setNameEditor({ field, value: toIsoDate(formData.dateOfBirth) || '' });
+      return;
+    }
+    setNameEditor({ field, value: formData[field] || '' });
+  };
+
+  const closeNameEditor = () => {
+    if (submitting) return;
+    setNameEditor(null);
+  };
+
+  const saveNameEditor = async () => {
+    if (!nameEditor) return;
+    const value = nameEditor.value.trim();
+    const field = nameEditor.field;
+    try {
+      setSubmitting(true);
+      const updateData: UpdateProfileRequest = {};
+      if (field === 'dateOfBirth') {
+        updateData.dateOfBirth = value || undefined;
+      } else {
+        (updateData as any)[field] = value || undefined;
+      }
+
+      const updatedProfile = await userApi.updateProfile(updateData);
+      setProfile(updatedProfile);
+      setFormData((prev) => ({
+        ...prev,
+        [field]: field === 'dateOfBirth' ? fromIsoDateToDisplay(value) : value
+      }));
+      toast.success(t('updateSuccess'));
+      setNameEditor(null);
+    } catch (error: any) {
+      toast.error(error.message || t('updateError'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -236,261 +306,329 @@ export default function ProfilePage() {
 
   return (
     <AppLayout>
-      <div className="mx-auto">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent">
+      <div className="mx-auto max-w-[1260px]">
+        <div className="mb-6">
+          <h1 className="text-[32px] leading-[1.4] tracking-[0.64px] font-semibold text-[var(--color-secondary-10)]">
             {t('title')}
           </h1>
-          <p className="text-gray-400 mt-2">{t('description')}</p>
+          <p className="mt-1 text-[16px] leading-[1.4] tracking-[0.32px] text-[var(--color-secondary-6)]">
+            {t('description')}
+          </p>
         </div>
 
-        {/* Content */}
-        <div className="p-6 rounded-2xl bg-[#141519] border border-gray-700/50 space-y-6">
-          {/* Avatar Section with enhanced styling */}
-          <div className="flex flex-col items-center mb-8">
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full blur-xl opacity-50 animate-pulse"></div>
-              <div className="relative">
-                <Avatar className="w-28 h-28 mb-4 relative ring-4 ring-purple-500/30 shadow-lg shadow-purple-500/20 cursor-pointer" onClick={() => setShowAvatarManager(true)}>
-                  <AvatarImage src={resolveAvatarSrc(formData.photo || profile.photo)} alt={profile.username} />
-                  <AvatarFallback className="bg-gradient-to-br from-purple-600 to-purple-800 text-white text-3xl font-bold">
-                    {getInitials(formData.firstName || profile.firstName, formData.lastName || profile.lastName, formData.username || profile.username)}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
+        <div className="space-y-4">
+          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+            <div className="min-w-0 w-full">
+              <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('email')}</p>
+              <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)] truncate">{profile.email || '—'}</p>
             </div>
+            <Button
+              type="button"
+              onClick={() => setShowChangeEmailForm(true)}
+              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+            >
+              {t('changeEmail')}
+            </Button>
           </div>
 
-          
+          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+            <div className="min-w-0 w-full">
+              <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('password')}</p>
+              <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">*************</p>
+            </div>
+            <Button
+              type="button"
+              onClick={() => setShowChangePasswordForm(true)}
+              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+            >
+              {t('changePassword')}
+            </Button>
+          </div>
 
-          {/* Form with improved spacing and styling */}
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            {/* Email (read-only) */}
-            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-semibold text-gray-200">
-                  {t('email')}
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowChangeEmailForm(true)}
-                  className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-all hover:underline"
-                >
-                  {t('changeEmail')}
-                </button>
+          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+            <div className="min-w-0 w-full">
+              <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('firstName')}</p>
+              <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{formData.firstName || '—'}</p>
+            </div>
+            <Button
+              type="button"
+              disabled={submitting}
+              onClick={() => openNameEditor('firstName')}
+              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+            >
+              Update First Name
+            </Button>
+          </div>
+
+          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+            <div className="min-w-0 w-full">
+              <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('lastName')}</p>
+              <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{formData.lastName || '—'}</p>
+            </div>
+            <Button
+              type="button"
+              disabled={submitting}
+              onClick={() => openNameEditor('lastName')}
+              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+            >
+              Update Last Name
+            </Button>
+          </div>
+
+          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+            <div className="min-w-0 w-full">
+              <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">Phone Number</p>
+              <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{formData.phone || '—'}</p>
+            </div>
+            <Button
+              type="button"
+              disabled={submitting}
+              onClick={() => openNameEditor('phone')}
+              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+            >
+              Update Number
+            </Button>
+          </div>
+
+          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+            <div className="min-w-0 w-full">
+              <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">Date of Birth</p>
+              <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{formatDateOfBirthForRow(formData.dateOfBirth)}</p>
+            </div>
+            <Button
+              type="button"
+              disabled={submitting}
+              onClick={() => openNameEditor('dateOfBirth')}
+              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+            >
+              Update Date
+            </Button>
+          </div>
+
+        </div>
+
+        <div className="mt-6 p-4 rounded-[10px] bg-[var(--color-secondary-2)] border border-[var(--color-secondary-4)]">
+          <h3 className="text-sm font-semibold text-[var(--color-secondary-10)] mb-4">
+            {t('integrations')}
+          </h3>
+
+          <div className="space-y-3">
+            {/* External SSO Services */}
+            <div className="p-3 bg-[var(--color-secondary-2)] rounded-[10px] border border-[var(--color-secondary-4)]">
+              <div className="text-sm font-medium text-[var(--color-secondary-10)] mb-3">
+                {t('externalServicesTitle')}
               </div>
-              <input
-                type="email"
-                value={profile.email ?? ''}
-                disabled
-                className="w-full p-3 bg-gray-800/50 text-gray-300 border border-gray-700 rounded-lg cursor-not-allowed focus:outline-none"
-              />
-              {profile.isEmailVerified && (
-                <div className="mt-2 flex items-center gap-2">
-                  <span className="text-green-400 text-sm">✓</span>
-                  <p className="text-xs text-green-400 font-medium">{t('emailVerified')}</p>
+              <ExternalServicesIntegration />
+            </div>
+
+            {/* Telegram Integration */}
+            <div className="flex items-center justify-between p-3 bg-[var(--color-secondary-2)] rounded-[10px] border border-[var(--color-secondary-4)]">
+              <div className="flex items-center gap-3">
+                <div className="p-1.5 bg-blue-600 rounded">
+                  <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+                  </svg>
                 </div>
-              )}
-            </div>
-
-            {/* Password */}
-            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-              <div className="flex items-center justify-between mb-3">
-                <label className="block text-sm font-semibold text-gray-200">
-                  {t('password')}
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setShowChangePasswordForm(true)}
-                  className="text-xs font-medium text-purple-400 hover:text-purple-300 transition-all hover:underline"
-                >
-                  {t('changePassword')}
-                </button>
+                <div>
+                  <div className="text-sm font-medium text-[var(--color-secondary-10)]">Telegram</div>
+                  {telegramLoading ? (
+                    <div className="text-xs text-[var(--color-secondary-6)]">{t('integrationsLoading')}</div>
+                  ) : telegramStatus?.isLinked ? (
+                    <div className="text-xs text-green-400">{t('integrationsConnected')}</div>
+                  ) : (
+                    <div className="text-xs text-[var(--color-secondary-6)]">{t('integrationsNotConnected')}</div>
+                  )}
+                </div>
               </div>
-              <input
-                type="password"
-                value="••••••••"
-                disabled
-                className="w-full p-3 bg-gray-800/50 text-gray-300 border border-gray-700 rounded-lg cursor-not-allowed focus:outline-none"
-              />
-            </div>
-
-            {/* First Name */}
-            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-              <label className="block text-sm font-semibold text-gray-200 mb-3">
-                {t('firstName')}
-              </label>
-              <input
-                type="text"
-                value={formData.firstName || ''}
-                onChange={(e) => handleInputChange('firstName', e.target.value)}
-                placeholder={t('enterFirstName')}
-                className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
-                  errors.firstName ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
-                }`}
-              />
-              {errors.firstName && (
-                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                  <span>⚠</span>
-                  <span>{errors.firstName}</span>
-                </p>
-              )}
-            </div>
-
-            {/* Last Name */}
-            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-              <label className="block text-sm font-semibold text-gray-200 mb-3">
-                {t('lastName')}
-              </label>
-              <input
-                type="text"
-                value={formData.lastName || ''}
-                onChange={(e) => handleInputChange('lastName', e.target.value)}
-                placeholder={t('enterLastName')}
-                className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
-                  errors.lastName ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
-                }`}
-              />
-              {errors.lastName && (
-                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                  <span>⚠</span>
-                  <span>{errors.lastName}</span>
-                </p>
-              )}
-            </div>
-
-            {/* Phone */}
-            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-              <label className="block text-sm font-semibold text-gray-200 mb-3">
-                {t('phone')}
-              </label>
-              <input
-                type="tel"
-                value={formData.phone || ''}
-                onChange={(e) => handleInputChange('phone', e.target.value)}
-                placeholder="+11234567890"
-                className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
-                  errors.phone ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
-                }`}
-              />
-              {errors.phone && (
-                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                  <span>⚠</span>
-                  <span>{errors.phone}</span>
-                </p>
-              )}
-            </div>
-
-            {/* Date of Birth */}
-            <div className="p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-              <label className="block text-sm font-semibold text-gray-200 mb-3">
-                {t('dateOfBirth')}
-              </label>
-              <input
-                type="text"
-                value={formData.dateOfBirth || ''}
-                onChange={(e) => {
-                  let value = e.target.value;
-                  // Remove non-numeric characters except slashes
-                  value = value.replace(/[^\d/]/g, '');
-                  // Auto-format as MM/DD/YYYY
-                  if (value.length > 2 && value.charAt(2) !== '/') {
-                    value = value.slice(0, 2) + '/' + value.slice(2);
-                  }
-                  if (value.length > 5 && value.charAt(5) !== '/') {
-                    value = value.slice(0, 5) + '/' + value.slice(5);
-                  }
-                  // Limit to MM/DD/YYYY format (10 characters)
-                  if (value.length <= 10) {
-                    // Store as MM/DD/YYYY for display
-                    setFormData(prev => ({ ...prev, dateOfBirth: value }));
-                  }
-                }}
-                placeholder="MM/DD/YYYY"
-                id={dateOfBirthId || `dateOfBirth-${Date.now()}`}
-                className={`w-full p-3 bg-gray-800/50 text-white placeholder-gray-500 border rounded-lg transition-all focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 focus:bg-gray-800 ${
-                  errors.dateOfBirth ? 'border-red-500 focus:ring-red-500/50' : 'border-gray-700'
-                }`}
-              />
-              {errors.dateOfBirth && (
-                <p className="mt-2 text-sm text-red-400 flex items-center gap-1">
-                  <span>⚠</span>
-                  <span>{errors.dateOfBirth}</span>
-                </p>
-              )}
-            </div>
-
-            {/* Actions */}
-            <div className="flex gap-3 pt-6 md:col-span-2">
               <Button
-                type="submit"
-                disabled={submitting}
-                className="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white disabled:opacity-50 shadow-lg shadow-purple-500/30 transition-all"
+                type="button"
+                onClick={() => router.push('/integrations/telegram')}
+                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs px-4 py-2"
               >
-                {submitting ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    {t('saving')}
-                  </div>
-                ) : (
-                  t('saveChanges')
-                )}
+                {telegramStatus?.isLinked ? t('integrationsManage') : t('integrationsConnect')}
               </Button>
             </div>
-          </form>
 
-          {/* Integrations Section */}
-          <div className="mt-6 p-4 rounded-lg bg-black/40 backdrop-blur-sm border border-gray-700/50">
-            <h3 className="text-sm font-semibold text-gray-200 mb-4">
-              {t('integrations')}
-            </h3>
-            
-            <div className="space-y-3">
-              {/* Telegram Integration */}
-              <div className="flex items-center justify-between p-3 bg-gray-800/50 rounded-lg border border-gray-700/50">
-                <div className="flex items-center gap-3">
-                  <div className="p-1.5 bg-blue-600 rounded">
-                    <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
-                    </svg>
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-gray-200">Telegram</div>
-                    {telegramLoading ? (
-                      <div className="text-xs text-gray-400">{t('integrationsLoading')}</div>
-                    ) : telegramStatus?.isLinked ? (
-                      <div className="text-xs text-green-400">{t('integrationsConnected')}</div>
-                    ) : (
-                      <div className="text-xs text-gray-400">{t('integrationsNotConnected')}</div>
-                    )}
-                  </div>
-                </div>
-                <Button
-                  type="button"
-                  onClick={() => router.push('/integrations/telegram')}
-                  className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs px-4 py-2"
-                >
-                  {telegramStatus?.isLinked ? t('integrationsManage') : t('integrationsConnect')}
-                </Button>
-              </div>
-
-              {/* Facebook Integration */}
-              <FacebookIntegration />
-
-              {/* External SSO Services */}
-              <div className="p-3 bg-gray-800/30 rounded-lg border border-gray-700/50">
-                <div className="text-sm font-medium text-gray-200 mb-3">
-                  {t('externalServicesTitle')}
-                </div>
-                <ExternalServicesIntegration />
-              </div>
-            </div>
-
+            {/* Facebook Integration */}
+            <FacebookIntegration />
           </div>
         </div>
 
         {/* Change Email Form Modal */}
+        {nameEditor && (
+          <>
+            <div
+              className="hidden md:fixed md:inset-0 md:z-50 md:bg-black/80 md:flex md:items-center md:justify-center md:p-4"
+              onClick={(e) => {
+                if (e.target === e.currentTarget) closeNameEditor();
+              }}
+            >
+              <div className="w-full max-w-[595px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] overflow-hidden">
+                <div className="h-[66px] bg-[var(--color-secondary-3)] border-b border-[var(--color-secondary-4)] px-8 flex items-center justify-between">
+                  <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)] uppercase">
+                    {nameEditor.field === 'firstName'
+                      ? 'Update First Name'
+                      : nameEditor.field === 'lastName'
+                      ? 'Update Last Name'
+                      : nameEditor.field === 'phone'
+                      ? 'Update Number'
+                      : 'Update Date'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={closeNameEditor}
+                    className="h-8 w-8 rounded-full border border-[var(--color-secondary-5)] text-[var(--color-secondary-10)] flex items-center justify-center text-[18px] leading-none"
+                    aria-label="Close"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="px-8 py-6">
+                  <label className="block text-[28px] mb-3 leading-[1.2] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">
+                    {nameEditor.field === 'firstName'
+                      ? t('firstName')
+                      : nameEditor.field === 'lastName'
+                      ? t('lastName')
+                      : nameEditor.field === 'phone'
+                      ? 'Phone Number'
+                      : 'Date of Birth'}
+                  </label>
+                  {nameEditor.field === 'dateOfBirth' ? (
+                    <div className="relative">
+                      <input
+                        type="text"
+                        readOnly
+                        value={formatIsoToDot(nameEditor.value)}
+                        className="w-full h-[48px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] pl-4 pr-12 text-[32px] leading-[1.2] font-normal text-[var(--color-secondary-10)] focus:outline-none"
+                      />
+                      <label className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-secondary-10)] cursor-pointer">
+                        <input
+                          type="date"
+                          value={nameEditor.value}
+                          onChange={(e) => setNameEditor((prev) => (prev ? { ...prev, value: e.target.value } : prev))}
+                          className="absolute inset-0 opacity-0 w-6 h-6 cursor-pointer"
+                          aria-label="Open calendar"
+                        />
+                        <CalendarDetailedIcon className="h-6 w-6" />
+                      </label>
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      value={nameEditor.value}
+                      onChange={(e) => setNameEditor((prev) => (prev ? { ...prev, value: e.target.value } : prev))}
+                      className="w-full h-[48px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-4 text-[32px] leading-[1.2] font-normal text-[var(--color-secondary-10)] focus:outline-none"
+                    />
+                  )}
+                  <div className="mt-6 flex justify-end gap-3">
+                    <Button
+                      type="button"
+                      onClick={closeNameEditor}
+                      className="h-12 px-5 rounded-[10px] border border-[var(--color-secondary-4)] bg-transparent text-[var(--color-secondary-10)] hover:bg-transparent"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      type="button"
+                      disabled={submitting}
+                      onClick={saveNameEditor}
+                      className="h-12 px-5 rounded-[10px] border border-[var(--color-main)] bg-transparent text-[var(--color-main)] hover:bg-transparent"
+                    >
+                      {nameEditor.field === 'firstName'
+                        ? 'Update First Name'
+                        : nameEditor.field === 'lastName'
+                        ? 'Update Last Name'
+                        : nameEditor.field === 'phone'
+                        ? 'Update Number'
+                        : 'Update Date'}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="fixed md:hidden inset-x-0 top-[71px] bottom-0 z-[70] bg-[var(--color-secondary-1)] overflow-y-auto px-4 pt-6 pb-8">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={closeNameEditor}
+                  className="h-8 w-8 rounded-full border border-[var(--color-secondary-5)] flex items-center justify-center text-[var(--color-secondary-10)]"
+                  aria-label="Back"
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                </button>
+                <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold uppercase text-[var(--color-secondary-10)]">
+                  {nameEditor.field === 'firstName'
+                    ? 'Update First Name'
+                    : nameEditor.field === 'lastName'
+                    ? 'Update Last Name'
+                    : nameEditor.field === 'phone'
+                    ? 'Update Number'
+                    : 'Update Date'}
+                </p>
+              </div>
+
+              <div className="mt-6 space-y-4">
+                <label className="block text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)]">
+                  {nameEditor.field === 'firstName'
+                    ? t('firstName')
+                    : nameEditor.field === 'lastName'
+                    ? t('lastName')
+                    : nameEditor.field === 'phone'
+                    ? 'Phone Number'
+                    : 'Date of Birth'}
+                </label>
+
+                {nameEditor.field === 'dateOfBirth' ? (
+                  <div className="relative">
+                    <input
+                      type="text"
+                      readOnly
+                      value={formatIsoToDot(nameEditor.value)}
+                      className="w-full h-12 rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-1)] pl-4 pr-12 text-[16px] leading-[1.4] tracking-[0.32px] font-medium text-[var(--color-secondary-10)] focus:outline-none"
+                    />
+                    <label className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-secondary-10)] cursor-pointer">
+                      <input
+                        type="date"
+                        value={nameEditor.value}
+                        onChange={(e) => setNameEditor((prev) => (prev ? { ...prev, value: e.target.value } : prev))}
+                        className="absolute inset-0 opacity-0 w-6 h-6 cursor-pointer"
+                        aria-label="Open calendar"
+                      />
+                      <CalendarDetailedIcon className="h-5 w-5" />
+                    </label>
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={nameEditor.value}
+                    onChange={(e) => setNameEditor((prev) => (prev ? { ...prev, value: e.target.value } : prev))}
+                    className="w-full h-12 rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-1)] px-4 text-[16px] leading-[1.4] tracking-[0.32px] font-medium text-[var(--color-secondary-10)] focus:outline-none"
+                  />
+                )}
+
+                <div className="h-px bg-[var(--color-secondary-4)] mt-4" />
+
+                <Button
+                  type="button"
+                  disabled={submitting}
+                  onClick={saveNameEditor}
+                  className="w-full h-12 rounded-[10px] bg-[var(--color-main)] text-[var(--color-secondary-10)] text-[16px] leading-[1.4] tracking-[0.32px] font-semibold"
+                >
+                  Update
+                </Button>
+                <Button
+                  type="button"
+                  onClick={closeNameEditor}
+                  className="w-full h-12 rounded-[10px] border border-[var(--color-main)] bg-transparent text-[var(--color-main)] text-[16px] leading-[1.4] tracking-[0.32px] font-semibold hover:bg-transparent"
+                >
+                  Discard
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+
         {profile && (
           <ChangeEmailForm
             isOpen={showChangeEmailForm}

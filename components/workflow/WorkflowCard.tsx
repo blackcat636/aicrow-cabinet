@@ -114,7 +114,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
 
   return (
     <div 
-      className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] w-full h-full overflow-hidden shadow-lg shadow-purple-500/30 flex flex-col"
+      className="p-[1px] rounded-lg bg-[var(--color-main)] w-full h-full overflow-hidden shadow-lg shadow-purple-500/30 flex flex-col"
     >
       <div 
         ref={cardRef}
@@ -200,7 +200,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
                 ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
                 : 'hover:brightness-110 shadow-lg'
             }`}
-            style={!isExecuting && workflow.isActive ? { background: 'linear-gradient(90deg, #A500E1 0%, #7B61FF 100%)', boxShadow: '0 10px 15px -3px rgba(165,0,225,0.25)' } : undefined}
+            style={!isExecuting && workflow.isActive ? { background: 'var(--color-main)', boxShadow: '0 10px 15px -3px rgba(141,46,226,0.25)' } : undefined}
             title={!workflow.isActive ? (t('activateToExecute') || 'Activate workflow to execute') : ''}
           >
             {isExecuting ? (
@@ -219,7 +219,7 @@ export const WorkflowCard: React.FC<WorkflowCardProps> = React.memo(({
           <button
             onClick={() => onViewDetails(workflow.id)}
             className="flex items-center justify-center gap-2 px-4 py-2 text-sm text-white rounded-lg transition-all font-medium w-32 hover:brightness-110 shadow-lg"
-            style={{ background: 'linear-gradient(90deg, #7B61FF 0%, #3B82F6 100%)', boxShadow: '0 10px 15px -3px rgba(165,0,225,0.25)' }}
+            style={{ background: 'var(--color-main)', boxShadow: '0 10px 15px -3px rgba(141,46,226,0.25)' }}
           >
             <EyeIcon className="w-4 h-4" />
             <span>{t('details')}</span>

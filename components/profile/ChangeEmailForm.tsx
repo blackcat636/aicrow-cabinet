@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { XIcon } from '@/components/icons';
+import { ChevronLeftIcon, XIcon } from '@/components/icons';
 import { toast } from 'sonner';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
@@ -164,29 +164,35 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
   return (
     <>
     <div
-      className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center p-4 z-50"
+      className="fixed inset-x-0 top-[71px] bottom-0 md:inset-0 bg-[var(--color-secondary-1)] md:bg-black md:bg-opacity-80 md:flex md:items-center md:justify-center md:p-4 z-50 overflow-y-auto"
       onClick={(e) => {
-        if (e.target === e.currentTarget) {
+        if (e.target === e.currentTarget && window.innerWidth >= 768) {
           setConfirmOpen(true);
         }
       }}
     >
-      <div className="bg-gray-900 rounded-xl max-w-md w-full border border-gray-700 shadow-2xl">
+      <div className="bg-[var(--color-secondary-1)] md:bg-gray-900 md:rounded-xl md:max-w-md w-full md:border md:border-gray-700 md:shadow-2xl min-h-full md:min-h-0">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-white">
+        <div className="flex items-center gap-3 p-4 md:p-6 border-b border-[var(--color-secondary-4)] md:border-gray-700">
+          <button
+            onClick={handleClose}
+            className="md:hidden h-8 w-8 rounded-full border border-[var(--color-secondary-5)] flex items-center justify-center text-[var(--color-secondary-10)]"
+          >
+            <ChevronLeftIcon className="w-4 h-4" />
+          </button>
+          <h2 className="text-[14px] uppercase md:normal-case md:text-xl font-semibold text-white flex-1">
             {step === 'email' ? t('enterNewEmail') : t('enterVerificationCode')}
           </h2>
           <button
             onClick={handleClose}
-            className="p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-gray-800"
+            className="hidden md:flex p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-gray-800"
           >
             <XIcon className="w-5 h-5" />
           </button>
         </div>
 
         {/* Content */}
-        <div className="p-6">
+        <div className="p-4 md:p-6">
           {sendingCode ? (
             <div className="flex flex-col items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mb-4"></div>
@@ -235,18 +241,18 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
                 </div>
               )}
 
-              <div className="flex gap-3 pt-4">
+              <div className="mt-4 flex flex-col md:flex-row gap-4 md:gap-3 md:pt-4">
                 <button
                   type="button"
                   onClick={handleClose}
-                  className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                  className="order-2 md:order-1 w-full md:flex-1 h-[48px] px-4 rounded-[10px] border border-[var(--color-main)] md:border-none bg-transparent md:bg-gray-700 text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] md:text-gray-300 hover:bg-transparent md:hover:bg-gray-600 transition-colors"
                 >
-                  {t('cancel')}
+                  {tProfile('discard')}
                 </button>
                 <button
                   type="submit"
                   disabled={sendingCode}
-                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="order-1 md:order-2 w-full md:flex-1 h-[48px] px-4 rounded-[10px] bg-[var(--color-main)] md:bg-purple-600 hover:bg-[var(--color-main)] md:hover:bg-purple-700 text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {sendingCode ? t('sendingCode') : t('sendCode')}
                 </button>
@@ -306,18 +312,18 @@ export const ChangeEmailForm: React.FC<ChangeEmailFormProps> = ({
                 </div>
               )}
 
-              <div className="flex gap-3 pt-4">
+              <div className="mt-4 flex flex-col md:flex-row gap-4 md:gap-3 md:pt-4">
                 <button
                   type="button"
-                  onClick={() => setStep('email')}
-                  className="flex-1 px-4 py-2 bg-gray-700 text-gray-300 rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                  onClick={handleClose}
+                  className="order-2 md:order-1 w-full md:flex-1 h-[48px] px-4 rounded-[10px] border border-[var(--color-main)] md:border-none bg-transparent md:bg-gray-700 text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] md:text-gray-300 hover:bg-transparent md:hover:bg-gray-600 transition-colors"
                 >
-                  {t('back')}
+                  {tProfile('discard')}
                 </button>
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="flex-1 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="order-1 md:order-2 w-full md:flex-1 h-[48px] px-4 rounded-[10px] bg-[var(--color-main)] md:bg-purple-600 hover:bg-[var(--color-main)] md:hover:bg-purple-700 text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isLoading ? t('confirming') : t('confirmChange')}
                 </button>

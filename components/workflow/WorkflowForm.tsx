@@ -9,6 +9,7 @@ import { TelegramStatusResponse } from '@/types/telegram';
 import { XIcon, CheckIcon } from '@/components/icons';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { useTranslations } from 'next-intl';
+import { ChevronLeftIcon } from '@/components/icons';
 
 interface WorkflowFormProps {
   isOpen: boolean;
@@ -26,6 +27,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
   preselectedWorkflow
 }) => {
   const t = useTranslations('workflowForm');
+  const tExecutions = useTranslations('executions');
   const [availableWorkflows, setAvailableWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -57,6 +59,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
   
   // Check if we're editing and have a workflow selected
   const isWorkflowSelected = editingWorkflow && formData.workflowId > 0 && (selectedWorkflow || editingWorkflow?.workflow);
+  const isQuickAddModal = !!preselectedWorkflow && !editingWorkflow;
 
   useEffect(() => {
     if (isOpen) {
@@ -108,12 +111,16 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
+        if (isQuickAddModal) {
+          onClose();
+          return;
+        }
         setConfirmOpen(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown as any);
     return () => window.removeEventListener('keydown', handleKeyDown as any);
-  }, [isOpen]);
+  }, [isOpen, isQuickAddModal, onClose]);
 
   const loadAvailableWorkflows = async () => {
     try {
@@ -208,7 +215,148 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
     });
   };
 
+  const handleQuickAttach = async () => {
+    if (!selectedWorkflow || submitting) return;
+
+    try {
+      setSubmitting(true);
+      await workflowApi.attachWorkflow({
+        workflowId: selectedWorkflow.id,
+        name: '',
+        description: '',
+        credentialType: 'telegram',
+        credentialData: {},
+        inputDataTemplate: ''
+      });
+      onSuccess();
+      onClose();
+    } catch (err) {
+      console.error('Error attaching workflow:', err);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (!isOpen) return null;
+
+  if (isQuickAddModal && selectedWorkflow) {
+    const tokenValue = selectedWorkflow.priceUsd ? Math.round(Number(selectedWorkflow.priceUsd)).toString() : '60';
+    const descriptionText = selectedWorkflow.description?.trim() || 'No description available.';
+
+    return createPortal(
+      <div
+        className="fixed inset-0 z-[9999] bg-black/80 p-4 md:flex md:items-center md:justify-center"
+        onClick={onClose}
+      >
+        <div
+          className="w-full rounded-[15px] bg-[var(--color-secondary-2)] pb-6 md:max-w-[595px]"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="md:hidden p-4 bg-[var(--color-secondary-1)] min-h-[calc(100dvh-32px)] rounded-[15px]">
+            <div className="flex items-center gap-3 mt-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="h-8 w-8 rounded-full border border-[var(--color-secondary-4)] bg-[var(--color-secondary-1)] flex items-center justify-center text-[var(--color-secondary-10)]"
+                aria-label={t('cancel')}
+              >
+                <ChevronLeftIcon className="w-5 h-5" />
+              </button>
+              <h2 className="figma-body-2-semibold uppercase text-[var(--color-secondary-10)] truncate">
+                {selectedWorkflow.name || t('attachNewWorkflow')}
+              </h2>
+            </div>
+
+            <p className="mt-6 figma-body-1-regular text-[var(--color-secondary-9)]">
+              {descriptionText}
+            </p>
+
+            <div className="mt-4 flex items-center gap-3">
+              <span className="figma-body-1-regular text-[var(--color-secondary-9)]">{tExecutions('cost')}:</span>
+              <div className="flex h-6 min-w-[25px] items-center justify-center rounded-[7.273px] border-[0.727px] border-[#34C759] px-[11.636px]">
+                <span className="text-[11.636px] font-medium leading-[1.4] tracking-[0.2327px] text-[#34C759]">
+                  {tokenValue}
+                </span>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={handleQuickAttach}
+                disabled={submitting}
+                className="h-12 rounded-[10px] bg-[var(--color-main)] figma-body-1-semibold text-[var(--color-secondary-10)] disabled:opacity-60"
+              >
+                {submitting ? t('attaching') : t('addWorkflow')}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="h-12 rounded-[10px] border border-[var(--color-main)] figma-body-1-semibold text-[var(--color-main)]"
+              >
+                {t('discard')}
+              </button>
+            </div>
+          </div>
+
+          <div className="hidden md:block">
+            <div className="relative h-[67px] rounded-t-[10px] bg-[var(--color-secondary-3)] px-8">
+              <div className="flex h-full items-center">
+                <h2 className="figma-body-2-semibold uppercase text-[var(--color-secondary-10)]">
+                  {selectedWorkflow.name || t('attachNewWorkflow')}
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="absolute right-4 top-[18px] flex h-8 w-8 items-center justify-center rounded-full border border-[var(--color-secondary-6)] text-[var(--color-secondary-10)]/80 transition-colors hover:border-[var(--color-secondary-10)]/80 hover:text-[var(--color-secondary-10)]"
+                aria-label={t('cancel')}
+              >
+                <span className="text-[14px] leading-none">×</span>
+              </button>
+              <div className="absolute bottom-0 left-0 h-px w-full bg-[var(--color-secondary-4)]" />
+            </div>
+
+            <div className="px-8 pt-6">
+              <p className="figma-body-1-regular text-[var(--color-secondary-9)]">
+                {descriptionText}
+              </p>
+
+              <div className="mt-6 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <span className="figma-body-1-regular text-[var(--color-secondary-9)]">{tExecutions('cost')}:</span>
+                  <div className="flex h-6 min-w-[25px] items-center justify-center rounded-[7.273px] border-[0.727px] border-[#34C759] px-[11.636px]">
+                    <span className="text-[11.636px] font-medium leading-[1.4] tracking-[0.2327px] text-[#34C759]">
+                      {tokenValue}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    className="h-12 w-[159px] rounded-[10px] border border-[var(--color-main)] px-4 figma-body-1-semibold text-[var(--color-main)]"
+                  >
+                    {t('discard')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleQuickAttach}
+                    disabled={submitting}
+                    className="h-12 w-[200px] rounded-[10px] bg-[var(--color-main)] px-4 figma-body-1-semibold text-white disabled:opacity-60"
+                  >
+                    {submitting ? t('attaching') : t('addWorkflow')}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>,
+      typeof document !== 'undefined' ? document.body : ({} as any)
+    ) as unknown as JSX.Element;
+  }
 
   return createPortal(
     <>

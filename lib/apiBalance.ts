@@ -64,6 +64,76 @@ export const balanceApi = {
     }
   },
 
+  // POST /balance/invoices — create invoice for Stripe Checkout
+  createInvoice: async (body: {
+    amount: number;
+    currency: string;
+    paymentMethod: string;
+    paymentDetails?: Record<string, unknown>;
+    description?: string;
+  }): Promise<{ status: number; data: Record<string, unknown>; message?: string }> => {
+    const url = `${API_BASE_URL}/balance/invoices`;
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to create invoice';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // ignore
+      }
+      const error = new Error(errorMessage);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as {
+      status: number;
+      data: Record<string, unknown>;
+      message?: string;
+    };
+  },
+
+  // POST /balance/invoices/:invoiceId/pay — initiate payment, returns checkoutUrl or client_secret
+  payInvoice: async (
+    invoiceId: string,
+    body: {
+      paymentMethod: string;
+      paymentDetails?: Record<string, unknown>;
+    }
+  ): Promise<{ status: number; data: Record<string, unknown>; message?: string }> => {
+    const url = `${API_BASE_URL}/balance/invoices/${invoiceId}/pay`;
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to initiate payment';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // ignore
+      }
+      const error = new Error(errorMessage);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as {
+      status: number;
+      data: Record<string, unknown>;
+      message?: string;
+    };
+  },
+
   // Get transactions list for current user (determined by auth token)
   getTransactions: async (): Promise<TransactionResponse> => {
     try {

@@ -15,12 +15,16 @@ import {
   ClockIcon,
   CheckIcon,
   XIcon,
-  CalendarIcon,
+  CalendarDetailedIcon,
   SettingsIcon,
   PauseIcon,
   TrashIcon
 } from '@/components/icons';
-import { Search, Calendar, X } from 'lucide-react';
+import { Search, X, ChevronDown } from 'lucide-react';
+import { Calendar, CalendarDayButton } from '@/components/ui/calendar';
+import { Card, CardContent } from '@/components/ui/card';
+import { format, startOfDay, endOfDay } from 'date-fns';
+import { type DateRange, useDayRender, type DayProps } from 'react-day-picker';
 import { toast } from 'sonner';
 import { WorkflowForm } from '@/components/workflow/WorkflowForm';
 import { WorkflowExecuteModal } from '@/components/workflow/WorkflowExecuteModal';
@@ -414,11 +418,15 @@ export default function WorkflowDetailPage() {
   const [showExecuteModal, setShowExecuteModal] = useState(false);
   
   // Filters for executions
-  const [dateFrom, setDateFrom] = useState<string>('');
-  const [dateTo, setDateTo] = useState<string>('');
-  const [dateFromNative, setDateFromNative] = useState<string>('');
-  const [dateToNative, setDateToNative] = useState<string>('');
+  const [appliedRange, setAppliedRange] = useState<DateRange | undefined>(undefined);
+  const [pendingRange, setPendingRange] = useState<DateRange | undefined>(undefined);
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
   const [inputDataSearch, setInputDataSearch] = useState<string>('');
+  const calendarRef = useRef<HTMLDivElement>(null);
   
   // Mouse tracking for Workflow Information card
   const [workflowInfoMousePosition, setWorkflowInfoMousePosition] = useState({ x: 0, y: 0 });
@@ -743,127 +751,26 @@ export default function WorkflowDetailPage() {
     loadWorkflow();
   };
 
-  // Date formatting functions (same as TransactionHistory)
-  const formatToDisplay = (value: string): string => {
-    if (!value) return '';
-    const parts = value.split('-');
-    if (parts.length === 3) {
-      return `${parts[1]}/${parts[2]}/${parts[0]}`;
-    }
-    return value;
-  };
+  const appliedRangeLabel = useMemo(() => {
+    if (!appliedRange?.from) return '';
+    if (!appliedRange.to) return format(appliedRange.from, 'dd.MM.yyyy');
+    return `${format(appliedRange.from, 'dd.MM.yyyy')} - ${format(appliedRange.to, 'dd.MM.yyyy')}`;
+  }, [appliedRange]);
 
-  const formatToNative = (value: string): string => {
-    if (!value) return '';
-    const parts = value.split('/');
-    if (parts.length === 3) {
-      const month = parts[0].padStart(2, '0');
-      const day = parts[1].padStart(2, '0');
-      const year = parts[2];
-      return `${year}-${month}-${day}`;
-    }
-    return value;
-  };
-
-  const formatDateInput = (value: string): string => {
-    const digits = value.replace(/\D/g, '');
-    if (digits.length <= 2) {
-      return digits;
-    } else if (digits.length <= 4) {
-      return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-    } else {
-      return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4, 8)}`;
-    }
-  };
-
-  const parseDateInput = (value: string): Date | null => {
-    if (!value) return null;
-    const parts = value.split('/');
-    if (parts.length === 3 && parts[0] && parts[1] && parts[2]) {
-      const month = parseInt(parts[0], 10) - 1;
-      const day = parseInt(parts[1], 10);
-      const year = parseInt(parts[2], 10);
-      if (month >= 0 && month <= 11 && day >= 1 && day <= 31 && year >= 1900) {
-        const date = new Date(year, month, day);
-        if (date.getMonth() === month && date.getDate() === day && date.getFullYear() === year) {
-          return date;
-        }
-      }
-    }
-    const isoParts = value.split('-');
-    if (isoParts.length === 3) {
-      const date = new Date(value);
-      if (!isNaN(date.getTime())) {
-        return date;
-      }
-    }
-    return null;
-  };
-
-  const handleDateFromNativeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setDateFromNative(value);
-    setDateFrom(formatToDisplay(value));
-  };
-
-  const handleDateToNativeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setDateToNative(value);
-    setDateTo(formatToDisplay(value));
-  };
-
-  const handleDateFromTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const formatted = formatDateInput(value);
-    if (formatted.length <= 10) {
-      setDateFrom(formatted);
-      const native = formatToNative(formatted);
-      if (native && native.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        setDateFromNative(native);
-      }
-    }
-  };
-
-  const handleDateToTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    const formatted = formatDateInput(value);
-    if (formatted.length <= 10) {
-      setDateTo(formatted);
-      const native = formatToNative(formatted);
-      if (native && native.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        setDateToNative(native);
-      }
-    }
-  };
-
-  // Filter executions by date range and input data search
+  // Filter executions by date and input data search
   const filteredExecutions = useMemo(() => {
     let filtered = executions.items;
 
-    // Filter by date range (using startedAt)
-    if (dateFromNative || dateFrom) {
-      const fromDate = parseDateInput(dateFromNative || dateFrom);
-      if (fromDate) {
-        fromDate.setHours(0, 0, 0, 0);
-        filtered = filtered.filter(execution => {
-          if (!execution.startedAt) return false;
-          const executionDate = new Date(execution.startedAt);
-          executionDate.setHours(0, 0, 0, 0);
-          return executionDate >= fromDate;
-        });
-      }
-    }
-
-    if (dateToNative || dateTo) {
-      const toDate = parseDateInput(dateToNative || dateTo);
-      if (toDate) {
-        toDate.setHours(23, 59, 59, 999);
-        filtered = filtered.filter(execution => {
-          if (!execution.startedAt) return false;
-          const executionDate = new Date(execution.startedAt);
-          return executionDate <= toDate;
-        });
-      }
+    if (appliedRange?.from) {
+      const fromDate = startOfDay(appliedRange.from);
+      const toDate = endOfDay(appliedRange.to ?? appliedRange.from);
+      filtered = filtered.filter((execution) => {
+        const executionDateRaw = execution.startedAt || execution.createdAt;
+        if (!executionDateRaw) return false;
+        const executionDate = new Date(executionDateRaw);
+        if (Number.isNaN(executionDate.getTime())) return false;
+        return executionDate >= fromDate && executionDate <= toDate;
+      });
     }
 
     // Filter by input data search
@@ -886,7 +793,7 @@ export default function WorkflowDetailPage() {
     });
 
     return filtered;
-  }, [executions.items, dateFromNative, dateFrom, dateToNative, dateTo, inputDataSearch]);
+  }, [executions.items, appliedRange, inputDataSearch]);
 
   const getExecutionKey = (execution: WorkflowExecution) =>
     execution.id ??
@@ -996,6 +903,29 @@ export default function WorkflowDetailPage() {
     }
   };
 
+  const formatExecutionDate = (value?: string | null) => {
+    if (!value) return '-';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '-';
+    return date.toLocaleDateString('en-GB');
+  };
+
+  const formatExecutionAmount = (value?: string | null) => {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return '0.00';
+    return parsed.toFixed(2);
+  };
+
+  const getExecutionStatusChipClass = (status: string) => {
+    if (status === '1' || status === 'completed') {
+      return 'border-[#34C759] text-[#34C759]';
+    }
+    if (status === '2' || status === 'failed') {
+      return 'border-[#C42B2B] text-[#C42B2B]';
+    }
+    return 'border-[var(--color-secondary-5)] text-[var(--color-secondary-5)]';
+  };
+
   // Skeleton loader for workflow detail page
   const DetailSkeleton = () => (
     <div className="h-full">
@@ -1086,411 +1016,355 @@ export default function WorkflowDetailPage() {
   return (
     <AppLayout>
       <div className="h-full">
-        <div className="max-w-6xl mx-auto p-6 min-h-[600px]">
-          <div className="rounded-lg border border-gray-700 bg-[#141519]">
-            {/* Header - fixed height to prevent layout shift */}
-            <div className="p-6 min-h-[120px]">
-              {/* Top row with Back button and action buttons */}
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-4">
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => router.push('/dashboard', { locale })}
-                    className="flex items-center gap-2 text-gray-300 hover:text-white transition-colors"
-                  >
-                    <ChevronLeftIcon className="w-4 h-4" />
-                    {tCommon('back')}
-                  </button>
-                  <Badge 
-                    variant={workflow.isActive ? 'default' : 'secondary'}
-                    className={workflow.isActive ? 'bg-green-600 text-white' : 'bg-gray-600 text-gray-300'}
-                  >
-                    {workflow.isActive ? t('active') : t('inactive')}
-                  </Badge>
-                </div>
-                
-                <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 w-full md:w-auto">
-                  <button
-                    onClick={handleExecute}
-                    disabled={executing || !workflow.isActive}
-                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 w-full md:w-auto ${
-                      executing 
-                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed' 
-                        : !workflow.isActive
-                        ? 'bg-gray-500 text-gray-300 cursor-not-allowed'
-                        : 'text-white shadow-lg shadow-[#A500E1]/25 bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] hover:brightness-110'
-                    }`}
-                  >
-                    {executing ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
-                        {t('executing')}
-                      </>
-                    ) : (
-                      <>
-                        <PlayIcon className="w-4 h-4" />
-                        {t('execute')}
-                      </>
-                    )}
-                  </button>
-                  
-                  <button
-                    onClick={handleToggle}
-                    disabled={toggling}
-                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg font-medium transition-all w-full md:w-auto ${
-                      toggling
-                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                        : workflow.isActive
-                        ? 'bg-yellow-600 hover:bg-yellow-700 text-white'
-                        : 'bg-green-600 hover:bg-green-700 text-white'
-                    }`}
-                    title={workflow.isActive ? t('deactivate') : t('activate')}
-                  >
-                    {toggling ? (
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    ) : workflow.isActive ? (
-                      <>
-                        <PauseIcon className="w-4 h-4" />
-                        {t('deactivate')}
-                      </>
-                    ) : (
-                      <>
-                        <PlayIcon className="w-4 h-4" />
-                        {t('activate')}
-                      </>
-                    )}
-                  </button>
-                  
-                  <button
-                    onClick={() => setShowEditForm(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors w-full md:w-auto"
-                    title={t('edit')}
-                  >
-                    <SettingsIcon className="w-4 h-4" />
-                    {t('edit')}
-                  </button>
-                  
-                  <button
-                    onClick={() => setShowDeleteDialog(true)}
-                    className="flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors w-full md:w-auto"
-                    title={tCommon('delete')}
-                  >
-                    <TrashIcon className="w-4 h-4" />
-                    {tCommon('delete')}
-                  </button>
-                </div>
-              </div>
-              
-              {/* Title and description */}
-              <div className="ml-6">
-                <h1 className="text-3xl font-bold text-white break-words break-all mb-2">
-                  {workflow.name || workflow.workflow?.name || tWorkflows('unnamedWorkflow')}
-                </h1>
-                {workflow.description || workflow.workflow?.description ? (
-                  <p className="text-gray-300 text-lg break-words break-all">
-                    {workflow.description || workflow.workflow?.description}
+        <div className="mx-auto w-full max-w-[1260px] px-4 md:px-6 pb-8 pt-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => router.push('/dashboard', { locale })}
+              className="h-8 w-8 rounded-[10px] border border-[var(--color-secondary-4)] flex items-center justify-center text-[var(--color-secondary-10)]"
+              aria-label={t('backToDashboard')}
+            >
+              <ChevronLeftIcon className="w-4 h-4" />
+            </button>
+            <h1 className="text-[32px] leading-[1.4] tracking-[0.64px] font-semibold text-[var(--color-secondary-10)] break-words">
+              {workflow.name || workflow.workflow?.name || tWorkflows('unnamedWorkflow')}
+            </h1>
+          </div>
+
+          <p className="mt-2 text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-8)]">
+            {workflow.description || workflow.workflow?.description || t('noDescription')}
+          </p>
+
+          <div className="mt-4 rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-4 py-3">
+            <div className="md:hidden space-y-4">
+              <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)]">
+                {t('workflowInformation')}
+              </p>
+              <div className="flex items-start justify-between">
+                <div className="space-y-1">
+                  <p className="text-[12px] leading-[1.4] tracking-[0.24px] font-semibold text-[var(--color-secondary-10)]">
+                    {t('price')}:
                   </p>
-                ) : (
-                  <p className="text-gray-400 italic text-lg">{t('noDescription')}</p>
-                )}
+                  <span className="inline-flex h-6 min-w-[25px] items-center justify-center rounded-[7px] border border-[#34C759] px-2 text-[12px] text-[#34C759]">
+                    {workflow.workflow?.priceUsd ? Math.round(Number(workflow.workflow.priceUsd)).toString() : '60'}
+                  </span>
+                </div>
+                <p className="text-right text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-8)]">
+                  <span className="text-[12px] font-semibold text-[var(--color-secondary-10)]">{t('credentialData.label')}:</span>
+                  <br />
+                  {getCredentialData()}
+                </p>
+              </div>
+              <div className="flex items-start justify-between">
+                <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-8)]">
+                  <span className="text-[12px] font-semibold text-[var(--color-secondary-10)]">{t('created')}:</span>
+                  <br />
+                  {new Date(workflow.createdAt).toLocaleDateString('en-GB')}
+                </p>
+                <p className="text-right text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-8)]">
+                  <span className="text-[12px] font-semibold text-[var(--color-secondary-10)]">{t('lastUpdated')}:</span>
+                  <br />
+                  {new Date(workflow.updatedAt).toLocaleDateString('en-GB')}
+                </p>
               </div>
             </div>
 
-            {/* Content */}
-            <div className="p-6">
-              {/* Workflow Info */}
-              <div className="grid grid-cols-1 gap-6 mb-8">
-                {/* Basic Info */}
-                <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30">
-                  <div 
-                    ref={workflowInfoRef}
-                    className="relative bg-black rounded-lg p-6 h-full w-full overflow-hidden group"
-                    onMouseMove={handleWorkflowInfoMouseMove}
-                    onMouseEnter={handleWorkflowInfoMouseEnter}
-                    onMouseLeave={handleWorkflowInfoMouseLeave}
-                  >
-                    {/* Interactive gradient overlay that follows mouse */}
-                    <div 
-                      className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
-                      style={{
-                        background: isWorkflowInfoHovering
-                          ? `radial-gradient(500px circle at ${workflowInfoMousePosition.x}px ${workflowInfoMousePosition.y}px, rgba(165,0,225,0.4), rgba(123,97,255,0.2) 40%, transparent 70%)`
-                          : 'none'
+            <div className="hidden md:flex md:items-center md:justify-between gap-3">
+              <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)]">
+                {t('workflowInformation')}:
+              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-[12px] font-semibold text-[var(--color-secondary-10)]">{t('price')}:</p>
+                <span className="inline-flex h-6 min-w-[25px] items-center justify-center rounded-[7px] border border-[#34C759] px-2 text-[12px] text-[#34C759]">
+                  {workflow.workflow?.priceUsd ? Math.round(Number(workflow.workflow.priceUsd)).toString() : '60'}
+                </span>
+              </div>
+              <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-8)]">
+                <span className="text-[12px] font-semibold text-[var(--color-secondary-10)]">{t('created')}:</span>{' '}
+                {new Date(workflow.createdAt).toLocaleDateString('en-GB')}
+              </p>
+              <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-8)]">
+                <span className="text-[12px] font-semibold text-[var(--color-secondary-10)]">{t('lastUpdated')}:</span>{' '}
+                {new Date(workflow.updatedAt).toLocaleDateString('en-GB')}
+              </p>
+              <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-8)] md:text-right">
+                <span className="text-[12px] font-semibold text-[var(--color-secondary-10)]">{t('credentialData.label')}:</span>{' '}
+                {getCredentialData()}
+              </p>
+            </div>
+          </div>
+
+          <h2 className="mt-7 text-[20px] leading-[1.4] tracking-[0.4px] font-medium text-[var(--color-secondary-6)]">
+            {t('executionHistory')}
+          </h2>
+
+          <div className="mt-3 flex flex-row gap-2 md:gap-3 items-center">
+            <div className="relative flex-1 md:w-[446px]">
+              <input
+                type="text"
+                placeholder="Search"
+                value={inputDataSearch}
+                onChange={(e) => setInputDataSearch(e.target.value)}
+                className="w-full h-12 rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-1)] px-4 pr-12 text-[14px] text-[var(--color-secondary-10)] placeholder:text-[var(--color-secondary-6)]"
+              />
+              <div className="absolute right-12 top-2 h-8 w-px bg-[var(--color-secondary-4)]" />
+              {inputDataSearch ? (
+                <button
+                  type="button"
+                  onClick={() => setInputDataSearch('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--color-secondary-6)]"
+                  aria-label={tCommon('clear')}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              ) : (
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-secondary-6)]" />
+              )}
+            </div>
+
+            <div className="relative w-[72px] md:w-[147px]" ref={calendarRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  setPendingRange(appliedRange);
+                  setIsCalendarOpen((prev) => !prev);
+                }}
+                className="w-full h-12 rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-1)] px-2 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-[5px]">
+                  <CalendarDetailedIcon className="h-5 w-5 shrink-0" />
+                  <span className="hidden md:inline text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-9)] font-medium">
+                    Calendar
+                  </span>
+                </div>
+                <ChevronDown className="h-5 w-5 text-[var(--color-secondary-6)]" />
+              </button>
+
+              {isCalendarOpen && (
+                <Card className="absolute right-0 top-[56px] z-50 w-[288px] rounded-[10px] border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-0 shadow-[0px_0px_7px_0px_rgba(255,255,255,0.04)]">
+                  <CardContent className="p-0">
+                    <Calendar
+                      mode="range"
+                      defaultMonth={pendingRange?.from ?? appliedRange?.from ?? calendarMonth}
+                      month={calendarMonth}
+                      onMonthChange={setCalendarMonth}
+                      selected={pendingRange}
+                      onSelect={setPendingRange}
+                      numberOfMonths={1}
+                      toDate={new Date()}
+                      captionLayout="dropdown"
+                      className="p-3 text-[var(--color-secondary-10)]"
+                      classNames={{
+                        months: 'space-y-4',
+                        month: 'space-y-4',
+                        caption: 'flex justify-center pt-1 relative items-center',
+                        caption_label: 'text-[16px] leading-[1.4] tracking-[0.32px] font-semibold',
+                        nav: 'space-x-1 flex items-center',
+                        nav_button: 'h-7 w-7 bg-transparent p-0 text-[var(--color-secondary-10)]',
+                        nav_button_previous: 'absolute left-1',
+                        nav_button_next: 'absolute right-1',
+                        table: 'w-full border-collapse space-y-1',
+                        head_row: 'flex',
+                        head_cell: 'text-[var(--color-secondary-10)] rounded-md w-9 font-semibold text-[12px]',
+                        row: 'flex w-full mt-2',
+                        cell: 'h-9 w-9 text-center text-sm p-0 relative',
+                        day: 'h-9 w-9 p-0 font-normal aria-selected:opacity-100',
+                        day_range_start: 'bg-[var(--color-main)] text-white rounded-[10px]',
+                        day_range_end: 'bg-[var(--color-main)] text-white rounded-[10px]',
+                        day_selected: 'bg-[var(--color-main)] text-white rounded-[10px]',
+                        day_today: 'text-[var(--color-secondary-10)]',
+                        day_outside: 'text-[var(--color-secondary-5)] opacity-50',
+                        day_disabled: 'text-[var(--color-secondary-5)] opacity-45',
+                        day_range_middle: 'bg-[var(--color-main)]/20 text-[var(--color-secondary-10)]',
+                        day_hidden: 'invisible',
+                      }}
+                      formatters={{
+                        formatMonthCaption: (date) => {
+                          return date.toLocaleString('default', { month: 'long' });
+                        },
+                      }}
+                      components={{
+                        Day: (props: DayProps) => {
+                          const buttonRef = React.useRef<HTMLButtonElement>(null);
+                          const dayRender = useDayRender(props.date, props.displayMonth, buttonRef);
+                          if (dayRender.isHidden) return <div role="gridcell" />;
+                          if (!dayRender.isButton) return <div {...dayRender.divProps} />;
+                          return (
+                            <CalendarDayButton ref={buttonRef} name="day" {...dayRender.buttonProps} />
+                          );
+                        },
                       }}
                     />
-                    
-                    {/* Content with relative z-index */}
-                    <div className="relative z-10">
-                      <h2 className="text-xl font-semibold text-white mb-4">{t('workflowInformation')}</h2>
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div>
-                          <span className="text-gray-400">{t('type')}:</span>
-                          <Badge variant="outline" className="ml-2 text-xs border-gray-600 text-gray-300">
-                            {getCredentialTypeLabel(workflow.credentialType)}
-                          </Badge>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">{t('price')}:</span>
-                          {workflow.workflow?.priceUsd ? (
-                            <Badge variant="outline" className="ml-2 text-xs border-green-600 text-green-300 bg-green-900/20">
-                              {workflow.workflow.priceUsd}
-                            </Badge>
-                          ) : (
-                            <span className="ml-2 text-gray-300 text-sm">{t('noPrice')}</span>
-                          )}
-                        </div>
-                        <div>
-                          <span className="text-gray-400">{t('created')}:</span>
-                          <span className="ml-2 text-gray-300">{new Date(workflow.createdAt).toLocaleDateString(locale)}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-400">{t('lastUpdated')}:</span>
-                          <span className="ml-2 text-gray-300">{new Date(workflow.updatedAt).toLocaleDateString(locale)}</span>
-                        </div>
-                        <div className="md:col-span-2 lg:col-span-1">
-                          <span className="text-gray-400">{t('credentialData.label')}:</span>
-                          <span className="ml-2 text-gray-300 text-sm break-all">{getCredentialData()}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Executions */}
-              <div>
-                <div className="flex items-center justify-between mb-6 ml-6 mr-6">
-                  <h2 className="text-xl font-semibold text-white">{t('executionHistory')}</h2>
-                  <div className="text-sm text-gray-400">
-                    {t('executionsCount', { count: filteredExecutions.length, total: executions.items.length })}
-                    {(dateFrom || dateTo || inputDataSearch) && (
-                      <span className="ml-2 text-purple-400">{t('filtered')}</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Filters Section */}
-                <div className="mb-6 p-4 bg-gray-800/50 rounded-lg border border-gray-700/50">
-                  <div className="flex flex-col lg:flex-row gap-4">
-                    {/* Input Data Search */}
-                    <div className="flex-1 min-w-0 relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input
-                        type="text"
-                        placeholder={t('searchByInputData')}
-                        value={inputDataSearch}
-                        onChange={(e) => setInputDataSearch(e.target.value)}
-                        className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500"
-                      />
-                      {inputDataSearch && (
-                        <button
-                          onClick={() => setInputDataSearch('')}
-                          className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                          type="button"
-                          aria-label={tCommon('clear')}
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      )}
-                    </div>
-
-                    {/* Date Range Filters */}
-                    <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
-                      <div className="relative w-full sm:w-48">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const input = document.getElementById('exec-date-from-picker') as HTMLInputElement;
-                            if (input) {
-                              input.style.pointerEvents = 'auto';
-                              if (typeof input.showPicker === 'function') {
-                                try {
-                                  const pickerResult = input.showPicker();
-                                  if (pickerResult !== undefined && pickerResult !== null && typeof (pickerResult as any).catch === 'function') {
-                                    (pickerResult as any).catch(() => input.click());
-                                  }
-                                } catch (error) {
-                                  input.click();
-                                }
-                              } else {
-                                input.click();
-                              }
-                              setTimeout(() => {
-                                input.style.pointerEvents = 'none';
-                              }, 100);
-                            }
-                          }}
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-400 transition-colors z-20 cursor-pointer"
-                          title={tBalance('openCalendar')}
-                          aria-label={tBalance('openCalendar')}
-                        >
-                          <Calendar className="w-4 h-4" />
-                        </button>
-                        <input
-                          type="date"
-                          value={dateFromNative}
-                          onChange={handleDateFromNativeChange}
-                          className="absolute inset-0 opacity-0 pointer-events-none z-10"
-                          id="exec-date-from-picker"
-                        />
-                        <input
-                          type="text"
-                          value={dateFrom}
-                          onChange={handleDateFromTextChange}
-                          placeholder={t('datePlaceholder')}
-                          maxLength={10}
-                          className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 relative z-0"
-                        />
-                        {dateFrom && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDateFrom('');
-                              setDateFromNative('');
-                            }}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors z-30"
-                            type="button"
-                            aria-label={tCommon('clear')}
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                      <div className="relative w-full sm:w-48">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const input = document.getElementById('exec-date-to-picker') as HTMLInputElement;
-                            if (input) {
-                              input.style.pointerEvents = 'auto';
-                              if (typeof input.showPicker === 'function') {
-                                try {
-                                  const pickerResult = input.showPicker();
-                                  if (pickerResult !== undefined && pickerResult !== null && typeof (pickerResult as any).catch === 'function') {
-                                    (pickerResult as any).catch(() => input.click());
-                                  }
-                                } catch (error) {
-                                  input.click();
-                                }
-                              } else {
-                                input.click();
-                              }
-                              setTimeout(() => {
-                                input.style.pointerEvents = 'none';
-                              }, 100);
-                            }
-                          }}
-                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-purple-400 transition-colors z-20 cursor-pointer"
-                          title={tBalance('openCalendar')}
-                          aria-label={tBalance('openCalendar')}
-                        >
-                          <Calendar className="w-4 h-4" />
-                        </button>
-                        <input
-                          type="date"
-                          value={dateToNative}
-                          onChange={handleDateToNativeChange}
-                          className="absolute inset-0 opacity-0 pointer-events-none z-10"
-                          id="exec-date-to-picker"
-                        />
-                        <input
-                          type="text"
-                          value={dateTo}
-                          onChange={handleDateToTextChange}
-                          placeholder={t('datePlaceholder')}
-                          maxLength={10}
-                          className="w-full pl-10 pr-10 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500 relative z-0"
-                        />
-                        {dateTo && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setDateTo('');
-                              setDateToNative('');
-                            }}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors z-30"
-                            type="button"
-                            aria-label={tCommon('clear')}
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Clear All Filters Button */}
-                    {(dateFrom || dateTo || inputDataSearch) && (
+                    <div className="px-6 py-4 flex flex-col items-center gap-3 border-t border-[var(--color-secondary-4)]">
+                    <div className="flex items-center gap-2">
                       <button
+                        type="button"
                         onClick={() => {
-                          setDateFrom('');
-                          setDateTo('');
-                          setDateFromNative('');
-                          setDateToNative('');
-                          setInputDataSearch('');
+                          setPendingRange(undefined);
+                          setAppliedRange(undefined);
+                          setIsCalendarOpen(false);
                         }}
-                        className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white text-sm rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
+                        className="h-[48px] px-4 rounded-[10px] border border-[var(--color-secondary-4)] text-[var(--color-secondary-9)] text-[14px] leading-[1.4] tracking-[0.28px] font-semibold"
                       >
-                        <X className="w-4 h-4" />
-                        {tCommon('clear')}
+                        Clear
                       </button>
-                    )}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAppliedRange(pendingRange);
+                          setIsCalendarOpen(false);
+                        }}
+                        className="h-[48px] w-[129px] rounded-[10px] bg-[var(--color-main)] text-white text-[14px] leading-[1.4] tracking-[0.28px] font-semibold"
+                      >
+                        Apply Now
+                      </button>
+                    </div>
+                    <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)] opacity-80">
+                      *Choose start and end date
+                    </p>
+                  </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </div>
+
+          {appliedRange?.from && (
+            <div className="mt-3 flex items-center gap-4">
+              <div className="h-[36px] rounded-[47px] border border-[var(--color-secondary-4)] px-3 inline-flex items-center gap-2">
+                <span className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-10)] font-medium">
+                  {appliedRangeLabel}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppliedRange(undefined);
+                    setPendingRange(undefined);
+                    setIsCalendarOpen(false);
+                  }}
+                  className="text-[var(--color-secondary-6)] hover:text-[var(--color-secondary-10)]"
+                  aria-label="Clear selected dates"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setAppliedRange(undefined);
+                  setPendingRange(undefined);
+                  setIsCalendarOpen(false);
+                }}
+                className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-main)] font-medium"
+              >
+                Clear all
+              </button>
+            </div>
+          )}
+
+          <div className="mt-4 space-y-4">
+            {executionsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--color-main)]" />
+              </div>
+            ) : executions.items.length === 0 ? (
+              <>
+                <div className="md:hidden rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] h-[174px] flex items-center justify-center text-center px-4">
+                  <div>
+                    <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">
+                      No transactions yet
+                    </p>
+                    <p className="mt-2 text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-8)]">
+                      Lorem impus dolor amet
+                    </p>
                   </div>
                 </div>
+                <div className="hidden md:block rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-4 py-6 text-center">
+                  <p className="text-[14px] text-[var(--color-secondary-8)]">{t('noExecutionsDescription')}</p>
+                </div>
+              </>
+            ) : filteredExecutions.length === 0 ? (
+              <div className="rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-4 py-6 text-center">
+                <p className="text-[14px] text-[var(--color-secondary-8)]">{t('noMatchingExecutions')}</p>
+              </div>
+            ) : (
+              filteredExecutions.map((execution) => {
+                const statusLabel = getStatusLabel(execution.status).toUpperCase();
+                const amount = formatExecutionAmount(execution.priceUsd);
+                const resultData = execution.resultData as Record<string, any> | null;
+                const beforeBalance = resultData?.balance_before ?? resultData?.balanceBefore;
+                const afterBalance = resultData?.balance_after ?? resultData?.balanceAfter;
+                const balanceLine = beforeBalance !== undefined && afterBalance !== undefined
+                  ? `Balance: ${beforeBalance} -> ${afterBalance}`
+                  : `Balance: 0.00 -> ${amount}`;
 
-                {executionsLoading ? (
-                  <div className="flex flex-col items-center justify-center py-12">
-                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-600 mb-4"></div>
-                    <p className="text-gray-400 text-sm">{tCommon('loading')}</p>
-                  </div>
-                ) : executions.items.length === 0 ? (
-                  <div className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden shadow-lg shadow-purple-500/30">
-                    <div 
-                      ref={noExecutionsRef}
-                      className="relative bg-black rounded-lg p-10 text-center h-full w-full overflow-hidden group"
-                      onMouseMove={handleNoExecutionsMouseMove}
-                      onMouseEnter={handleNoExecutionsMouseEnter}
-                      onMouseLeave={handleNoExecutionsMouseLeave}
-                    >
-                      {/* Interactive gradient overlay that follows mouse */}
-                      <div 
-                        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
-                        style={{
-                          background: isNoExecutionsHovering
-                            ? `radial-gradient(500px circle at ${noExecutionsMousePosition.x}px ${noExecutionsMousePosition.y}px, rgba(165,0,225,0.4), rgba(123,97,255,0.2) 40%, transparent 70%)`
-                            : 'none'
-                        }}
-                      />
-                      
-                      {/* Content with relative z-index */}
-                      <div className="relative z-10">
-                        <h3 className="text-lg font-medium text-white mb-2">{t('noExecutions')}</h3>
-                        <p className="text-gray-300 mb-0">
-                          {t('noExecutionsDescription')}
+                return (
+                  <div
+                    key={getExecutionKey(execution)}
+                    className="rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-4 py-2"
+                  >
+                    <div className="md:hidden w-full flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)] truncate">
+                          {workflow.name || workflow.workflow?.name || tWorkflows('unnamedWorkflow')}
+                        </p>
+                        <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)] truncate">
+                          Reference: {execution.n8nExecutionId || execution.id}
+                        </p>
+                        <span className={`mt-2 inline-flex h-7 items-center rounded-[47px] border px-3 text-[12px] leading-[1.4] tracking-[0.24px] font-semibold ${getExecutionStatusChipClass(execution.status)}`}>
+                          {statusLabel}
+                        </span>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
+                          Currency: TKN
+                        </p>
+                        <p className="mt-2 text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
+                          {formatExecutionDate(execution.startedAt || execution.createdAt)}
+                        </p>
+                        <p className="mt-3 text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)]">
+                          +{amount} TKN
+                        </p>
+                        <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
+                          {balanceLine}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="hidden md:flex md:items-center md:justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)] truncate">
+                          {workflow.name || workflow.workflow?.name || tWorkflows('unnamedWorkflow')}
+                        </p>
+                        <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)] truncate">
+                          Reference: {execution.n8nExecutionId || execution.id}
+                        </p>
+                      </div>
+
+                      <span className={`inline-flex h-7 items-center rounded-[47px] border px-3 text-[12px] leading-[1.4] tracking-[0.24px] font-semibold ${getExecutionStatusChipClass(execution.status)}`}>
+                        {statusLabel}
+                      </span>
+
+                      <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
+                        Currency: TKN
+                      </p>
+
+                      <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
+                        {formatExecutionDate(execution.startedAt || execution.createdAt)}
+                      </p>
+
+                      <div className="text-right">
+                        <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)]">
+                          +{amount} TKN
+                        </p>
+                        <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
+                          {balanceLine}
                         </p>
                       </div>
                     </div>
                   </div>
-                ) : (
-                  <div className="space-y-4">
-                    {filteredExecutions.length === 0 ? (
-                      <div className="p-6 bg-gray-800/50 rounded-lg border border-gray-700/50 text-center">
-                        <p className="text-gray-400">{t('noMatchingExecutions')}</p>
-                      </div>
-                    ) : (
-                      filteredExecutions.map((execution) => (
-                        <ExecutionCard
-                          key={getExecutionKey(execution)}
-                          execution={execution}
-                          getStatusColor={getStatusColor}
-                          getStatusIcon={getStatusIcon}
-                          getStatusLabel={getStatusLabel}
-                          getTriggerTypeLabel={getTriggerTypeLabel}
-                        />
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
+                );
+              })
+            )}
           </div>
         </div>
       </div>

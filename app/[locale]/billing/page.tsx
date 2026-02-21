@@ -10,8 +10,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
 export default function BillingPage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-  const t = useTranslations('billing');
+  const { isLoading } = useAuth();
   const tCommon = useTranslations('common');
 
   if (isLoading) {
@@ -27,11 +26,7 @@ export default function BillingPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6 max-w-full">
-        <div className="space-y-1">
-          <h1 className="text-2xl font-bold text-white">{t('title')}</h1>
-          <p className="text-gray-300">{t('description')}</p>
-        </div>
+      <div className="max-w-[1262px] mx-auto">
         <BillingList />
       </div>
     </AppLayout>

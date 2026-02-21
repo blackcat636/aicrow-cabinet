@@ -25,6 +25,15 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const AUTH_LOG = true; // Set to false to disable auth debug logs
+
+function authLog(message: string, data?: Record<string, unknown>) {
+  if (AUTH_LOG && typeof window !== 'undefined') {
+    const payload = data != null ? ` ${JSON.stringify(data)}` : '';
+    console.warn(`[AuthContext] ${message}${payload}`);
+  }
+}
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -44,6 +53,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [error, setError] = useState<string | null>(null);
   const [pathname, setPathname] = useState<string>('/');
   const isLoggingOutRef = useRef(false);
+  const authInitRequestIdRef = useRef(0);
   const [impersonationInfo, setImpersonationInfo] = useState<ImpersonationInfo | null>(null);
 
   const mapProfileToUser = useCallback((profile: any): User => {
@@ -80,95 +90,171 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
+  // Run auth init only on mount to avoid re-fetch/abort on pathname change (which caused "User" flash).
   useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    let isActive = true;
+    const requestId = ++authInitRequestIdRef.current;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const currentPath = window.location.pathname.replace(/^\/(uk|en|fr)(\/|$)/, '/') || '/';
+    authLog('effect run (mount only)', { requestId, pathname: currentPath });
+
+    const applyUnauthenticatedState = (clearImpersonation: boolean, reason: string) => {
+      if (!isActive || requestId !== authInitRequestIdRef.current) return;
+      authLog('applyUnauthenticatedState (user set to null)', { requestId, reason, clearImpersonation });
+      setIsAuthenticated(false);
+      setUser(null);
+      if (clearImpersonation) {
+        setImpersonationInfo(null);
+      }
+    };
+
+    const applyAuthenticatedState = (profile: any) => {
+      if (!isActive || requestId !== authInitRequestIdRef.current) return;
+      authLog('applyAuthenticatedState', { requestId, username: profile?.username, id: profile?.id });
+      setIsAuthenticated(true);
+      setUser(mapProfileToUser(profile));
+      setImpersonationInfo(getImpersonationMeta());
+    };
+
     const initializeAuth = async () => {
       try {
         if (isLoggingOutRef.current) {
+          authLog('skip: isLoggingOutRef.current');
           return;
         }
-        if (pathname === '/login' || pathname === '/signup') {
-          setIsAuthenticated(false);
-          setUser(null);
+        if (currentPath === '/login' || currentPath === '/signup') {
+          authLog('path is login/signup, clearing auth state');
+          applyUnauthenticatedState(false, 'pathname_login_signup');
           return;
         }
 
         const at = getAccessToken();
         const rt = getRefreshToken();
         if (!at && !rt) {
-          setIsAuthenticated(false);
-          setUser(null);
-          setImpersonationInfo(null);
+          authLog('no tokens, applying unauthenticated');
+          applyUnauthenticatedState(true, 'no_tokens');
           return;
         }
 
-        const res = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
+        authLog('fetching /api/users/profile', { requestId });
+        const res = await fetch('/api/users/profile', {
+          method: 'GET',
+          cache: 'no-cache',
+          signal: controller.signal
+        });
+        authLog('profile response', { requestId, status: res.status, ok: res.ok });
+
         if (res.ok) {
           const profile = await res.json();
-          setIsAuthenticated(true);
-          setUser(mapProfileToUser(profile));
-          setImpersonationInfo(getImpersonationMeta());
+          applyAuthenticatedState(profile);
         } else if (res.status === 401) {
-          const refreshRes = await fetch('/api/auth/refresh', { method: 'POST', cache: 'no-cache' });
+          authLog('401, trying refresh', { requestId });
+          const refreshRes = await fetch('/api/auth/refresh', {
+            method: 'POST',
+            cache: 'no-cache',
+            signal: controller.signal
+          });
+          authLog('refresh response', { requestId, status: refreshRes.status, ok: refreshRes.ok });
           if (refreshRes.ok) {
-            const profileRes = await fetch('/api/users/profile', { method: 'GET', cache: 'no-cache' });
+            const profileRes = await fetch('/api/users/profile', {
+              method: 'GET',
+              cache: 'no-cache',
+              signal: controller.signal
+            });
             if (profileRes.ok) {
               const profile = await profileRes.json();
-              setIsAuthenticated(true);
-              setUser(mapProfileToUser(profile));
-              setImpersonationInfo(getImpersonationMeta());
+              applyAuthenticatedState(profile);
             } else {
+              authLog('profile after refresh failed', { requestId, status: profileRes.status });
               removeTokens();
-              setIsAuthenticated(false);
-              setUser(null);
-              setImpersonationInfo(null);
+              applyUnauthenticatedState(true, 'profile_after_refresh_failed');
             }
           } else {
+            authLog('refresh failed', { requestId });
             removeTokens();
-            setIsAuthenticated(false);
-            setUser(null);
-            setImpersonationInfo(null);
+            applyUnauthenticatedState(true, 'refresh_failed');
           }
         } else {
-          setIsAuthenticated(false);
-          setUser(null);
-          setImpersonationInfo(null);
+          authLog('non-200 non-401: keeping user (no clear)', { requestId, status: res.status });
         }
       } catch (error) {
-        removeTokens();
-        setIsAuthenticated(false);
-        setUser(null);
-        setImpersonationInfo(null);
+        const err = error as { name?: string; message?: string };
+        authLog('catch', {
+          requestId,
+          name: err?.name,
+          message: err?.message,
+          hasAccessToken: !!getAccessToken(),
+          hasRefreshToken: !!getRefreshToken()
+        });
+        if (err?.name === 'AbortError') {
+          authLog('AbortError, skipping');
+          return;
+        }
+        const at = getAccessToken();
+        const rt = getRefreshToken();
+        if (!at && !rt) {
+          applyUnauthenticatedState(true, 'catch_no_tokens');
+        } else {
+          authLog('catch with tokens: keeping user (no clear)');
+        }
       } finally {
-        setIsLoading(false);
+        clearTimeout(timeoutId);
+        if (isActive && requestId === authInitRequestIdRef.current) {
+          setIsLoading(false);
+          authLog('setIsLoading(false)', { requestId });
+        }
       }
     };
 
     initializeAuth();
-  }, [pathname, mapProfileToUser]);
+
+    return () => {
+      authLog('effect cleanup (abort)', { requestId });
+      isActive = false;
+      clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [mapProfileToUser]);
+
+  // When user navigates to login/signup, clear auth state (no re-fetch).
+  useEffect(() => {
+    if (pathname === '/login' || pathname === '/signup') {
+      authLog('path changed to login/signup, clearing auth state');
+      setIsAuthenticated(false);
+      setUser(null);
+      setImpersonationInfo(null);
+    }
+  }, [pathname]);
 
   const logout = useCallback(async (): Promise<void> => {
     setIsLoading(true);
     isLoggingOutRef.current = true;
-    
+
     try {
-      const response = await fetch('/api/auth/logout', {
+      await fetch('/api/auth/logout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         cache: 'no-cache'
       });
-
     } catch (error) {
+      // Continue to clear state and redirect even on network error
     } finally {
       clearImpersonationMeta();
       removeTokens();
       setIsAuthenticated(false);
       setUser(null);
       setImpersonationInfo(null);
-      setIsLoading(false);
+      // Keep isLoading true until redirect so header shows "…" instead of "User" flash
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
+      } else {
+        setIsLoading(false);
       }
     }
   }, []);
