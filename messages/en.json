@@ -176,7 +176,7 @@
   },
   "nav": {
     "dashboard": "Dashboard",
-    "workflows": "Workflows",
+    "workflows": "Automatizations",
     "executions": "Executions",
     "balance": "Balance",
     "billing": "Billing",
@@ -432,6 +432,7 @@
     }
   },
   "workflowForm": {
+    "addWorkflow": "Add Automatization",
     "attachNewWorkflow": "Attach New Workflow",
     "editWorkflow": "Edit Workflow",
     "selectWorkflow": "Select Workflow",
@@ -639,7 +640,7 @@
     "titleMobile": "404 - Page Not Found",
     "descriptionMobile": "The page you're looking for doesn't exist or has been moved.",
     "goToDashboard": "Go to Dashboard",
-    "workflows": "Workflows",
+    "workflows": "Automatizations",
     "executions": "Executions"
   },
   "error": {

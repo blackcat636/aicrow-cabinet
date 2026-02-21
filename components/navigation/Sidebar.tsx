@@ -7,14 +7,12 @@ import { SidebarNavigation } from './SidebarNavigation';
 interface SidebarProps {
   currentPath?: string;
   className?: string;
-  onSocialMediaClick?: () => void;
   showHeader?: boolean;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
   currentPath,
   className = '',
-  onSocialMediaClick,
   showHeader = true,
 }) => {
   return (
@@ -26,7 +24,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       {/* Navigation Menu */}
-      <SidebarNavigation currentPath={currentPath} onSocialMediaClick={onSocialMediaClick} />
+      <SidebarNavigation currentPath={currentPath} />
     </aside>
   );
 };

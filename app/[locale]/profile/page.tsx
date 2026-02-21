@@ -399,7 +399,7 @@ export default function ProfilePage() {
               type="button"
               disabled={submitting}
               onClick={() => openNameEditor('dateOfBirth')}
-              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-[var(--color-main)]/10"
             >
               Update Date
             </Button>
@@ -408,14 +408,14 @@ export default function ProfilePage() {
         </div>
 
         <div className="mt-6 p-4 rounded-[10px] bg-[var(--color-secondary-2)] border border-[var(--color-secondary-4)]">
-          <h3 className="text-sm font-semibold text-[var(--color-secondary-10)] mb-4">
+          <h3 className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)] mb-4">
             {t('integrations')}
           </h3>
 
           <div className="space-y-3">
             {/* External SSO Services */}
             <div className="p-3 bg-[var(--color-secondary-2)] rounded-[10px] border border-[var(--color-secondary-4)]">
-              <div className="text-sm font-medium text-[var(--color-secondary-10)] mb-3">
+              <div className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)] mb-3">
                 {t('externalServicesTitle')}
               </div>
               <ExternalServicesIntegration />
@@ -430,20 +430,20 @@ export default function ProfilePage() {
                   </svg>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-[var(--color-secondary-10)]">Telegram</div>
+                  <div className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">Telegram</div>
                   {telegramLoading ? (
-                    <div className="text-xs text-[var(--color-secondary-6)]">{t('integrationsLoading')}</div>
+                    <div className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{t('integrationsLoading')}</div>
                   ) : telegramStatus?.isLinked ? (
-                    <div className="text-xs text-green-400">{t('integrationsConnected')}</div>
+                    <div className="text-[14px] leading-[1.4] tracking-[0.28px] text-green-400">{t('integrationsConnected')}</div>
                   ) : (
-                    <div className="text-xs text-[var(--color-secondary-6)]">{t('integrationsNotConnected')}</div>
+                    <div className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{t('integrationsNotConnected')}</div>
                   )}
                 </div>
               </div>
               <Button
                 type="button"
                 onClick={() => router.push('/integrations/telegram')}
-                className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-500 hover:to-purple-600 text-white text-xs px-4 py-2"
+                className="h-12 rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] px-5 hover:bg-[var(--color-main)]/10"
               >
                 {telegramStatus?.isLinked ? t('integrationsManage') : t('integrationsConnect')}
               </Button>
@@ -532,7 +532,7 @@ export default function ProfilePage() {
                       type="button"
                       disabled={submitting}
                       onClick={saveNameEditor}
-                      className="h-12 px-5 rounded-[10px] border border-[var(--color-main)] bg-transparent text-[var(--color-main)] hover:bg-transparent"
+                      className="h-12 px-5 rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-[var(--color-main)]/10"
                     >
                       {nameEditor.field === 'firstName'
                         ? 'Update First Name'

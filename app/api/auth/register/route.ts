@@ -8,13 +8,14 @@ const API_URL = API_CONFIG.BASE_URL;
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const { email, password, confirmPassword } = body;
 
     const response = await fetch(`${API_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({ email, password, confirmPassword })
     });
 
     const data = await response.json();

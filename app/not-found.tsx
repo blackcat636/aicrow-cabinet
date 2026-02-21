@@ -16,7 +16,7 @@ const fallbackTranslations: Record<string, string> = {
   titleMobile: '404 - Page Not Found',
   descriptionMobile: "The page you're looking for doesn't exist or has been moved.",
   goToDashboard: 'Go to Dashboard',
-  workflows: 'Workflows',
+  workflows: 'Automatizations',
   executions: 'Executions'
 };
 

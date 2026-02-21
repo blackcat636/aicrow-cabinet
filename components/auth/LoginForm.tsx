@@ -94,9 +94,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   if (isModal) {
     return (
       <>
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4">
-          {/* Mobile (Figma 1-3905): full-screen, no card. Desktop: centered card */}
-          <div className="relative flex h-full w-full max-h-[100dvh] flex-col md:h-auto md:max-h-[none] md:w-full md:max-w-[540px] md:rounded-[20px] md:border md:border-[var(--color-secondary-4)] md:bg-[var(--color-secondary-2)] md:pt-12 md:pb-6 md:px-[72px]">
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-0 md:p-4">
+          {/* Mobile: full-screen card. Desktop: centered card + sign-up block below */}
+          <div className="relative flex h-full w-full max-h-[100dvh] flex-col md:h-auto md:max-h-[none] md:w-full md:max-w-[540px] md:rounded-[20px] md:border md:border-[var(--color-secondary-4)] md:bg-[var(--color-secondary-2)] md:pt-12 md:pb-6 md:px-[72px] md:rounded-b-none">
             <div className="flex flex-1 flex-col overflow-y-auto md:flex-initial md:overflow-visible">
               {/* Header: "Log In" centered */}
               <div className="flex flex-shrink-0 items-center justify-center px-6 pt-[64px] pb-4 md:pt-0 md:contents">
@@ -106,7 +106,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               </div>
 
               <div className="">
-              <form onSubmit={handleSubmit} className="mt-2 space-y-5 mx-auto w-full max-w-[400px] px-6 pb-6 md:px-0 md:pb-0md:mt-8 md:space-y-6">
+              <form onSubmit={handleSubmit} className="mt-2 space-y-5 mx-auto w-full max-w-[400px] px-6 pb-6 md:px-0 md:pb-0 md:mt-8 md:space-y-6">
                 {redirectUri && (
                   <div className="rounded-[8px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-1)] px-4 py-3 text-[14px] text-[var(--color-secondary-8)]">
                     {tSso('continueToExternalService', { service: service ? `: ${service}` : '' })}
@@ -153,7 +153,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888888] hover:text-white md:text-[var(--color-secondary-6)] md:hover:text-[var(--color-secondary-10)]"
-                      aria-label={showPassword ? 'Hide password' : 'Show password'}
+                      aria-label={showPassword ? t('hidePassword') : t('showPassword')}
                     >
                       {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                     </button>
@@ -183,21 +183,23 @@ export const LoginForm: React.FC<LoginFormProps> = ({
               </form>
               </div>
 
-            {/* Mobile: horizontal line (Secondary-4) just below Facebook button */}
+            {/* Mobile only: horizontal line below Facebook button */}
             <div className="mt-2 h-px w-full flex-shrink-0 bg-[var(--color-secondary-4)] md:hidden" style={{ background: 'var(--color-secondary-4, #363639)' }} aria-hidden />
-            <div className="flex-shrink-0 pt-5 px-6 -mx-6 w-full md:mt-6 md:pt-5 md:px-0 md:-mx-[72px] md:border-t md:border-[var(--color-secondary-4)]">
-              <p className="text-center text-[16px] leading-[1.4] text-[#424242] md:tracking-[0.32px]">
-                {t('dontHaveAccount')}{' '}
-                <button
-                  type="button"
-                  onClick={onSwitchToRegister}
-                  className="font-semibold text-[var(--color-main)] underline decoration-[var(--color-main)] underline-offset-2 hover:opacity-90 md:no-underline"
-                >
-                  {t('signUp')}
-                </button>
-              </p>
             </div>
-            </div>
+          </div>
+
+          {/* Sign-up block: outside form card, in main block — line full width, text centered */}
+          <div className="w-full flex-shrink-0 pt-5 px-6 pb-6 md:pt-5 md:pb-6 md:px-[72px] md:max-w-[540px] md:border md:border-[var(--color-secondary-4)] md:rounded-b-[20px] md:bg-[var(--color-secondary-2)]">
+            <p className="text-center text-[16px] leading-[1.4] text-[#424242] md:text-[var(--color-secondary-8)] md:tracking-[0.32px]">
+              {t('dontHaveAccount')}{' '}
+              <button
+                type="button"
+                onClick={onSwitchToRegister}
+                className="font-semibold text-[var(--color-main)] underline decoration-[var(--color-main)] underline-offset-2 hover:opacity-90 md:no-underline"
+              >
+                {t('signUp')}
+              </button>
+            </p>
           </div>
         </div>
 

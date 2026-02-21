@@ -6,7 +6,6 @@ import { Link as I18nLink } from '@/i18n/routing';
 import {
   WorkflowsIcon,
   LogOutIcon,
-  ExecutionIcon,
   BalanceIcon,
   SettingsNewIcon,
 } from '@/components/icons';
@@ -16,7 +15,6 @@ import { LogoutConfirmDialog } from '@/components/ui/LogoutConfirmDialog';
 interface SidebarNavigationProps {
   currentPath?: string;
   className?: string;
-  onSocialMediaClick?: () => void;
 }
 
 interface NavItem {
@@ -30,7 +28,6 @@ interface NavItem {
 export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   currentPath = '/',
   className = '',
-  onSocialMediaClick,
 }) => {
   const t = useTranslations('nav');
   const { logout } = useAuth();
@@ -57,22 +54,6 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
       label: t('workflows'),
       icon: <WorkflowsIcon className="w-5 h-5" />,
       translationKey: 'workflows',
-    },
-    {
-      href: '#',
-      label: t('socialMedia'),
-      icon: <SettingsNewIcon className="w-5 h-5" />,
-      translationKey: 'socialMedia',
-      onClick: (e) => {
-        e.preventDefault();
-        onSocialMediaClick?.();
-      },
-    },
-    {
-      href: '/executions',
-      label: t('executions'),
-      icon: <ExecutionIcon className="w-5 h-5" />,
-      translationKey: 'executions',
     },
     {
       href: '/balance',

@@ -463,7 +463,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(userData),
+        body: JSON.stringify({ email: userData.email, password: userData.password, confirmPassword: userData.confirmPassword }),
         cache: 'no-cache'
       });
 

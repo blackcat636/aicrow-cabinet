@@ -175,7 +175,7 @@
   },
   "nav": {
     "dashboard": "Panel de control",
-    "workflows": "Flujos de trabajo",
+    "workflows": "Automatizaciones",
     "executions": "Ejecuciones",
     "balance": "Saldo",
     "billing": "Facturación",
@@ -426,6 +426,7 @@
     }
   },
   "workflowForm": {
+    "addWorkflow": "Agregar automatización",
     "attachNewWorkflow": "Adjuntar nuevo flujo de trabajo",
     "editWorkflow": "Editar flujo de trabajo",
     "selectWorkflow": "Seleccionar flujo de trabajo",
@@ -627,7 +628,7 @@
     "titleMobile": "404 - Página no encontrada",
     "descriptionMobile": "La página que buscas no existe o ha sido movida.",
     "goToDashboard": "Ir al panel de control",
-    "workflows": "Flujos de trabajo",
+    "workflows": "Automatizaciones",
     "executions": "Ejecuciones"
   },
   "error": {

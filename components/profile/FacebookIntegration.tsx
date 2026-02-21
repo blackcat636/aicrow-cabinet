@@ -137,13 +137,13 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
             <FacebookIcon className="w-5 h-5 text-white" />
           </div>
           <div>
-            <div className="text-sm font-medium text-[var(--color-secondary-10)]">
+            <div className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">
               {t('facebookIntegration')}
             </div>
             {loadingStatus ? (
-              <div className="text-xs text-[var(--color-secondary-6)]">{t('integrationsLoading')}</div>
+              <div className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{t('integrationsLoading')}</div>
             ) : isLinked ? (
-              <div className="text-xs text-green-400 flex flex-col gap-0.5">
+              <div className="text-[14px] leading-[1.4] tracking-[0.28px] text-green-400 flex flex-col gap-0.5">
                 <span>{t('integrationsConnected')}</span>
                 {facebookAccount?.email && (
                   <span className="text-[var(--color-secondary-6)]">{facebookAccount.email}</span>
@@ -155,7 +155,7 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
                 )}
               </div>
             ) : (
-              <div className="text-xs text-[var(--color-secondary-6)]">{t('facebookNotConnected')}</div>
+              <div className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{t('facebookNotConnected')}</div>
             )}
           </div>
         </div>
@@ -164,10 +164,9 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
           {isLinked ? (
             <Button
               type="button"
-              variant="outline"
               onClick={() => setConfirmUnlink(true)}
               disabled={loading}
-              className="border-red-600 text-red-300 hover:text-white hover:bg-red-600/20 text-xs px-4 py-2"
+              className="h-12 rounded-[10px] border border-red-500 bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-red-400 px-5 hover:bg-red-500/10"
             >
               {t('facebookUnlink')}
             </Button>
@@ -176,7 +175,7 @@ export const FacebookIntegration: React.FC<FacebookIntegrationProps> = ({ classN
               type="button"
               onClick={handleConnect}
               disabled={loading || !isAuthenticated || loadingStatus}
-              className="bg-[#1877F2] hover:bg-[#0f5dc0] text-white text-xs px-4 py-2"
+              className="h-12 rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] px-5 hover:bg-[var(--color-main)]/10"
             >
               {t('facebookConnect')}
             </Button>

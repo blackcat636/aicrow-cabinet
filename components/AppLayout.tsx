@@ -15,7 +15,6 @@ import {
   ChevronDownIcon,
   DashBoardIcon,
   WorkflowsIcon,
-  ExecutionIcon,
   BalanceIcon,
   SettingsNewIcon
 } from '@/components/icons';
@@ -296,26 +295,6 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside, true);
   }, [isUserMenuOpen]);
 
-  // Handle social media click
-  const handleSocialMediaClick = useCallback(async () => {
-    try {
-      const { userApi } = await import('@/lib/apiUser');
-      const { toast } = await import('sonner');
-      const result = await userApi.updateSocialUp();
-      if (result.access_url) {
-        window.open(result.access_url, '_blank', 'noopener,noreferrer');
-        toast.success(tProfile('socialUpSuccess'));
-      }
-    } catch (error: any) {
-      const { toast } = await import('sonner');
-      if (error.status === 503) {
-        toast.error(tProfile('socialUpError503'));
-      } else {
-        toast.error(tProfile('socialUpError'));
-      }
-    }
-  }, [tProfile]);
-
   return (
     <>
     <div className='h-screen bg-black overflow-hidden flex flex-col'>
@@ -357,7 +336,6 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
       <div className='hidden md:block'>
         <Sidebar 
           currentPath={pathname}
-          onSocialMediaClick={handleSocialMediaClick}
           showHeader={false}
         />
       </div>
@@ -414,7 +392,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
         {isUserMenuOpen && (
           <div
             ref={userMenuRef}
-            className='fixed right-4 md:right-8 top-[64px] md:top-[86px] z-[120] min-w-[188px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-2 shadow-[0px_0px_14px_0px_rgba(0,0,0,0.35)]'
+            className='fixed right-4 md:right-10 top-[68px] md:top-[70image.pngpx] z-[120] min-w-[188px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-2 shadow-[0px_0px_14px_0px_rgba(0,0,0,0.35)]'
           >
             <I18nLink
               href='/profile'
@@ -495,45 +473,6 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                     <WorkflowsIcon className={`${activeStates.workflows ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'} w-5 h-5`} />
                     <span className={`figma-body-2-medium ${activeStates.workflows ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'}`}>
                       {t('workflows')}
-                    </span>
-                  </div>
-                </I18nLink>
-
-                <button
-                  onClick={async () => {
-                    setIsMobileMenuOpen(false);
-                    await handleSocialMediaClick();
-                  }}
-                  className='relative flex h-[56px] w-full items-center px-[24px]'
-                >
-                  <div className='absolute inset-0 bg-transparent' />
-                  <div className='relative z-10 flex items-center gap-3 px-[16px] py-[13px]'>
-                    <SettingsNewIcon className='w-5 h-5 text-[var(--color-secondary-5)]' />
-                    <span className='figma-body-2-medium text-[var(--color-secondary-5)]'>
-                      {t('socialMedia')}
-                    </span>
-                  </div>
-                </button>
-
-                <I18nLink
-                  href='/executions'
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className='relative flex h-[56px] items-center px-[24px]'
-                >
-                  {activeStates.executions && (
-                    <div className='absolute -left-[1px] top-[4px] bottom-[2px] w-[5px] bg-[var(--color-secondary-10)] rounded-[10px]' />
-                  )}
-                  <div
-                    className={`absolute inset-0 ${
-                      activeStates.executions
-                        ? 'left-[24px] right-[24px] top-[2px] bottom-[2px] bg-[var(--color-secondary-3)] rounded-[10px]'
-                        : 'bg-transparent'
-                    }`}
-                  />
-                  <div className='relative z-10 flex items-center gap-3 px-[16px] py-[13px]'>
-                    <ExecutionIcon className={`${activeStates.executions ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'} w-5 h-5`} />
-                    <span className={`figma-body-2-medium ${activeStates.executions ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'}`}>
-                      {t('executions')}
                     </span>
                   </div>
                 </I18nLink>
@@ -671,49 +610,9 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         }`}
                       >
                         <WorkflowsIcon className='w-5 h-5' />
-                        <span className='font-medium'>Workflows</span>
+                        <span className='font-medium'>{t('workflows')}</span>
                       </I18nLink>
                       
-                      {/* Social Media Section */}
-                      <button
-                        onClick={async () => {
-                          closeMobileMenu();
-                          try {
-                            const { userApi } = await import('@/lib/apiUser');
-                            const { toast } = await import('sonner');
-                            const result = await userApi.updateSocialUp();
-                            if (result.access_url) {
-                              window.open(result.access_url, '_blank', 'noopener,noreferrer');
-                              toast.success(tProfile('socialUpSuccess'));
-                            }
-                          } catch (error: any) {
-                            const { toast } = await import('sonner');
-                            // Show specific message for 503 Service Unavailable
-                            if (error.status === 503) {
-                              toast.error(tProfile('socialUpError503'));
-                            } else {
-                              toast.error(tProfile('socialUpError'));
-                            }
-                          }
-                        }}
-                        className="w-full flex items-center gap-3 p-3 rounded-lg transition-colors text-gray-300 hover:bg-white/10 hover:text-white"
-                      >
-                        <SettingsNewIcon className='w-5 h-5' />
-                        <span className='font-medium'>{t('socialMedia')}</span>
-                      </button>
-                      
-                      <I18nLink
-                        href="/executions"
-                        onClick={closeMobileMenu}
-                        className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
-                          activeStates.executions
-                            ? 'bg-[var(--color-main)] text-white shadow-lg shadow-[var(--color-main)]/25'
-                            : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                        }`}
-                      >
-                        <ExecutionIcon className='w-5 h-5' />
-                        <span className='font-medium'>Executions</span>
-                      </I18nLink>
                       <I18nLink
                         href="/balance"
                         onClick={closeMobileMenu}

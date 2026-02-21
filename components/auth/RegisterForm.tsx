@@ -165,8 +165,8 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
       {!showVerifyEmail && (
         isModal ? (
           /* Figma 1-3568: registration modal – same layout as login (mobile full-screen, desktop card) */
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-0 md:p-4">
-            <div className="relative flex h-full w-full max-h-[100dvh] flex-col md:h-auto md:max-h-[none] md:w-full md:max-w-[540px] md:rounded-[20px] md:border md:border-[var(--color-secondary-4)] md:bg-[var(--color-secondary-2)] md:pt-12 md:pb-6 md:px-[72px]">
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center p-0 md:p-4">
+            <div className="relative flex h-full w-full max-h-[100dvh] flex-col md:h-auto md:max-h-[none] md:w-full md:max-w-[540px] md:rounded-[20px] md:rounded-b-none md:border md:border-[var(--color-secondary-4)] md:bg-[var(--color-secondary-2)] md:pt-12 md:pb-6 md:px-[72px]">
               <div className="flex flex-1 flex-col overflow-y-auto md:flex-initial md:overflow-visible">
                 <div className="flex flex-shrink-0 items-center justify-center px-6 pt-[64px] pb-4 md:pt-0 md:contents">
                   <h2 className="text-[26px] leading-[1.3] font-bold text-white md:text-center md:text-[32px] md:leading-[1.4] md:tracking-[0.64px] md:font-semibold">
@@ -218,7 +218,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                           type="button"
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888888] hover:text-white md:text-[var(--color-secondary-6)] md:hover:text-[var(--color-secondary-10)]"
-                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          aria-label={showPassword ? t('hidePassword') : t('showPassword')}
                         >
                           {showPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                         </button>
@@ -242,7 +242,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                           type="button"
                           onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                           className="absolute right-3 top-1/2 -translate-y-1/2 text-[#888888] hover:text-white md:text-[var(--color-secondary-6)] md:hover:text-[var(--color-secondary-10)]"
-                          aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                          aria-label={showConfirmPassword ? t('hidePassword') : t('showPassword')}
                         >
                           {showConfirmPassword ? <EyeOffIcon className="w-5 h-5" /> : <EyeIcon className="w-5 h-5" />}
                         </button>
@@ -267,19 +267,21 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                 </div>
 
                 <div className="mt-2 h-px w-full flex-shrink-0 bg-[var(--color-secondary-4)] md:hidden" style={{ background: 'var(--color-secondary-4, #363639)' }} aria-hidden />
-                <div className="flex-shrink-0 pt-5 px-6 -mx-6 w-full md:mt-6 md:mb-[64px] md:pt-5 md:px-0 md:-mx-[72px] md:border-t md:border-[var(--color-secondary-4)]">
-                  <p className="text-center text-[16px] leading-[1.4] text-[#424242] md:tracking-[0.32px]">
-                    {t('alreadyHaveAccount')}{" "}
-                    <button
-                      type="button"
-                      onClick={() => { clearError(); onSwitchToLogin(); }}
-                      className="font-semibold text-[var(--color-main)] hover:opacity-90"
-                    >
-                      {t('signIn')}
-                    </button>
-                  </p>
-                </div>
               </div>
+            </div>
+
+            {/* Sign-in block: outside form card, in main block — same as login (line full width, text centered) */}
+            <div className="w-full flex-shrink-0 pt-5 px-6 pb-6 md:pt-5 md:pb-6 md:px-[72px] md:max-w-[540px] md:border md:border-[var(--color-secondary-4)] md:rounded-b-[20px] md:bg-[var(--color-secondary-2)]">
+              <p className="text-center text-[16px] leading-[1.4] text-[#424242] md:text-[var(--color-secondary-8)] md:tracking-[0.32px]">
+                {t('alreadyHaveAccount')}{" "}
+                <button
+                  type="button"
+                  onClick={() => { clearError(); onSwitchToLogin(); }}
+                  className="font-semibold text-[var(--color-main)] underline decoration-[var(--color-main)] underline-offset-2 hover:opacity-90 md:no-underline"
+                >
+                  {t('signIn')}
+                </button>
+              </p>
             </div>
           </div>
         ) : (

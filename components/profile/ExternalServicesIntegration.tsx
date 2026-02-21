@@ -135,7 +135,7 @@ export const ExternalServicesIntegration: React.FC = () => {
     }
 
     if (!services.length) {
-      return <div className="text-sm text-[var(--color-secondary-6)]">{t('externalServicesEmpty')}</div>;
+      return <div className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{t('externalServicesEmpty')}</div>;
     }
 
     return services.map((item) => {
@@ -148,32 +148,30 @@ export const ExternalServicesIntegration: React.FC = () => {
         <div key={serviceId} className="rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-3 space-y-3">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
             <div>
-              <div className="text-sm font-semibold text-[var(--color-secondary-10)]">{item.service.name}</div>
+              <div className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{item.service.name}</div>
               {item.service.description && (
-                <div className="text-xs text-[var(--color-secondary-6)] mt-1">{item.service.description}</div>
+                <div className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)] mt-1">{item.service.description}</div>
               )}
-              <div className="mt-2 text-xs text-[var(--color-secondary-6)] space-x-3">
+              <div className="mt-2 text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)] space-x-3">
                 <span>{t('externalServicesActiveSessions')}: {item.activeSessionsCount}</span>
                 <span>{t('externalServicesPendingSessions')}: {item.pendingSessionsCount}</span>
               </div>
-              <div className="mt-1 text-xs text-[var(--color-secondary-7)]">
+              <div className="mt-1 text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-7)]">
                 {t('externalServicesLastUsed')}: {formatDate(item.lastUsedAt)}
               </div>
             </div>
             <div className="flex gap-2">
               <Button
                 type="button"
-                variant="outline"
                 onClick={() => void toggleSessions(serviceId)}
-                className="text-xs"
+                className="h-12 rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] px-5 hover:bg-[var(--color-main)]/10"
               >
                 {isExpanded ? t('externalServicesHideSessions') : t('externalServicesViewSessions')}
               </Button>
               <Button
                 type="button"
-                variant="outline"
                 onClick={() => setRevokeServiceTarget(item)}
-                className="border-red-600 text-red-300 hover:text-white hover:bg-red-600/20 text-xs"
+                className="h-12 rounded-[10px] border border-red-500 bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-red-400 px-5 hover:bg-red-500/10"
               >
                 {t('externalServicesRevokeService')}
               </Button>
@@ -183,17 +181,17 @@ export const ExternalServicesIntegration: React.FC = () => {
           {isExpanded && (
             <div className="space-y-2 border-t border-[var(--color-secondary-4)] pt-3">
               {isLoadingSessions ? (
-                <div className="text-xs text-[var(--color-secondary-6)]">{t('integrationsLoading')}</div>
+                <div className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{t('integrationsLoading')}</div>
               ) : sessions.length === 0 ? (
-                <div className="text-xs text-[var(--color-secondary-6)]">{t('externalServicesNoSessions')}</div>
+                <div className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{t('externalServicesNoSessions')}</div>
               ) : (
                 sessions.map((session) => (
                   <div
                     key={session.id}
                     className="flex flex-col gap-2 rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-3 py-2 md:flex-row md:items-center md:justify-between"
                   >
-                    <div className="text-xs text-[var(--color-secondary-9)]">
-                      <div className="font-medium">{session.deviceName || t('externalServicesUnknownDevice')}</div>
+                    <div className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-9)]">
+                      <div className="font-semibold text-[var(--color-secondary-10)]">{session.deviceName || t('externalServicesUnknownDevice')}</div>
                       <div className="text-[var(--color-secondary-6)]">
                         {session.ipAddress || '—'} · {session.status}
                       </div>
@@ -203,9 +201,8 @@ export const ExternalServicesIntegration: React.FC = () => {
                     </div>
                     <Button
                       type="button"
-                      variant="outline"
                       onClick={() => setRevokeSessionTarget({ serviceId, session })}
-                      className="border-red-600 text-red-300 hover:text-white hover:bg-red-600/20 text-xs"
+                      className="h-10 rounded-[10px] border border-red-500 bg-transparent text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-red-400 px-4 hover:bg-red-500/10"
                     >
                       {t('externalServicesRevokeSession')}
                     </Button>

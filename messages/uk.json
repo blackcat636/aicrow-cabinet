@@ -176,7 +176,7 @@
   },
   "nav": {
     "dashboard": "Панель керування",
-    "workflows": "Робочі процеси",
+    "workflows": "Автоматизації",
     "executions": "Виконання",
     "balance": "Баланс",
     "billing": "Оплата",
@@ -237,7 +237,7 @@
     "hidePassword": "Приховати пароль",
     "signingIn": "Вхід...",
     "emailAddress": "Електронна пошта",
-    "enterYourEmail": "Введіть вашу електронну пошту",
+    "enterYourEmail": "Введіть ваш email",
     "enterYourPassword": "Введіть ваш пароль",
     "createAccount": "Створити обліковий запис",
     "next": "Далі",
@@ -432,6 +432,7 @@
     }
   },
   "workflowForm": {
+    "addWorkflow": "Додати автоматизацію",
     "attachNewWorkflow": "Приєднати новий робочий процес",
     "editWorkflow": "Редагувати робочий процес",
     "selectWorkflow": "Виберіть робочий процес",
@@ -639,7 +640,7 @@
     "titleMobile": "404 - Сторінку не знайдено",
     "descriptionMobile": "Сторінка, яку ви шукаєте, не існує або була переміщена.",
     "goToDashboard": "Перейти до панелі",
-    "workflows": "Робочі процеси",
+    "workflows": "Автоматизації",
     "executions": "Виконання"
   },
   "error": {
