@@ -4,6 +4,8 @@ import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react'
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSubscription } from '@/hooks/useSubscription';
+import { balanceApi } from '@/lib/apiBalance';
 import { useTranslations, useLocale } from 'next-intl';
 import { Link as I18nLink, useRouter } from '@/i18n/routing';
 import aiPillsLogo from '@/public/brand/aiPillsLogo.png';
@@ -25,6 +27,7 @@ import { Sidebar } from '@/components/navigation';
 import { toast } from 'sonner';
 import { getImpersonationMeta } from '@/lib/auth';
 import { LogoutConfirmDialog } from '@/components/ui/LogoutConfirmDialog';
+import { Badge } from '@/components/ui/badge';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -144,9 +147,51 @@ TopNavItem.displayName = 'TopNavItem';
 
 export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout, impersonationInfo, impersonateUser, stopImpersonation, isLoading: authLoading } = useAuth();
+  const { planName, isLoading: planLoading } = useSubscription();
   const t = useTranslations('nav');
   const tProfile = useTranslations('profile');
   const tImpersonation = useTranslations('impersonation');
+
+  // Debug: Check subscription data
+  console.log('Plan name:', planName);
+  console.log('Plan loading:', planLoading);
+
+  // Real balance state
+  const [balance, setBalance] = useState(0);
+  const [balanceLoading, setBalanceLoading] = useState(true);
+
+  // Clean plan name - remove 'plan' suffix if present
+  const cleanPlanName = planName ? planName.replace(/\s+plan$/i, '') : 'Free';
+
+  // Fetch real balance from API
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        setBalanceLoading(true);
+        const response = await balanceApi.getBalance();
+        console.log('Balance API response:', response);
+        
+        // response.data is BalanceData[] array
+        if (response?.data && response.data.length > 0) {
+          const mainBalance = response.data[0];
+          // Use available_balance which is the real usable balance
+          const realBalance = mainBalance.available_balance;
+          setBalance(realBalance);
+          console.log('Real balance:', realBalance);
+        }
+      } catch (error) {
+        console.error('Failed to fetch balance:', error);
+        // Fallback to user balance if API fails
+        setBalance(parseFloat(user?.balance || '0'));
+      } finally {
+        setBalanceLoading(false);
+      }
+    };
+
+    fetchBalance();
+  }, [user?.balance]);
+
+  const formattedBalance = balance.toLocaleString();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -309,6 +354,15 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
         </div>
         <div className='flex-1 h-full px-[40px] flex items-center justify-end'>
           <div className='flex items-center gap-[24px]'>
+            {/* Balance and Plan Info */}
+            <div className="flex items-center">
+              <p className="font-normal text-[#9e9e9e] text-[16px] tracking-[0.32px]">
+                <span>{`You have ${formattedBalance} tokens in `}</span>
+                <Badge className="bg-[#757575] text-white text-[16px] font-semibold">{cleanPlanName}</Badge>
+                <span>{` plan`}</span>
+              </p>
+            </div>
+            
             <LanguageSwitcherMenu variant="desktop" />
             <button
               type='button'

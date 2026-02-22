@@ -190,7 +190,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
           {/* Sign-up block: outside form card, in main block — line full width, text centered */}
           <div className="w-full flex-shrink-0 pt-5 px-6 pb-6 md:pt-5 md:pb-6 md:px-[72px] md:max-w-[540px] md:border md:border-[var(--color-secondary-4)] md:rounded-b-[20px] md:bg-[var(--color-secondary-2)]">
-            <p className="text-center text-[16px] leading-[1.4] text-[#424242] md:text-[var(--color-secondary-8)] md:tracking-[0.32px]">
+            <p className="text-center text-[16px] leading-[1.4] text-[#757575] md:text-[#757575] md:tracking-[0.32px]">
               {t('dontHaveAccount')}{' '}
               <button
                 type="button"
