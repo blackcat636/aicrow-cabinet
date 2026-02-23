@@ -356,11 +356,11 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
           <div className='flex items-center gap-[24px]'>
             {/* Balance and Plan Info */}
             <div className="flex items-center">
-              <p className="font-normal text-[#9e9e9e] text-[16px] tracking-[0.32px]">
+              <div className="font-normal text-[#9e9e9e] text-[16px] tracking-[0.32px]">
                 <span>{`You have ${formattedBalance} tokens in `}</span>
                 <Badge className="bg-[#757575] text-white text-[16px] font-semibold">{cleanPlanName}</Badge>
                 <span>{` plan`}</span>
-              </p>
+              </div>
             </div>
             
             <LanguageSwitcherMenu variant="desktop" />

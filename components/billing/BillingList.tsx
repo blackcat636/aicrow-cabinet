@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { subscriptionApi } from '@/lib/apiSubscription';
 import { balanceApi } from '@/lib/apiBalance';
 import { API_CONFIG } from '@/config/api';
+import { useAuth } from '@/contexts/AuthContext';
 import { PlanCard } from './PlanCard';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
@@ -13,11 +14,13 @@ import type { ActivePlanResponse, SubscriptionPlan } from '@/types/subscription'
 
 export const BillingList: React.FC = () => {
   const t = useTranslations('billing');
+  const { user } = useAuth();
   const [activeData, setActiveData] = useState<ActivePlanResponse['data'] | null>(null);
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [purchasingPlanId, setPurchasingPlanId] = useState<number | null>(null);
+  const [balance, setBalance] = useState(0);
 
   const fetchData = useCallback(async () => {
     try {
@@ -45,6 +48,22 @@ export const BillingList: React.FC = () => {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Fetch balance from same API as header (balanceApi.getBalance)
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        const response = await balanceApi.getBalance();
+        if (response?.data && response.data.length > 0) {
+          const mainBalance = response.data[0];
+          setBalance(mainBalance.available_balance);
+        }
+      } catch {
+        setBalance(parseFloat(user?.balance ?? '0'));
+      }
+    };
+    fetchBalance();
+  }, [user?.balance]);
 
   const handleSubscribe = useCallback(
     async (planId: number, useTrial?: boolean) => {
@@ -171,9 +190,25 @@ export const BillingList: React.FC = () => {
     );
   }
 
+  const showCreditsRemaining = Boolean(activeData?.isActive && activeData?.plan);
+  const creditsCount = balance;
+
   return (
     <div className="space-y-5 min-h-[400px]">
       <h2 className="figma-heading-semibold text-[var(--color-secondary-10)]">Subscription</h2>
+      {showCreditsRemaining && (
+        <div className="figma-body-1-regular text-[#9E9E9E]">
+          {t('creditsRemainingPrefix')}
+          <span className="font-semibold text-[var(--color-secondary-10)]">
+            {creditsCount.toLocaleString()}
+          </span>
+          {t('creditsRemainingSuffix')}
+          <span className="inline-flex items-center rounded-md bg-[#757575] px-2.5 py-0.5 text-[16px] font-semibold leading-[1.4] tracking-[0.32px] text-[var(--color-secondary-10)]">
+            {activeData?.plan?.name ?? ''}
+          </span>
+          {t('creditsRemainingPlan')}
+        </div>
+      )}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 min-w-0 pt-3">
         {sortedPlans.map((plan, index) => (
           <PlanCard
