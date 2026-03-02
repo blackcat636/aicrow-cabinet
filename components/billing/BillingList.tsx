@@ -101,11 +101,8 @@ export const BillingList: React.FC = () => {
           paymentDetails: { successUrl, cancelUrl },
           description
         };
-        console.log('[Billing] createInvoice request:', JSON.stringify(invoicePayload, null, 2));
 
         const res = await balanceApi.createInvoice(invoicePayload);
-
-        console.log('[Billing] createInvoice response:', JSON.stringify(res, null, 2));
 
         const invoiceData = res?.data as Record<string, unknown> | undefined;
         const invoiceId = invoiceData?.invoice_id as string | undefined;
@@ -117,8 +114,6 @@ export const BillingList: React.FC = () => {
           paymentMethod: 'STRIPE',
           paymentDetails: { successUrl, cancelUrl }
         });
-
-        console.log('[Billing] payInvoice response:', JSON.stringify(payRes, null, 2));
 
         const payData = payRes?.data as Record<string, unknown> | undefined;
         redirectUrl =

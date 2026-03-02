@@ -152,10 +152,6 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const tProfile = useTranslations('profile');
   const tImpersonation = useTranslations('impersonation');
 
-  // Debug: Check subscription data
-  console.log('Plan name:', planName);
-  console.log('Plan loading:', planLoading);
-
   // Real balance state
   const [balance, setBalance] = useState(0);
   const [balanceLoading, setBalanceLoading] = useState(true);
@@ -169,7 +165,6 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
       try {
         setBalanceLoading(true);
         const response = await balanceApi.getBalance();
-        console.log('Balance API response:', response);
         
         // response.data is BalanceData[] array
         if (response?.data && response.data.length > 0) {
@@ -177,7 +172,6 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
           // Use available_balance which is the real usable balance
           const realBalance = mainBalance.available_balance;
           setBalance(realBalance);
-          console.log('Real balance:', realBalance);
         }
       } catch (error) {
         console.error('Failed to fetch balance:', error);
@@ -239,7 +233,8 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
 
   // Memoize active states to prevent unnecessary recalculations
   const activeStates = useMemo(() => ({
-    dashboard: pathname === '/dashboard' || pathname === '/' || pathname.startsWith('/dashboard/') || pathname.startsWith('/workflows/'),
+    dashboard: pathname === '/dashboard' || pathname === '/' || pathname.startsWith('/dashboard/') || pathname.startsWith('/market/'),
+    market: pathname === '/market',
     workflows: pathname === '/workflows',
     executions: pathname === '/executions',
     balance: pathname === '/balance',
@@ -509,24 +504,24 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                 </I18nLink>
 
                 <I18nLink
-                  href='/workflows'
+                  href='/market'
                   onClick={() => setIsMobileMenuOpen(false)}
                   className='relative flex h-[56px] items-center px-[24px]'
                 >
-                  {activeStates.workflows && (
+                  {activeStates.market && (
                     <div className='absolute -left-[1px] top-[4px] bottom-[2px] w-[5px] bg-[var(--color-secondary-10)] rounded-[10px]' />
                   )}
                   <div
                     className={`absolute inset-0 ${
-                      activeStates.workflows
+                      activeStates.market
                         ? 'left-[24px] right-[24px] top-[2px] bottom-[2px] bg-[var(--color-secondary-3)] rounded-[10px]'
                         : 'bg-transparent'
                     }`}
                   />
                   <div className='relative z-10 flex items-center gap-3 px-[16px] py-[13px]'>
-                    <WorkflowsIcon className={`${activeStates.workflows ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'} w-5 h-5`} />
-                    <span className={`figma-body-2-medium ${activeStates.workflows ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'}`}>
-                      {t('workflows')}
+                    <WorkflowsIcon className={`${activeStates.market ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'} w-5 h-5`} />
+                    <span className={`figma-body-2-medium ${activeStates.market ? 'text-[var(--color-secondary-10)]' : 'text-[var(--color-secondary-5)]'}`}>
+                      {t('market')}
                     </span>
                   </div>
                 </I18nLink>
@@ -655,16 +650,16 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
                         <span className='font-medium'>Dashboard</span>
                       </I18nLink>
                       <I18nLink
-                        href="/workflows"
+                        href="/market"
                         onClick={closeMobileMenu}
                         className={`w-full flex items-center gap-3 p-3 rounded-lg transition-colors relative ${
-                          activeStates.workflows
+                          activeStates.market
                             ? 'bg-[var(--color-main)] text-white shadow-lg shadow-[var(--color-main)]/25'
                             : 'text-gray-300 hover:bg-white/10 hover:text-white'
                         }`}
                       >
                         <WorkflowsIcon className='w-5 h-5' />
-                        <span className='font-medium'>{t('workflows')}</span>
+                        <span className='font-medium'>{t('market')}</span>
                       </I18nLink>
                       
                       <I18nLink

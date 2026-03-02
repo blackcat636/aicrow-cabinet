@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { UserWorkflow } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
+import { automationApi, UserAutomation } from '@/lib/apiAutomation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { PlusIcon } from '@/components/icons';
 import { useAuth } from '@/contexts/AuthContext';
@@ -13,9 +14,10 @@ interface WorkflowListProps {
   onEditWorkflow: (workflow: UserWorkflow) => void;
   onManageSchedules: (workflowId: number) => void;
   onExecuteWorkflow: (workflowId: number) => void;
-  onViewDetails: (workflowId: number) => void; // Add view details handler
-  refreshTrigger?: number; // Add refresh trigger
-  executingWorkflowId?: number | null; // Add executing state
+  onViewDetails: (workflowId: number) => void;
+  onGoToAutomation?: (automation: UserAutomation) => void;
+  refreshTrigger?: number;
+  executingWorkflowId?: number | null;
 }
 
 const MenuDetailsIcon = () => (
@@ -53,6 +55,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = (props) => {
     onEditWorkflow,
     onExecuteWorkflow,
     onViewDetails,
+    onGoToAutomation,
     refreshTrigger,
     executingWorkflowId,
   } = props;
@@ -61,6 +64,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = (props) => {
   const tWorkflow = useTranslations('workflow');
   const tCommon = useTranslations('common');
   const [workflows, setWorkflows] = useState<UserWorkflow[]>([]);
+  const [automatizations, setAutomatizations] = useState<UserAutomation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleteDialog, setDeleteDialog] = useState<{
@@ -86,42 +90,50 @@ export const WorkflowList: React.FC<WorkflowListProps> = (props) => {
     setError(null);
   }, [isAuthenticated]);
 
-  const loadWorkflows = React.useCallback(async () => {
+  const loadData = React.useCallback(async () => {
     try {
       if (!isAuthenticated) {
         setWorkflows([]);
+        setAutomatizations([]);
         setLoading(false);
         setError(null);
         return;
       }
       setLoading(true);
       setError(null);
-      const data = await workflowApi.getMyWorkflows();
-      const workflowsArray = Array.isArray(data) ? data : ((data as any)?.userWorkflows || (data as any)?.data || []);
+      const [workflowsData, automatizationsData] = await Promise.all([
+        workflowApi.getMyWorkflows(),
+        automationApi.getMyAutomatizations()
+      ]);
+      const workflowsArray = Array.isArray(workflowsData)
+        ? workflowsData
+        : ((workflowsData as { userWorkflows?: UserWorkflow[] })?.userWorkflows ||
+           (workflowsData as { data?: UserWorkflow[] })?.data ||
+           []);
+      const automatizationsArray = Array.isArray(automatizationsData) ? automatizationsData : [];
       setWorkflows(workflowsArray);
+      setAutomatizations(automatizationsArray);
     } catch (err) {
-      setError('Failed to load workflows');
-      console.error('Error loading workflows:', err);
+      setError('Failed to load data');
+      console.error('Error loading data:', err);
     } finally {
       setLoading(false);
     }
   }, [isAuthenticated]);
 
-  // Load workflows once after authentication is confirmed (guards StrictMode double invoke)
   useEffect(() => {
     if (isAuthenticated && !isMountedRef.current) {
       isMountedRef.current = true;
-      loadWorkflows();
+      loadData();
     }
-  }, [isAuthenticated, loadWorkflows]);
+  }, [isAuthenticated, loadData]);
 
-  // Refresh when refreshTrigger changes (but not on initial mount when it's 0)
   useEffect(() => {
     if (isMountedRef.current && refreshTrigger !== undefined && prevRefreshTriggerRef.current !== refreshTrigger) {
       prevRefreshTriggerRef.current = refreshTrigger;
-      loadWorkflows();
+      loadData();
     }
-  }, [refreshTrigger, loadWorkflows]);
+  }, [refreshTrigger, loadData]);
 
   useEffect(() => {
     if (!openMenuWorkflowId) return;
@@ -148,13 +160,13 @@ export const WorkflowList: React.FC<WorkflowListProps> = (props) => {
     if (deleteDialog.workflowId) {
       try {
         await workflowApi.deleteUserWorkflow(deleteDialog.workflowId);
-        await loadWorkflows(); // Reload to get updated data
+        await loadData();
       } catch (err) {
         console.error('Error deleting workflow:', err);
       }
     }
     setDeleteDialog({ isOpen: false, workflowId: null, workflowName: '' });
-  }, [deleteDialog.workflowId, loadWorkflows]);
+  }, [deleteDialog.workflowId, loadData]);
 
   const handleCloseDeleteDialog = useCallback(() => {
     setDeleteDialog({ isOpen: false, workflowId: null, workflowName: '' });
@@ -260,6 +272,48 @@ export const WorkflowList: React.FC<WorkflowListProps> = (props) => {
     );
   };
 
+  // Automation card: no 3-dots menu, only "Go To" button (external services)
+  const renderAutomationCard = (automation: UserAutomation) => {
+    const cardName = automation.name || automation.automation?.name || t('noWorkflows');
+    const cardDescription = automation.description ?? automation.automation?.description ?? '';
+    const hasPrice = automation.priceUsd != null && automation.priceUsd !== '';
+    const priceValue = automation.priceUsd || automation.automation?.priceUsd || '—';
+
+    return (
+      <div
+        key={automation.id}
+        className="relative w-full rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-4"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <p className="min-w-0 text-[14px] leading-[1.4] tracking-[0.28px] font-medium text-[var(--color-secondary-10)] truncate">
+            {cardName}
+          </p>
+          {hasPrice && (
+            <div className="h-6 min-w-[25px] rounded-[7px] border border-[#34C759] px-[10px] flex items-center justify-center">
+              <span className="text-[12px] leading-[1.4] tracking-[0.24px] text-[#34C759]">{priceValue}</span>
+            </div>
+          )}
+        </div>
+
+        <p className="mt-2 text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)] line-clamp-3 min-h-[50px]">
+          {cardDescription || t('createManageRun')}
+        </p>
+
+        <div className="mt-4 h-px w-full bg-[var(--color-secondary-4)]" />
+
+        <div className="mt-4">
+          <button
+            type="button"
+            onClick={() => onGoToAutomation?.(automation)}
+            className="w-full h-12 rounded-[10px] bg-[var(--color-main)] text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]"
+          >
+            {t('goTo')}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   // Skeleton loader component - reserves space to prevent layout shift
   const SkeletonLoader = () => (
     <div className="space-y-4 min-h-[300px]">
@@ -282,7 +336,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = (props) => {
       <div className="text-center py-12">
         <p className="text-red-400 mb-4">{error}</p>
         <button
-          onClick={loadWorkflows}
+          onClick={loadData}
           className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors mx-auto shadow-lg shadow-purple-500/25"
         >
           <PlusIcon className="w-4 h-4" />
@@ -292,6 +346,10 @@ export const WorkflowList: React.FC<WorkflowListProps> = (props) => {
     );
   }
 
+  const hasWorkflows = workflows.length > 0;
+  const hasAutomatizations = automatizations.length > 0;
+  const isEmpty = !hasWorkflows && !hasAutomatizations;
+
   return (
     <div className="space-y-5 relative min-h-[400px]">
       <div className="space-y-1">
@@ -300,7 +358,7 @@ export const WorkflowList: React.FC<WorkflowListProps> = (props) => {
         </h1>
       </div>
 
-      {workflows.length === 0 ? (
+      {isEmpty ? (
         <div className="rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-6">
           <p className="text-[16px] text-[var(--color-secondary-10)]">{t('noWorkflows')}</p>
           <button
@@ -313,8 +371,27 @@ export const WorkflowList: React.FC<WorkflowListProps> = (props) => {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-          {workflows.map((workflow) => renderCard(workflow))}
+        <div className="flex flex-col gap-8">
+          {hasWorkflows && (
+            <section>
+              <h3 className="text-[18px] leading-[1.4] font-semibold text-[var(--color-secondary-10)] mb-4">
+                {t('sectionWorkflow')}
+              </h3>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                {workflows.map((workflow) => renderCard(workflow))}
+              </div>
+            </section>
+          )}
+          {hasAutomatizations && (
+            <section>
+              <h3 className="text-[18px] leading-[1.4] font-semibold text-[var(--color-secondary-10)] mb-4">
+                {t('sectionAutomation')}
+              </h3>
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                {automatizations.map((automation) => renderAutomationCard(automation))}
+              </div>
+            </section>
+          )}
         </div>
       )}
 

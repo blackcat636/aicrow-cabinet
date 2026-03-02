@@ -84,7 +84,7 @@ const NotFoundPage: React.FC = () => {
               
               <div className="flex gap-4">
                 <button 
-                  onClick={() => router.push('/workflows')}
+                  onClick={() => router.push('/market')}
                   className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-300 px-6 py-3 font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <FileTextIcon className="w-4 h-4" />

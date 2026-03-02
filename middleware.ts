@@ -7,6 +7,7 @@ import { routing } from './i18n/routing';
 
 const protectedRoutes = [
   '/workflows',
+  '/market',
   '/executions',
   '/profile',
   '/dashboard',

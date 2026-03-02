@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { WorkflowList } from '@/components/workflow/WorkflowList';
 import { WorkflowForm } from '@/components/workflow/WorkflowForm';
 import { WorkflowExecuteModal } from '@/components/workflow/WorkflowExecuteModal';
 import { UserWorkflow } from '@/types/workflow';
+import { UserAutomation } from '@/lib/apiAutomation';
 import { AppLayout } from '@/components/AppLayout';
 import { workflowApi } from '@/lib/apiWorkflow';
 import { toast } from 'sonner';
@@ -69,6 +70,15 @@ export default function DashboardPage() {
 
   const handleViewDetails = (workflowId: number) => {
     router.push(`/dashboard/workflows/${workflowId}`);
+  };
+
+  const handleGoToAutomation = (automation: UserAutomation) => {
+    const url = automation.goToUrl || automation.link;
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      toast.info(t('automationGoToNotConfigured'));
+    }
   };
 
   const handleExecuteWorkflow = async (workflowId: number) => {
@@ -168,6 +178,7 @@ export default function DashboardPage() {
         onManageSchedules={handleManageSchedules}
         onExecuteWorkflow={handleExecuteWorkflow}
         onViewDetails={handleViewDetails}
+        onGoToAutomation={handleGoToAutomation}
         refreshTrigger={refreshTrigger}
         executingWorkflowId={executingWorkflowId}
       />

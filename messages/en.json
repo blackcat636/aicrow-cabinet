@@ -177,6 +177,7 @@
   "nav": {
     "dashboard": "Dashboard",
     "workflows": "Automatizations",
+    "market": "Market",
     "executions": "Executions",
     "balance": "Balance",
     "billing": "Billing",
@@ -294,6 +295,10 @@
   },
   "dashboard": {
     "title": "Dashboard",
+    "sectionWorkflow": "Workflow",
+    "sectionAutomation": "Automation",
+    "goTo": "Go To",
+    "automationGoToNotConfigured": "Link for this automation is not configured yet",
     "noWorkflows": "No workflows yet",
     "addWorkflow": "Add Workflow",
     "workflowNotFound": "Workflow not found",
@@ -461,6 +466,20 @@
     "nameMaxLength": "Name must not exceed 100 characters",
     "descriptionMaxLength": "Description must not exceed 500 characters",
     "loading": "Loading..."
+  },
+  "market": {
+    "title": "Market",
+    "sectionWorkflow": "Workflow",
+    "sectionAutomation": "Automation",
+    "goTo": "Go To",
+    "noItemsAvailable": "No items available",
+    "loading": "Loading...",
+    "failedToLoad": "Failed to load data",
+    "alreadyUsed": "Already Used",
+    "addWorkflow": "Add Workflow",
+    "unnamedWorkflow": "Unnamed",
+    "alreadyAdded": "This workflow has already been added",
+    "addedSuccessfully": "Workflow added successfully!"
   },
   "workflows": {
     "title": "Available Workflows",

@@ -177,6 +177,7 @@
   "nav": {
     "dashboard": "Панель керування",
     "workflows": "Автоматизації",
+    "market": "Маркет",
     "executions": "Виконання",
     "balance": "Баланс",
     "billing": "Оплата",
@@ -294,6 +295,10 @@
   },
   "dashboard": {
     "title": "Панель керування",
+    "sectionWorkflow": "Workflow",
+    "sectionAutomation": "Automation",
+    "goTo": "Go To",
+    "automationGoToNotConfigured": "Посилання для цієї автоматизації ще не налаштовано",
     "noWorkflows": "Поки що немає робочих процесів",
     "addWorkflow": "Додати робочий процес",
     "workflowNotFound": "Робочий процес не знайдено",
@@ -461,6 +466,20 @@
     "nameMaxLength": "Назва не повинна перевищувати 100 символів",
     "descriptionMaxLength": "Опис не повинен перевищувати 500 символів",
     "loading": "Завантаження..."
+  },
+  "market": {
+    "title": "Маркет",
+    "sectionWorkflow": "Workflow",
+    "sectionAutomation": "Automation",
+    "goTo": "Go To",
+    "noItemsAvailable": "Немає доступних елементів",
+    "loading": "Завантаження...",
+    "failedToLoad": "Не вдалося завантажити дані",
+    "alreadyUsed": "Вже використано",
+    "addWorkflow": "Додати workflow",
+    "unnamedWorkflow": "Без назви",
+    "alreadyAdded": "Цей workflow вже додано",
+    "addedSuccessfully": "Workflow успішно додано!"
   },
   "workflows": {
     "title": "Доступні робочі процеси",

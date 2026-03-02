@@ -50,10 +50,10 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
       translationKey: 'dashboard',
     },
     {
-      href: '/workflows',
-      label: t('workflows'),
+      href: '/market',
+      label: t('market'),
       icon: <WorkflowsIcon className="w-5 h-5" />,
-      translationKey: 'workflows',
+      translationKey: 'market',
     },
     {
       href: '/balance',

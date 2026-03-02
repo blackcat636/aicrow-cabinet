@@ -176,6 +176,7 @@
   "nav": {
     "dashboard": "Panel de control",
     "workflows": "Automatizaciones",
+    "market": "Mercado",
     "executions": "Ejecuciones",
     "balance": "Saldo",
     "billing": "Facturación",
@@ -288,6 +289,10 @@
   },
   "dashboard": {
     "title": "Panel de control",
+    "sectionWorkflow": "Workflow",
+    "sectionAutomation": "Automation",
+    "goTo": "Ir a",
+    "automationGoToNotConfigured": "El enlace para esta automatización aún no está configurado",
     "noWorkflows": "Aún no hay flujos de trabajo",
     "addWorkflow": "Agregar flujo de trabajo",
     "workflowNotFound": "Flujo de trabajo no encontrado",
@@ -455,6 +460,20 @@
     "nameMaxLength": "El nombre no debe exceder 100 caracteres",
     "descriptionMaxLength": "La descripción no debe exceder 500 caracteres",
     "loading": "Cargando..."
+  },
+  "market": {
+    "title": "Mercado",
+    "sectionWorkflow": "Workflow",
+    "sectionAutomation": "Automation",
+    "goTo": "Ir a",
+    "noItemsAvailable": "No hay elementos disponibles",
+    "loading": "Cargando...",
+    "failedToLoad": "Error al cargar datos",
+    "alreadyUsed": "Ya usado",
+    "addWorkflow": "Agregar workflow",
+    "unnamedWorkflow": "Sin nombre",
+    "alreadyAdded": "Este workflow ya ha sido agregado",
+    "addedSuccessfully": "¡Workflow agregado exitosamente!"
   },
   "workflows": {
     "title": "Flujos de trabajo disponibles",
