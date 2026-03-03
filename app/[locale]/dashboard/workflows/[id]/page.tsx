@@ -396,7 +396,6 @@ export default function WorkflowDetailPage() {
   const t = useTranslations('workflow');
   const tCommon = useTranslations('common');
   const tExecutions = useTranslations('executions');
-  const tBalance = useTranslations('balance');
   const tWorkflows = useTranslations('workflows');
   const locale = useLocale();
   
@@ -903,29 +902,6 @@ export default function WorkflowDetailPage() {
     }
   };
 
-  const formatExecutionDate = (value?: string | null) => {
-    if (!value) return '-';
-    const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return '-';
-    return date.toLocaleDateString('en-GB');
-  };
-
-  const formatExecutionAmount = (value?: string | null) => {
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) return '0.00';
-    return parsed.toFixed(2);
-  };
-
-  const getExecutionStatusChipClass = (status: string) => {
-    if (status === '1' || status === 'completed') {
-      return 'border-[#34C759] text-[#34C759]';
-    }
-    if (status === '2' || status === 'failed') {
-      return 'border-[#C42B2B] text-[#C42B2B]';
-    }
-    return 'border-[var(--color-secondary-5)] text-[var(--color-secondary-5)]';
-  };
-
   // Skeleton loader for workflow detail page
   const DetailSkeleton = () => (
     <div className="h-full">
@@ -1287,83 +1263,16 @@ export default function WorkflowDetailPage() {
                 <p className="text-[14px] text-[var(--color-secondary-8)]">{t('noMatchingExecutions')}</p>
               </div>
             ) : (
-              filteredExecutions.map((execution) => {
-                const statusLabel = getStatusLabel(execution.status).toUpperCase();
-                const amount = formatExecutionAmount(execution.priceUsd);
-                const resultData = execution.resultData as Record<string, any> | null;
-                const beforeBalance = resultData?.balance_before ?? resultData?.balanceBefore;
-                const afterBalance = resultData?.balance_after ?? resultData?.balanceAfter;
-                const balanceLine = beforeBalance !== undefined && afterBalance !== undefined
-                  ? `Balance: ${beforeBalance} -> ${afterBalance}`
-                  : `Balance: 0.00 -> ${amount}`;
-
-                return (
-                  <div
-                    key={getExecutionKey(execution)}
-                    className="rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-4 py-2"
-                  >
-                    <div className="md:hidden w-full flex items-start justify-between gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)] truncate">
-                          {workflow.name || workflow.workflow?.name || tWorkflows('unnamedWorkflow')}
-                        </p>
-                        <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)] truncate">
-                          Reference: {execution.n8nExecutionId || execution.id}
-                        </p>
-                        <span className={`mt-2 inline-flex h-7 items-center rounded-[47px] border px-3 text-[12px] leading-[1.4] tracking-[0.24px] font-semibold ${getExecutionStatusChipClass(execution.status)}`}>
-                          {statusLabel}
-                        </span>
-                      </div>
-                      <div className="shrink-0 text-right">
-                        <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
-                          Currency: TKN
-                        </p>
-                        <p className="mt-2 text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
-                          {formatExecutionDate(execution.startedAt || execution.createdAt)}
-                        </p>
-                        <p className="mt-3 text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)]">
-                          +{amount} TKN
-                        </p>
-                        <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
-                          {balanceLine}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="hidden md:flex md:items-center md:justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)] truncate">
-                          {workflow.name || workflow.workflow?.name || tWorkflows('unnamedWorkflow')}
-                        </p>
-                        <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)] truncate">
-                          Reference: {execution.n8nExecutionId || execution.id}
-                        </p>
-                      </div>
-
-                      <span className={`inline-flex h-7 items-center rounded-[47px] border px-3 text-[12px] leading-[1.4] tracking-[0.24px] font-semibold ${getExecutionStatusChipClass(execution.status)}`}>
-                        {statusLabel}
-                      </span>
-
-                      <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
-                        Currency: TKN
-                      </p>
-
-                      <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
-                        {formatExecutionDate(execution.startedAt || execution.createdAt)}
-                      </p>
-
-                      <div className="text-right">
-                        <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)]">
-                          +{amount} TKN
-                        </p>
-                        <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
-                          {balanceLine}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+              filteredExecutions.map((execution) => (
+                <ExecutionCard
+                  key={getExecutionKey(execution)}
+                  execution={execution}
+                  getStatusColor={getStatusColor}
+                  getStatusIcon={getStatusIcon}
+                  getStatusLabel={getStatusLabel}
+                  getTriggerTypeLabel={getTriggerTypeLabel}
+                />
+              ))
             )}
           </div>
         </div>
