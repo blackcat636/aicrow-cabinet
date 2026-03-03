@@ -456,6 +456,10 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
           paginatedTransactions.map((transaction) => {
             const statusLabel = transaction.status?.toUpperCase() || 'UNKNOWN';
             const typeSign = transaction.type === 'DEPOSIT' ? '+' : transaction.type === 'WITHDRAWAL' ? '-' : '';
+            const amountNum = Number.parseFloat(String(transaction.amount));
+            const formattedAmount = formatAmount(transaction.amount, transaction.currency?.precision || '2');
+            // Avoid double minus: if amount is already negative, don't add typeSign
+            const displayAmount = amountNum < 0 ? formattedAmount : `${typeSign}${formattedAmount}`;
             return (
               <div key={transaction.id} className="rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-4 md:h-[74px] md:px-4 md:py-2">
                 <div className="hidden md:flex items-center justify-between gap-4">
@@ -487,7 +491,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
 
                   <div className="text-right min-w-[160px]">
                     <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-10)] font-semibold">
-                      {typeSign}{formatAmount(transaction.amount, transaction.currency?.precision || '2')} {transaction.currency?.code || ''}
+                      {displayAmount} {transaction.currency?.code || ''}
                     </p>
                     <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
                       {t('balance')}: {formatBalance(transaction.balance_before || '0', transaction.currency?.precision || '2')} -&gt; {formatBalance(transaction.balance_after || '0', transaction.currency?.precision || '2')}
@@ -522,7 +526,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
                   <div className="flex items-end justify-between">
                     <div>
                       <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-10)] font-semibold">
-                        {typeSign}{formatAmount(transaction.amount, transaction.currency?.precision || '2')} {transaction.currency?.code || ''}
+                        {displayAmount} {transaction.currency?.code || ''}
                       </p>
                       <p className="text-[12px] leading-[1.4] tracking-[0.24px] text-[var(--color-secondary-8)]">
                         {t('balance')}: {formatBalance(transaction.balance_before || '0', transaction.currency?.precision || '2')} -&gt; {formatBalance(transaction.balance_after || '0', transaction.currency?.precision || '2')}
