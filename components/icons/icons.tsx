@@ -2679,3 +2679,16 @@ export const SpainFlagIcon: React.FC<IconSvgProps> = ({ className = 'w-5 h-4', .
     <path fill="#F1BF00" d="M0 128h512v256H0z"/>
   </svg>
 );
+
+export const RussiaFlagIcon: React.FC<IconSvgProps> = ({ className = 'w-5 h-4', ...props }) => (
+  <svg
+    className={className}
+    viewBox="0 0 640 480"
+    xmlns="http://www.w3.org/2000/svg"
+    {...props}
+  >
+    <path fill="#fff" d="M0 0h640v160H0z"/>
+    <path fill="#0039a6" d="M0 160h640v160H0z"/>
+    <path fill="#d52b1e" d="M0 320h640v160H0z"/>
+  </svg>
+);

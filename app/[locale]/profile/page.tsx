@@ -356,7 +356,7 @@ export default function ProfilePage() {
               onClick={() => openNameEditor('firstName')}
               className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
             >
-              Update First Name
+              {t('updateFirstName')}
             </Button>
           </div>
 
@@ -371,13 +371,13 @@ export default function ProfilePage() {
               onClick={() => openNameEditor('lastName')}
               className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
             >
-              Update Last Name
+              {t('updateLastName')}
             </Button>
           </div>
 
           <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
             <div className="min-w-0 w-full">
-              <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">Phone Number</p>
+              <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('phoneNumber')}</p>
               <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{formData.phone || '—'}</p>
             </div>
             <Button
@@ -386,13 +386,13 @@ export default function ProfilePage() {
               onClick={() => openNameEditor('phone')}
               className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
             >
-              Update Number
+              {t('updateNumber')}
             </Button>
           </div>
 
           <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
             <div className="min-w-0 w-full">
-              <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">Date of Birth</p>
+              <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('dateOfBirthLabel')}</p>
               <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{formatDateOfBirthForRow(formData.dateOfBirth)}</p>
             </div>
             <Button
@@ -401,7 +401,7 @@ export default function ProfilePage() {
               onClick={() => openNameEditor('dateOfBirth')}
               className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-[var(--color-main)]/10"
             >
-              Update Date
+              {t('updateDate')}
             </Button>
           </div>
 
@@ -467,12 +467,12 @@ export default function ProfilePage() {
                 <div className="h-[66px] bg-[var(--color-secondary-3)] border-b border-[var(--color-secondary-4)] px-8 flex items-center justify-between">
                   <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold text-[var(--color-secondary-10)] uppercase">
                     {nameEditor.field === 'firstName'
-                      ? 'Update First Name'
+                      ? t('updateFirstName')
                       : nameEditor.field === 'lastName'
-                      ? 'Update Last Name'
+                      ? t('updateLastName')
                       : nameEditor.field === 'phone'
-                      ? 'Update Number'
-                      : 'Update Date'}
+                      ? t('updateNumber')
+                      : t('updateDate')}
                   </p>
                   <button
                     type="button"
@@ -490,8 +490,8 @@ export default function ProfilePage() {
                       : nameEditor.field === 'lastName'
                       ? t('lastName')
                       : nameEditor.field === 'phone'
-                      ? 'Phone Number'
-                      : 'Date of Birth'}
+                      ? t('phoneNumber')
+                      : t('dateOfBirthLabel')}
                   </label>
                   {nameEditor.field === 'dateOfBirth' ? (
                     <div className="relative">
@@ -526,7 +526,7 @@ export default function ProfilePage() {
                       onClick={closeNameEditor}
                       className="h-12 px-5 rounded-[10px] border border-[var(--color-secondary-4)] bg-transparent text-[var(--color-secondary-10)] hover:bg-transparent"
                     >
-                      Cancel
+                      {t('cancel')}
                     </Button>
                     <Button
                       type="button"
@@ -535,12 +535,12 @@ export default function ProfilePage() {
                       className="h-12 px-5 rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-[var(--color-main)]/10"
                     >
                       {nameEditor.field === 'firstName'
-                        ? 'Update First Name'
+                        ? t('updateFirstName')
                         : nameEditor.field === 'lastName'
-                        ? 'Update Last Name'
+                        ? t('updateLastName')
                         : nameEditor.field === 'phone'
-                        ? 'Update Number'
-                        : 'Update Date'}
+                        ? t('updateNumber')
+                        : t('updateDate')}
                     </Button>
                   </div>
                 </div>
@@ -559,12 +559,12 @@ export default function ProfilePage() {
                 </button>
                 <p className="text-[14px] leading-[1.4] tracking-[0.28px] font-semibold uppercase text-[var(--color-secondary-10)]">
                   {nameEditor.field === 'firstName'
-                    ? 'Update First Name'
+                    ? t('updateFirstName')
                     : nameEditor.field === 'lastName'
-                    ? 'Update Last Name'
+                    ? t('updateLastName')
                     : nameEditor.field === 'phone'
-                    ? 'Update Number'
-                    : 'Update Date'}
+                    ? t('updateNumber')
+                    : t('updateDate')}
                 </p>
               </div>
 
@@ -575,8 +575,8 @@ export default function ProfilePage() {
                     : nameEditor.field === 'lastName'
                     ? t('lastName')
                     : nameEditor.field === 'phone'
-                    ? 'Phone Number'
-                    : 'Date of Birth'}
+                    ? t('phoneNumber')
+                    : t('dateOfBirthLabel')}
                 </label>
 
                 {nameEditor.field === 'dateOfBirth' ? (
@@ -615,14 +615,14 @@ export default function ProfilePage() {
                   onClick={saveNameEditor}
                   className="w-full h-12 rounded-[10px] bg-[var(--color-main)] text-[var(--color-secondary-10)] text-[16px] leading-[1.4] tracking-[0.32px] font-semibold"
                 >
-                  Update
+                  {t('update')}
                 </Button>
                 <Button
                   type="button"
                   onClick={closeNameEditor}
                   className="w-full h-12 rounded-[10px] border border-[var(--color-main)] bg-transparent text-[var(--color-main)] text-[16px] leading-[1.4] tracking-[0.32px] font-semibold hover:bg-transparent"
                 >
-                  Discard
+                  {t('discard')}
                 </Button>
               </div>
             </div>

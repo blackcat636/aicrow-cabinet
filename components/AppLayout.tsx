@@ -151,6 +151,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const t = useTranslations('nav');
   const tProfile = useTranslations('profile');
   const tImpersonation = useTranslations('impersonation');
+  const tBilling = useTranslations('billing');
 
   // Real balance state
   const [balance, setBalance] = useState(0);
@@ -352,9 +353,9 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
             {/* Balance and Plan Info */}
             <div className="flex items-center">
               <div className="font-normal text-[#9e9e9e] text-[16px] tracking-[0.32px]">
-                <span>{`You have ${formattedBalance} tokens in `}</span>
+                <span>{tBilling('tokensInPlanPrefix', { count: formattedBalance })}</span>
                 <Badge className="bg-[#757575] text-white text-[16px] font-semibold">{cleanPlanName}</Badge>
-                <span>{` plan`}</span>
+                <span>{tBilling('tokensInPlanSuffix')}</span>
               </div>
             </div>
             

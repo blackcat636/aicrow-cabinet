@@ -4,11 +4,12 @@ import React, { useState, useRef, useEffect, startTransition } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocale } from 'next-intl';
 import { usePathname, useRouter } from '@/i18n/routing';
-import { USFlagIcon, UkraineFlagIcon, FranceFlagIcon, SpainFlagIcon } from '@/components/icons';
+import { USFlagIcon, UkraineFlagIcon, FranceFlagIcon, SpainFlagIcon, RussiaFlagIcon } from '@/components/icons';
 
 const languages = [
   { code: 'en', name: 'English', FlagIcon: USFlagIcon },
   { code: 'uk', name: 'Українська', FlagIcon: UkraineFlagIcon },
+  { code: 'ru', name: 'Русский', FlagIcon: RussiaFlagIcon },
   { code: 'fr', name: 'Français', FlagIcon: FranceFlagIcon },
   { code: 'es', name: 'Español', FlagIcon: SpainFlagIcon }
 ];
