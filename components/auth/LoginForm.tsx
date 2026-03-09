@@ -7,7 +7,7 @@ import { getDeviceId } from '@/lib/auth';
 import { EyeIcon, EyeOffIcon } from '@/components/icons';
 import { ResetPasswordForm } from './ResetPasswordForm';
 import { useTranslations } from 'next-intl';
-import { FacebookLoginButton } from './FacebookLoginButton';
+// import { FacebookLoginButton } from './FacebookLoginButton'; // Facebook auth disabled
 
 interface LoginFormProps {
   // When variant is 'modal', uses isOpen/onClose overlay; when 'embedded', always renders inline
@@ -178,7 +178,9 @@ export const LoginForm: React.FC<LoginFormProps> = ({
                   >
                     {isLoading ? t('signingIn') : t('signIn')}
                   </button>
+                  {/* Facebook auth disabled
                   <FacebookLoginButton className="h-12 w-full rounded-[10px] text-[16px] font-semibold justify-center bg-[#3B5998] hover:bg-[#334d82] md:rounded-[8px]" />
+                  */}
                 </div>
               </form>
               </div>
@@ -299,7 +301,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </button>
           </div>
 
-          {/* Social login separator */}
+          {/* Facebook auth disabled
           <div className="flex items-center gap-3 pt-2">
             <div className="h-px bg-white/10 flex-1" />
             <span className="text-xs text-gray-400 uppercase tracking-wide">
@@ -307,9 +309,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({
             </span>
             <div className="h-px bg-white/10 flex-1" />
           </div>
-
-          {/* Facebook Login */}
           <FacebookLoginButton />
+          */}
 
           {/* Forgot Password + Create account (embedded) */}
           <div className="text-center">

@@ -8,7 +8,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { RegisterRequest } from "@/types/auth";
 import { EyeIcon, EyeOffIcon } from "@/components/icons";
 import { useTranslations } from 'next-intl';
-import { FacebookLoginButton } from "./FacebookLoginButton";
+// import { FacebookLoginButton } from "./FacebookLoginButton"; // Facebook auth disabled
 
 interface RegisterFormProps {
   variant?: "modal" | "embedded";
@@ -261,7 +261,9 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                       >
                         {isLoading ? t('signingUp') : t('next')}
                       </button>
+                      {/* Facebook auth disabled
                       <FacebookLoginButton className="h-12 w-full rounded-[10px] text-[16px] font-semibold justify-center bg-[#3B5998] hover:bg-[#334d82] md:rounded-[8px]" />
+                      */}
                     </div>
                   </form>
                 </div>
@@ -382,12 +384,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
                   {isLoading ? t('signingUp') : t('createAccount')}
                 </button>
               </div>
+              {/* Facebook auth disabled
               <div className="flex items-center gap-3 pt-2">
                 <div className="h-px bg-white/10 flex-1" />
                 <span className="text-xs text-gray-400 uppercase">{t('or')}</span>
                 <div className="h-px bg-white/10 flex-1" />
               </div>
               <FacebookLoginButton />
+              */}
               <div className="text-center pt-4 border-t border-gray-700">
                 <p className="text-sm text-gray-300">
                   {t('alreadyHaveAccount')}{" "}

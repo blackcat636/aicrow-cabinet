@@ -16,7 +16,7 @@ import { useTranslations } from 'next-intl';
 import { telegramApi } from '@/lib/apiTelegram';
 import { TelegramStatusResponse } from '@/types/telegram';
 import { useRouter } from '@/i18n/routing';
-import { FacebookIntegration } from '@/components/profile/FacebookIntegration';
+// import { FacebookIntegration } from '@/components/profile/FacebookIntegration'; // Facebook auth disabled
 import { ExternalServicesIntegration } from '@/components/profile/ExternalServicesIntegration';
 import { CalendarDetailedIcon, ChevronLeftIcon } from '@/components/icons';
 
@@ -449,8 +449,9 @@ export default function ProfilePage() {
               </Button>
             </div>
 
-            {/* Facebook Integration */}
+            {/* Facebook auth disabled
             <FacebookIntegration />
+            */}
           </div>
         </div>
 
