@@ -1,8 +1,6 @@
-import {
-  BalanceResponse,
-  TransactionResponse,
-  Transaction
-} from '@/types/balance';
+import { BalanceResponse, TransactionResponse } from '@/types/balance';
+import type { CryptapiNetworksResponse, CryptapiWalletResponse } from '@/types/deposit';
+import type { StripePaymentIntentCreateResponse } from '@/types/stripeBalance';
 import { API_CONFIG } from '@/config/api';
 import { fetchWithAuth } from '@/lib/auth';
 
@@ -62,6 +60,66 @@ export const balanceApi = {
     } catch (error) {
       throw error;
     }
+  },
+
+  /** POST /balance/payment-methods/stripe/create-payment-intent — amount in major units (e.g. 100 USD). */
+  createStripePaymentIntent: async (body: {
+    amount: number;
+    currency: string;
+    metadata?: Record<string, string | number>;
+  }): Promise<StripePaymentIntentCreateResponse> => {
+    const url = `${API_BASE_URL}/balance/payment-methods/stripe/create-payment-intent`;
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to create payment';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // ignore
+      }
+      const error = new Error(errorMessage);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as StripePaymentIntentCreateResponse;
+  },
+
+  /** POST /balance/payment-methods/stripe/confirm-payment-intent — after Stripe.js confirms the card. */
+  confirmStripePaymentIntent: async (body: {
+    paymentIntentId: string;
+  }): Promise<{ status: number; data?: Record<string, unknown>; message?: string }> => {
+    const url = `${API_BASE_URL}/balance/payment-methods/stripe/confirm-payment-intent`;
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to confirm payment';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // ignore
+      }
+      const error = new Error(errorMessage);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as {
+      status: number;
+      data?: Record<string, unknown>;
+      message?: string;
+    };
   },
 
   // POST /balance/invoices — create invoice for Stripe Checkout
@@ -236,5 +294,54 @@ export const balanceApi = {
     } catch (error) {
       throw error;
     }
+  },
+
+  /** GET /balance/deposit/cryptapi/networks */
+  getCryptapiNetworks: async (): Promise<CryptapiNetworksResponse> => {
+    const url = `${API_BASE_URL}/balance/deposit/cryptapi/networks`;
+    const response = await fetchWithAuth(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to load crypto networks';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // ignore
+      }
+      const error = new Error(errorMessage);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as CryptapiNetworksResponse;
+  },
+
+  /** GET /balance/deposit/cryptapi/wallet?ticker= */
+  getCryptapiWallet: async (ticker: string): Promise<CryptapiWalletResponse> => {
+    const params = new URLSearchParams({ ticker });
+    const url = `${API_BASE_URL}/balance/deposit/cryptapi/wallet?${params.toString()}`;
+    const response = await fetchWithAuth(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to load deposit wallet';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // ignore
+      }
+      const error = new Error(errorMessage);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as CryptapiWalletResponse;
   }
 };

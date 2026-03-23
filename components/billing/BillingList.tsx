@@ -75,7 +75,7 @@ export const BillingList: React.FC = () => {
           return;
         }
 
-        const amount =
+        const amountMajor =
           typeof plan.price === 'string' ? parseFloat(plan.price) : Number(plan.price);
         const currency = (plan.currency || 'UAH').trim();
         const description = plan.name
@@ -95,7 +95,7 @@ export const BillingList: React.FC = () => {
 
         let redirectUrl: string | undefined;
         const invoicePayload = {
-          amount,
+          amount: amountMajor,
           currency,
           paymentMethod: 'STRIPE',
           paymentDetails: { successUrl, cancelUrl },

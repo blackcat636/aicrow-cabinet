@@ -7,9 +7,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { AlertCircle, ChevronDown, Search, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { CalendarDetailedIcon, ChevronLeftIcon, ChevronRightIcon, DownloadSquareIcon } from '@/components/icons';
+import { BalanceDepositModal } from '@/components/balance/BalanceDepositModal';
 
 interface TransactionHistoryProps {
   balances: BalanceData[];
+  onBalancesRefresh?: () => void;
 }
 
 interface DateRange {
@@ -79,9 +81,13 @@ const isIsoInRange = (iso: string, range: DateRange): boolean => {
   return iso >= range.start && iso <= range.end;
 };
 
-export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances }) => {
+export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
+  balances,
+  onBalancesRefresh
+}) => {
   const { isLoading: authLoading } = useAuth();
   const t = useTranslations('balance');
+  const tDeposit = useTranslations('balance.deposit');
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -96,6 +102,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
   const [appliedRange, setAppliedRange] = useState<DateRange>({ start: null, end: null });
   const [pendingRange, setPendingRange] = useState<DateRange>({ start: null, end: null });
   const [page, setPage] = useState(1);
+  const [depositModalOpen, setDepositModalOpen] = useState(false);
   const calendarRef = useRef<HTMLDivElement>(null);
 
   const dateFormat = t('dateFormat') || 'MM/DD/YYYY';
@@ -251,10 +258,28 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({ balances
 
   return (
     <div className="space-y-4">
-      <div className="space-y-1">
-        <h1 className="figma-heading-semibold text-[32px] text-[var(--color-secondary-10)]">Transaction History</h1>
-        <p className="figma-body-1-regular text-[var(--color-secondary-6)]">Lorem ipsum dolor amet lorem ipsum</p>
+      <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between md:gap-4">
+        <div className="space-y-1 min-w-0">
+          <h1 className="figma-heading-semibold text-[32px] text-[var(--color-secondary-10)]">
+            {t('transactionHistory')}
+          </h1>
+          <p className="figma-body-1-regular text-[var(--color-secondary-6)]">{t('viewAllTransactions')}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setDepositModalOpen(true)}
+          className="shrink-0 h-12 px-5 rounded-[10px] bg-[var(--color-main)] text-white text-[14px] font-semibold tracking-[0.28px] hover:opacity-90 transition-opacity"
+        >
+          {tDeposit('addFunds')}
+        </button>
       </div>
+
+      <BalanceDepositModal
+        isOpen={depositModalOpen}
+        onClose={() => setDepositModalOpen(false)}
+        balances={balances}
+        onDepositSuccess={onBalancesRefresh}
+      />
 
       <div className="flex flex-row gap-3 pt-1">
         <div className="relative w-full md:w-[446px]">

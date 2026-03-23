@@ -75,5 +75,7 @@ export const BalanceList: React.FC = () => {
     );
   }
 
-  return <TransactionHistory balances={balances} />;
+  return (
+    <TransactionHistory balances={balances} onBalancesRefresh={fetchBalances} />
+  );
 };
