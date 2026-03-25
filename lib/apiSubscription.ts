@@ -2,10 +2,13 @@ import {
   AvailablePlansResponse,
   ActivePlanResponse,
   PurchasePlanRequest,
-  PurchasePlanResponse,
   CheckoutSessionResponse,
-  CreateCheckoutSessionRequest
+  CreateCheckoutSessionRequest,
+  type CreateSubscriptionInvoiceRequest,
+  type SubscriptionInvoiceCryptapiAddressResponse,
+  type SubscriptionPurchaseResult
 } from '@/types/subscription';
+import { parseSubscriptionActionData } from '@/lib/subscriptionPaymentParse';
 import { API_CONFIG } from '@/config/api';
 import { fetchWithAuth } from '@/lib/auth';
 
@@ -38,6 +41,30 @@ const getJsonMessage = async (response: Response): Promise<string> => {
     return response.statusText || `Error ${response.status}`;
   }
 };
+
+function toSubscriptionPurchaseResult(json: {
+  status: number;
+  data?: unknown;
+  message?: string;
+}): SubscriptionPurchaseResult {
+  const parsed = parseSubscriptionActionData(json.data);
+  if (parsed.kind === 'requires_payment') {
+    const p = parsed.payload;
+    return {
+      outcome: 'payment_required',
+      invoiceId: p.invoiceId,
+      amount: p.amount,
+      currency: p.currency,
+      paymentMethods: p.paymentMethods
+    };
+  }
+  return {
+    outcome: 'completed',
+    status: json.status,
+    data: json.data,
+    message: json.message
+  };
+}
 
 export const subscriptionApi = {
   /** GET /subscription-plans — available plans (non-default, active). */
@@ -111,7 +138,7 @@ export const subscriptionApi = {
   purchasePlan: async (
     planId: number,
     body: PurchasePlanRequest = {}
-  ): Promise<PurchasePlanResponse> => {
+  ): Promise<SubscriptionPurchaseResult> => {
     const url = `${API_BASE_URL}${ENDPOINTS.PURCHASE(planId)}`;
     const response = await fetchWithAuth(url, {
       method: 'POST',
@@ -119,40 +146,178 @@ export const subscriptionApi = {
       body: JSON.stringify(body)
     });
 
+    const json = (await response.json()) as {
+      status: number;
+      data?: unknown;
+      message?: string;
+    };
+
     if (!response.ok) {
-      const errorMessage = await getJsonMessage(response);
-      const fallback = `Failed to purchase plan (${response.status})`;
-      const error = new Error(errorMessage || fallback);
+      const errorMessage =
+        (typeof json.message === 'string' && json.message) ||
+        `Failed to purchase plan (${response.status})`;
+      const error = new Error(errorMessage);
       (error as Error & { status?: number }).status = response.status;
       throw error;
     }
 
-    return (await response.json()) as PurchasePlanResponse;
+    return toSubscriptionPurchaseResult(json);
   },
 
   /** POST /subscription-plans/trial/:userPlanId/convert — convert trial to paid. */
   convertTrialToPaid: async (
     userPlanId: number
-  ): Promise<{ status: number; data?: unknown; message?: string }> => {
+  ): Promise<SubscriptionPurchaseResult> => {
     const url = `${API_BASE_URL}${ENDPOINTS.TRIAL_CONVERT(userPlanId)}`;
     const response = await fetchWithAuth(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' }
     });
 
+    const json = (await response.json()) as {
+      status: number;
+      data?: unknown;
+      message?: string;
+    };
+
+    if (!response.ok) {
+      const errorMessage =
+        (typeof json.message === 'string' && json.message) ||
+        'Failed to convert trial to paid';
+      const error = new Error(errorMessage);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return toSubscriptionPurchaseResult(json);
+  },
+
+  /** POST /subscription-plans/:planId/upgrade */
+  upgradePlan: async (planId: number): Promise<SubscriptionPurchaseResult> => {
+    const url = `${API_BASE_URL}${ENDPOINTS.UPGRADE(planId)}`;
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const json = (await response.json()) as {
+      status: number;
+      data?: unknown;
+      message?: string;
+    };
+
+    if (!response.ok) {
+      const errorMessage =
+        (typeof json.message === 'string' && json.message) ||
+        'Failed to upgrade plan';
+      const error = new Error(errorMessage);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return toSubscriptionPurchaseResult(json);
+  },
+
+  /** POST /subscription-plans/renew/:userPlanId */
+  renewPlan: async (
+    userPlanId: number
+  ): Promise<SubscriptionPurchaseResult> => {
+    const url = `${API_BASE_URL}${ENDPOINTS.RENEW(userPlanId)}`;
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const json = (await response.json()) as {
+      status: number;
+      data?: unknown;
+      message?: string;
+    };
+
+    if (!response.ok) {
+      const errorMessage =
+        (typeof json.message === 'string' && json.message) ||
+        'Failed to renew subscription';
+      const error = new Error(errorMessage);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return toSubscriptionPurchaseResult(json);
+  },
+
+  /** POST /subscription-plans/invoice — create subscription invoice by action. */
+  createSubscriptionInvoice: async (
+    body: CreateSubscriptionInvoiceRequest
+  ): Promise<SubscriptionPurchaseResult> => {
+    const url = `${API_BASE_URL}${ENDPOINTS.INVOICE}`;
+    const response = await fetchWithAuth(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+
+    const json = (await response.json()) as {
+      status: number;
+      data?: unknown;
+      message?: string;
+    };
+
+    if (!response.ok) {
+      const errorMessage =
+        (typeof json.message === 'string' && json.message) ||
+        'Failed to create subscription invoice';
+      const error = new Error(errorMessage);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return toSubscriptionPurchaseResult(json);
+  },
+
+  /** GET /subscription-plans/invoice/:invoiceId */
+  getSubscriptionInvoice: async (
+    invoiceId: string
+  ): Promise<{ status: number; data: Record<string, unknown>; message?: string }> => {
+    const url = `${API_BASE_URL}${ENDPOINTS.INVOICE_BY_ID(invoiceId)}`;
+    const response = await fetchWithAuth(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
     if (!response.ok) {
       const errorMessage = await getJsonMessage(response);
-      const error = new Error(
-        errorMessage || 'Failed to convert trial to paid'
-      );
+      const error = new Error(errorMessage || 'Failed to load subscription invoice');
       (error as Error & { status?: number }).status = response.status;
       throw error;
     }
 
     return (await response.json()) as {
       status: number;
-      data?: unknown;
+      data: Record<string, unknown>;
       message?: string;
     };
+  },
+
+  /** GET /subscription-plans/invoice/:invoiceId/cryptapi-address?ticker= */
+  getSubscriptionInvoiceCryptapiAddress: async (
+    invoiceId: string,
+    ticker: string
+  ): Promise<SubscriptionInvoiceCryptapiAddressResponse> => {
+    const params = new URLSearchParams({ ticker });
+    const url = `${API_BASE_URL}${ENDPOINTS.INVOICE_CRYPTAPI_ADDRESS(invoiceId)}?${params.toString()}`;
+    const response = await fetchWithAuth(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      const errorMessage = await getJsonMessage(response);
+      const error = new Error(errorMessage || 'Failed to load crypto deposit address');
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as SubscriptionInvoiceCryptapiAddressResponse;
   }
 };

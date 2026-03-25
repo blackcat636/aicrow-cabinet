@@ -3,24 +3,41 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { subscriptionApi } from '@/lib/apiSubscription';
 import { balanceApi } from '@/lib/apiBalance';
-import { API_CONFIG } from '@/config/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { PlanCard } from './PlanCard';
+import { CurrentPlanBlock } from './CurrentPlanBlock';
+import { SubscriptionPaymentModal } from './SubscriptionPaymentModal';
 import { Card, CardContent } from '@/components/ui/card';
 import { AlertCircle } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
+import { useRouter } from '@/i18n/routing';
 import type { ActivePlanResponse, SubscriptionPlan } from '@/types/subscription';
+
+interface PendingSubscriptionPayment {
+  invoiceId: string;
+  amount: number;
+  currency: string;
+  paymentMethods: string[];
+}
 
 export const BillingList: React.FC = () => {
   const t = useTranslations('billing');
+  const router = useRouter();
   const { user } = useAuth();
-  const [activeData, setActiveData] = useState<ActivePlanResponse['data'] | null>(null);
+  const [activeData, setActiveData] = useState<ActivePlanResponse['data'] | null>(
+    null
+  );
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [purchasingPlanId, setPurchasingPlanId] = useState<number | null>(null);
+  const [convertingUserPlanId, setConvertingUserPlanId] = useState<number | null>(
+    null
+  );
   const [balance, setBalance] = useState(0);
+  const [pendingPayment, setPendingPayment] =
+    useState<PendingSubscriptionPayment | null>(null);
 
   const fetchData = useCallback(async () => {
     try {
@@ -46,10 +63,9 @@ export const BillingList: React.FC = () => {
   }, [t]);
 
   useEffect(() => {
-    fetchData();
+    void fetchData();
   }, [fetchData]);
 
-  // Fetch balance from same API as header (balanceApi.getBalance)
   useEffect(() => {
     const fetchBalance = async () => {
       try {
@@ -62,98 +78,106 @@ export const BillingList: React.FC = () => {
         setBalance(parseFloat(user?.balance ?? '0'));
       }
     };
-    fetchBalance();
+    void fetchBalance();
   }, [user?.balance]);
+
+  const handleSubscriptionPaid = useCallback(async () => {
+    setPendingPayment(null);
+    await fetchData();
+    router.push('/billing/success');
+  }, [fetchData, router]);
 
   const handleSubscribe = useCallback(
     async (planId: number, useTrial?: boolean) => {
       setPurchasingPlanId(planId);
       try {
-        const plan = plans.find((p) => p.id === planId);
-        if (!plan) {
-          toast.error(t('purchaseError'));
-          return;
-        }
+        let result;
+        try {
+          result = await subscriptionApi.purchasePlan(planId, {
+            useTrial: Boolean(useTrial)
+          });
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          const shouldRetryWithoutTrial =
+            Boolean(useTrial) &&
+            message.includes(
+              'Trial is only available for users without any previous plans'
+            );
 
-        const amountMajor =
-          typeof plan.price === 'string' ? parseFloat(plan.price) : Number(plan.price);
-        const currency = (plan.currency || 'UAH').trim();
-        const description = plan.name
-          ? `Subscription: ${plan.name}`
-          : undefined;
-
-        const localePrefix =
-          typeof window !== 'undefined' &&
-          typeof window.location?.pathname === 'string' &&
-          /^\/(uk|en|fr|es)(\/|$)/.test(window.location.pathname)
-            ? window.location.pathname.slice(0, 3)
-            : '';
-        const baseUrl =
-          typeof window !== 'undefined' ? window.location.origin : '';
-        const successUrl = `${baseUrl}${localePrefix}/billing/success`;
-        const cancelUrl = `${baseUrl}${localePrefix}/billing/cancel`;
-
-        let redirectUrl: string | undefined;
-        const invoicePayload = {
-          amount: amountMajor,
-          currency,
-          paymentMethod: 'STRIPE',
-          paymentDetails: { successUrl, cancelUrl },
-          description
-        };
-
-        const res = await balanceApi.createInvoice(invoicePayload);
-
-        const invoiceData = res?.data as Record<string, unknown> | undefined;
-        const invoiceId = invoiceData?.invoice_id as string | undefined;
-        if (!invoiceId) {
-          throw new Error('No invoice_id in response');
-        }
-
-        const payRes = await balanceApi.payInvoice(invoiceId, {
-          paymentMethod: 'STRIPE',
-          paymentDetails: { successUrl, cancelUrl }
-        });
-
-        const payData = payRes?.data as Record<string, unknown> | undefined;
-        redirectUrl =
-          (payData?.checkoutUrl as string) ??
-          (payData?.url as string) ??
-          (payData?.checkout_url as string) ??
-          (payData?.redirect_url as string) ??
-          (payData?.paymentUrl as string) ??
-          (payData?.sessionUrl as string) ??
-          (payData?.payment_url as string);
-
-        if (redirectUrl && typeof window !== 'undefined') {
-          if (redirectUrl.startsWith('/')) {
-            redirectUrl = `${API_CONFIG.BASE_URL.replace(/\/$/, '')}${redirectUrl}`;
+          if (!shouldRetryWithoutTrial) {
+            throw err;
           }
-          window.location.href = redirectUrl;
+
+          result = await subscriptionApi.purchasePlan(planId, {
+            useTrial: false
+          });
+        }
+
+        if (result.outcome === 'payment_required') {
+          setPendingPayment({
+            invoiceId: result.invoiceId,
+            amount: result.amount,
+            currency: result.currency,
+            paymentMethods: result.paymentMethods
+          });
           return;
         }
-        throw new Error('No checkout URL returned by payment API');
+        toast.success(t('purchaseSuccess'));
+        await fetchData();
       } catch (err: unknown) {
         const status = (err as { status?: number })?.status;
         const isServerError = typeof status === 'number' && status >= 500;
         const message = isServerError
           ? t('purchaseErrorServer')
-          : (err instanceof Error ? err.message : t('purchaseError'));
+          : err instanceof Error
+            ? err.message
+            : t('purchaseError');
         toast.error(message);
-        if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
-          console.error('[Billing] Checkout failed:', err);
-        }
       } finally {
         setPurchasingPlanId(null);
       }
     },
-    [t, plans]
+    [fetchData, t]
+  );
+
+  const handleConvertTrial = useCallback(
+    async (userPlanId: number) => {
+      setConvertingUserPlanId(userPlanId);
+      try {
+        const result = await subscriptionApi.convertTrialToPaid(userPlanId);
+        if (result.outcome === 'payment_required') {
+          setPendingPayment({
+            invoiceId: result.invoiceId,
+            amount: result.amount,
+            currency: result.currency,
+            paymentMethods: result.paymentMethods
+          });
+          return;
+        }
+        toast.success(t('convertSuccess'));
+        await fetchData();
+      } catch (err: unknown) {
+        const status = (err as { status?: number })?.status;
+        const isServerError = typeof status === 'number' && status >= 500;
+        const message = isServerError
+          ? t('purchaseErrorServer')
+          : err instanceof Error
+            ? err.message
+            : t('convertError');
+        toast.error(message);
+      } finally {
+        setConvertingUserPlanId(null);
+      }
+    },
+    [fetchData, t]
   );
 
   const currentPlanId = activeData?.isActive ? activeData.planId : null;
   const sortedPlans = [...plans].sort((a, b) => {
-    const aValue = typeof a.price === 'string' ? Number.parseFloat(a.price) : Number(a.price);
-    const bValue = typeof b.price === 'string' ? Number.parseFloat(b.price) : Number(b.price);
+    const aValue =
+      typeof a.price === 'string' ? Number.parseFloat(a.price) : Number(a.price);
+    const bValue =
+      typeof b.price === 'string' ? Number.parseFloat(b.price) : Number(b.price);
     if (Number.isNaN(aValue) && Number.isNaN(bValue)) return 0;
     if (Number.isNaN(aValue)) return 1;
     if (Number.isNaN(bValue)) return -1;
@@ -163,10 +187,15 @@ export const BillingList: React.FC = () => {
   if (isLoading) {
     return (
       <div className="space-y-5 min-h-[400px]">
-        <h2 className="figma-heading-semibold text-[var(--color-secondary-10)]">Subscription</h2>
+        <h2 className="figma-heading-semibold text-[var(--color-secondary-10)]">
+          Subscription
+        </h2>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-[430px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)]/80 animate-pulse min-w-0" />
+            <div
+              key={i}
+              className="h-[430px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)]/80 animate-pulse min-w-0"
+            />
           ))}
         </div>
       </div>
@@ -190,7 +219,26 @@ export const BillingList: React.FC = () => {
 
   return (
     <div className="space-y-5 min-h-[400px]">
-      <h2 className="figma-heading-semibold text-[var(--color-secondary-10)]">Subscription</h2>
+      <SubscriptionPaymentModal
+        isOpen={pendingPayment !== null}
+        onClose={() => setPendingPayment(null)}
+        invoiceId={pendingPayment?.invoiceId ?? null}
+        amount={pendingPayment?.amount ?? 0}
+        currency={pendingPayment?.currency ?? 'USD'}
+        paymentMethods={pendingPayment?.paymentMethods ?? []}
+        onPaid={() => void handleSubscriptionPaid()}
+      />
+
+      <CurrentPlanBlock
+        activeData={activeData}
+        onConvertTrial={handleConvertTrial}
+        isConverting={convertingUserPlanId !== null}
+      />
+
+      <h2 className="figma-heading-semibold text-[var(--color-secondary-10)]">
+        Subscription
+      </h2>
+
       {showCreditsRemaining && (
         <div className="figma-body-1-regular text-[#9E9E9E]">
           {t('creditsRemainingPrefix')}
@@ -222,4 +270,3 @@ export const BillingList: React.FC = () => {
     </div>
   );
 };
-

@@ -192,6 +192,36 @@ export const balanceApi = {
     };
   },
 
+  /** GET /balance/invoices/:invoiceId — poll status (PENDING, PAID, …). */
+  getInvoice: async (
+    invoiceId: string
+  ): Promise<{ status: number; data: Record<string, unknown>; message?: string }> => {
+    const url = `${API_BASE_URL}/balance/invoices/${invoiceId}`;
+    const response = await fetchWithAuth(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      let errorMessage = 'Failed to load invoice';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.message || errorData.error || errorMessage;
+      } catch {
+        // ignore
+      }
+      const error = new Error(errorMessage);
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as {
+      status: number;
+      data: Record<string, unknown>;
+      message?: string;
+    };
+  },
+
   // Get transactions list for current user (determined by auth token)
   getTransactions: async (): Promise<TransactionResponse> => {
     try {

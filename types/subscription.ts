@@ -140,3 +140,51 @@ export interface CreateCheckoutSessionRequest {
   successUrl?: string;
   cancelUrl?: string;
 }
+
+/** POST /subscription-plans/invoice body (alternative invoice creation). */
+export type SubscriptionInvoiceAction =
+  | 'purchase'
+  | 'convert_trial'
+  | 'upgrade'
+  | 'renew';
+
+export interface CreateSubscriptionInvoiceRequest {
+  action: SubscriptionInvoiceAction;
+  planId?: number;
+  userPlanId?: number;
+}
+
+/** GET /subscription-plans/invoice/:invoiceId/cryptapi-address response data. */
+export interface SubscriptionInvoiceCryptapiAddressData {
+  deposit_address: string;
+  qr_code_url?: string;
+  amount?: string | number;
+  target_currency?: string;
+  min_amount_usd?: number;
+  network?: string;
+  message?: string;
+}
+
+export type SubscriptionInvoiceCryptapiAddressResponse = {
+  status: number;
+  data: SubscriptionInvoiceCryptapiAddressData;
+  message?: string;
+};
+
+/**
+ * Result of subscription actions that may require invoice payment.
+ */
+export type SubscriptionPurchaseResult =
+  | {
+      outcome: 'payment_required';
+      invoiceId: string;
+      amount: number;
+      currency: string;
+      paymentMethods: string[];
+    }
+  | {
+      outcome: 'completed';
+      status: number;
+      data: unknown;
+      message?: string;
+    };

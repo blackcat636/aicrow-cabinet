@@ -38,8 +38,15 @@ export const API_CONFIG = {
       MY_ACTIVE: '/subscription-plans/my/active',
       PURCHASE: (id: number) => `/subscription-plans/${id}/purchase`,
       CHECKOUT: (id: number) => `/subscription-plans/${id}/checkout`,
+      UPGRADE: (planId: number) => `/subscription-plans/${planId}/upgrade`,
+      RENEW: (userPlanId: number) => `/subscription-plans/renew/${userPlanId}`,
       TRIAL_CONVERT: (userPlanId: number) =>
-        `/subscription-plans/trial/${userPlanId}/convert`
+        `/subscription-plans/trial/${userPlanId}/convert`,
+      INVOICE: '/subscription-plans/invoice',
+      INVOICE_BY_ID: (invoiceId: string) =>
+        `/subscription-plans/invoice/${invoiceId}`,
+      INVOICE_CRYPTAPI_ADDRESS: (invoiceId: string) =>
+        `/subscription-plans/invoice/${invoiceId}/cryptapi-address`
     }
   },
 

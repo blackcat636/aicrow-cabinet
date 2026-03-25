@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback, useRef } from 'react';
+import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -60,18 +60,6 @@ export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
   isConverting
 }) => {
   const t = useTranslations('billing');
-  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
-  const [isHovering, setIsHovering] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    if (!cardRef.current) return;
-    const rect = cardRef.current.getBoundingClientRect();
-    setMousePosition({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  }, []);
-
-  const handleMouseEnter = useCallback(() => setIsHovering(true), []);
-  const handleMouseLeave = useCallback(() => setIsHovering(false), []);
 
   const hasActive = Boolean(activeData?.isActive && activeData?.plan);
   const isTrial = Boolean(activeData?.isTrial);
@@ -87,30 +75,18 @@ export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
   const tokensLeft = activeData?.tokensLeft;
 
   return (
-    <div className="p-[1px] rounded-lg bg-[var(--color-main)] overflow-hidden shadow-lg shadow-purple-500/30">
-      <Card
-        ref={cardRef}
-        className="relative w-full bg-[var(--color-secondary-2)] border-0 rounded-lg overflow-hidden group"
-        onMouseMove={handleMouseMove}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div
-          className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none z-0"
-          style={{
-            background: isHovering
-              ? `radial-gradient(500px circle at ${mousePosition.x}px ${mousePosition.y}px, rgba(165,0,225,0.5), rgba(123,97,255,0.3) 40%, transparent 70%)`
-              : 'none'
-          }}
-        />
-        <CardContent className="relative z-10 p-6">
+    <div className="relative min-w-0 w-full">
+      <Card className="relative w-full bg-[var(--color-secondary-2)] border border-[var(--color-secondary-4)] rounded-[10px] overflow-hidden flex flex-col">
+        <CardContent className="relative p-6">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="space-y-3 min-w-0 flex-1">
-              <h2 className="text-xl font-bold text-white">{t('currentPlan')}</h2>
+              <h2 className="figma-heading-semibold text-[var(--color-secondary-10)]">
+                {t('currentPlan')}
+              </h2>
               {hasActive ? (
                 <>
-                  <p className="text-gray-300 font-medium">{planName}</p>
-                  <p className="text-lg font-semibold text-white">{planPrice}</p>
+                  <p className="figma-body-1-medium text-[var(--color-secondary-5)]">{planName}</p>
+                  <p className="figma-heading-medium text-[var(--color-secondary-10)]">{planPrice}</p>
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge variant="secondary" className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30">
                       {t('statusActive')}
@@ -137,7 +113,9 @@ export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
                   <Badge variant="secondary" className="bg-amber-500/20 text-amber-400 border-amber-500/30">
                     {t('statusExpired')}
                   </Badge>
-                  <p className="text-gray-400">{t('selectPlanCta')}</p>
+                  <p className="figma-body-1-regular text-[var(--color-secondary-5)]">
+                    {t('selectPlanCta')}
+                  </p>
                 </>
               )}
             </div>

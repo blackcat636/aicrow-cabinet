@@ -24,11 +24,21 @@ interface BalanceDepositStripeCardFormProps {
   submitLabel: string;
   backLabel: string;
   onBack: () => void;
+  /** When false, skips POST confirm after Stripe success (subscription invoice flow). Default true. */
+  confirmBalanceOnSuccess?: boolean;
 }
 
 export const BalanceDepositStripeCardForm: React.FC<
   BalanceDepositStripeCardFormProps
-> = ({ clientSecret, onSuccess, onError, submitLabel, backLabel, onBack }) => {
+> = ({
+  clientSecret,
+  onSuccess,
+  onError,
+  submitLabel,
+  backLabel,
+  onBack,
+  confirmBalanceOnSuccess = true
+}) => {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -61,12 +71,14 @@ export const BalanceDepositStripeCardForm: React.FC<
         status === 'processing' ||
         status === 'requires_capture'
       ) {
-        const id = paymentIntent?.id;
-        if (!id) {
-          onError('Missing payment intent');
-          return;
+        if (confirmBalanceOnSuccess) {
+          const id = paymentIntent?.id;
+          if (!id) {
+            onError('Missing payment intent');
+            return;
+          }
+          await balanceApi.confirmStripePaymentIntent({ paymentIntentId: id });
         }
-        await balanceApi.confirmStripePaymentIntent({ paymentIntentId: id });
         onSuccess();
         return;
       }
