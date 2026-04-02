@@ -64,7 +64,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   const planCurrency = (plan.currency || 'USD').toUpperCase();
 
   return (
-    <div className={`relative min-w-0 flex flex-col ${isMostPopular ? 'mt-6' : ''}`}>
+    <div className={`relative min-w-0 flex flex-col ${isMostPopular ? 'mt-5 xl:mt-0' : ''}`}>
       {isMostPopular && (
         <div className="absolute -top-[22px] left-0 right-0 h-[22px] rounded-t-[10px] bg-[var(--color-main)] flex items-center justify-center gap-1">
           <span className="text-[11px] leading-[1.4] tracking-[0.22px] text-white">★</span>
@@ -72,7 +72,9 @@ export const PlanCard: React.FC<PlanCardProps> = ({
         </div>
       )}
       <Card
-        className="relative w-full bg-[var(--color-secondary-2)] border border-[var(--color-secondary-4)] rounded-[10px] h-full overflow-hidden group flex flex-col"
+        className={`relative w-full bg-[var(--color-secondary-2)] border border-[var(--color-secondary-4)] h-full overflow-hidden group flex flex-col ${
+          isMostPopular ? 'rounded-b-[10px] rounded-t-none' : 'rounded-[10px]'
+        }`}
       >
         <div className="relative z-10 flex flex-col flex-1 min-w-0">
           <CardHeader className="p-4 pb-3">
