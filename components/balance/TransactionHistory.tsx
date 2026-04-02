@@ -265,6 +265,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
           </h1>
           <p className="figma-body-1-regular text-[var(--color-secondary-6)]">{t('viewAllTransactions')}</p>
         </div>
+        {/*
         <button
           type="button"
           onClick={() => setDepositModalOpen(true)}
@@ -272,6 +273,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
         >
           {tDeposit('addFunds')}
         </button>
+        */}
       </div>
 
       <BalanceDepositModal

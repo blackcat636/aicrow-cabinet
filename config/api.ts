@@ -36,6 +36,7 @@ export const API_CONFIG = {
       PLANS: '/subscription-plans',
       PLAN_BY_ID: (id: number) => `/subscription-plans/${id}`,
       MY_ACTIVE: '/subscription-plans/my/active',
+      MY_HISTORY: '/subscription-plans/my/history',
       PURCHASE: (id: number) => `/subscription-plans/${id}/purchase`,
       CHECKOUT: (id: number) => `/subscription-plans/${id}/checkout`,
       UPGRADE: (planId: number) => `/subscription-plans/${planId}/upgrade`,

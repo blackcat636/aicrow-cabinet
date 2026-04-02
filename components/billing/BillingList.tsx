@@ -8,11 +8,17 @@ import { PlanCard } from './PlanCard';
 import { CurrentPlanBlock } from './CurrentPlanBlock';
 import { SubscriptionPaymentModal } from './SubscriptionPaymentModal';
 import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
+import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { useRouter } from '@/i18n/routing';
-import type { ActivePlanResponse, SubscriptionPlan } from '@/types/subscription';
+import type {
+  ActivePlanResponse,
+  SubscriptionHistoryItem,
+  SubscriptionPlan
+} from '@/types/subscription';
 
 interface PendingSubscriptionPayment {
   invoiceId: string;
@@ -38,6 +44,13 @@ export const BillingList: React.FC = () => {
   const [balance, setBalance] = useState(0);
   const [pendingPayment, setPendingPayment] =
     useState<PendingSubscriptionPayment | null>(null);
+  const [history, setHistory] = useState<SubscriptionHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyLimit, setHistoryLimit] = useState(20);
+  const [historyHasNextPage, setHistoryHasNextPage] = useState(false);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
 
   const fetchData = useCallback(async () => {
     try {
@@ -65,6 +78,42 @@ export const BillingList: React.FC = () => {
   useEffect(() => {
     void fetchData();
   }, [fetchData]);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const res = await subscriptionApi.getMyHistory({
+          page: historyPage,
+          limit: historyLimit,
+          eventType: 'purchased'
+        });
+        const rows = Array.isArray(res.data) ? res.data : [];
+        setHistory(rows);
+        setHistoryHasNextPage(rows.length >= historyLimit);
+        const totalPagesFromMeta =
+          typeof res.meta?.totalPages === 'number' && res.meta.totalPages > 0
+            ? Math.floor(res.meta.totalPages)
+            : null;
+        if (totalPagesFromMeta != null) {
+          setHistoryTotalPages(totalPagesFromMeta);
+        } else {
+          setHistoryTotalPages(rows.length >= historyLimit ? historyPage + 1 : historyPage);
+        }
+      } catch (err) {
+        const message =
+          err instanceof Error ? err.message : t('historyLoadError');
+        setHistoryError(message);
+        setHistory([]);
+        setHistoryHasNextPage(false);
+        setHistoryTotalPages(1);
+      } finally {
+        setHistoryLoading(false);
+      }
+    };
+    void fetchHistory();
+  }, [historyLimit, historyPage, t]);
 
   useEffect(() => {
     const fetchBalance = async () => {
@@ -267,6 +316,150 @@ export const BillingList: React.FC = () => {
       {sortedPlans.length === 0 && (
         <p className="text-gray-400">{t('noPlans')}</p>
       )}
+
+      <div className="space-y-3">
+        <h3 className="figma-heading-semibold text-[var(--color-secondary-10)]">
+          {t('historyTitle')}
+        </h3>
+        <p className="text-sm text-[var(--color-secondary-6)]">
+          {t('historyExplanation')}
+        </p>
+        {historyLoading ? (
+          <p className="text-sm text-gray-400">{t('historyLoading')}</p>
+        ) : historyError ? (
+          <p className="text-sm text-red-400">{historyError}</p>
+        ) : history.length === 0 ? (
+          <p className="text-sm text-gray-400">{t('historyEmpty')}</p>
+        ) : (
+          <>
+            <div className="overflow-x-auto rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)]">
+              <table className="w-full min-w-[920px] border-collapse">
+                <thead>
+                  <tr className="border-b border-[var(--color-secondary-4)] text-xs text-[var(--color-secondary-6)]">
+                    <th className="px-4 py-3 text-left font-medium">{t('historyColPlan')}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t('historyColActivationDate')}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t('historyColPrice')}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t('historyColCurrency')}</th>
+                    <th className="px-4 py-3 text-left font-medium">{t('historyColPaymentStatus')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {history.map((item) => {
+                    const activationDate = item.startDate
+                      ? new Date(item.startDate).toLocaleDateString()
+                      : '—';
+                    const planName = item.plan?.name || t('historyPlanFallback');
+                    const rawPrice = item.plan?.price ?? item.amount;
+                    const priceNum =
+                      rawPrice == null
+                        ? null
+                        : typeof rawPrice === 'string'
+                          ? Number.parseFloat(rawPrice)
+                          : Number(rawPrice);
+                    const price =
+                      priceNum == null || Number.isNaN(priceNum)
+                        ? t('historyAmountUnknown')
+                        : (Math.round(priceNum * 100) / 100).toLocaleString(undefined, {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                          });
+                    const currency = item.plan?.currency || item.currency || '—';
+                    const paymentStatus = item.paymentStatus || '—';
+                    return (
+                      <tr
+                        key={item.id}
+                        className="border-b border-[var(--color-secondary-4)] last:border-b-0 text-sm text-[var(--color-secondary-9)]"
+                      >
+                        <td className="px-4 py-3 text-[var(--color-secondary-10)]">{planName}</td>
+                        <td className="px-4 py-3">{activationDate}</td>
+                        <td className="px-4 py-3">{price}</td>
+                        <td className="px-4 py-3">{currency}</td>
+                        <td className="px-4 py-3 uppercase">{paymentStatus}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-[var(--color-secondary-6)]">
+                  {t('historyRowsPerPage')}
+                </span>
+                <select
+                  value={String(historyLimit)}
+                  onChange={(e) => {
+                    const nextLimit = Number(e.target.value);
+                    setHistoryPage(1);
+                    setHistoryLimit(nextLimit);
+                  }}
+                  className="h-9 rounded-[8px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-2 text-sm text-[var(--color-secondary-10)]"
+                >
+                  {[10, 20, 30, 50].map((size) => (
+                    <option key={size} value={size}>
+                      {size}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <span className="text-sm text-[var(--color-secondary-6)]">
+                {t('historyPageOfLabel', {
+                  page: historyPage,
+                  total: historyTotalPages
+                })}
+              </span>
+
+              <div className="flex items-center gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setHistoryPage(1)}
+                  disabled={historyPage <= 1 || historyLoading}
+                  className="border-[var(--color-secondary-4)] bg-transparent text-[var(--color-secondary-10)]"
+                >
+                  <ChevronsLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                  disabled={historyPage <= 1 || historyLoading}
+                  className="border-[var(--color-secondary-4)] bg-transparent text-[var(--color-secondary-10)]"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="h-9 min-w-9 px-3 inline-flex items-center justify-center rounded-[10px] bg-[var(--color-main)] text-white text-sm font-semibold">
+                  {historyPage}
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setHistoryPage((p) => p + 1)}
+                  disabled={!historyHasNextPage || historyLoading}
+                  className="border-[var(--color-secondary-4)] bg-transparent text-[var(--color-secondary-10)]"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => setHistoryPage(Math.max(1, historyTotalPages))}
+                  disabled={!historyHasNextPage || historyLoading}
+                  className="border-[var(--color-secondary-4)] bg-transparent text-[var(--color-secondary-10)]"
+                >
+                  <ChevronsRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };

@@ -154,6 +154,55 @@ export interface CreateSubscriptionInvoiceRequest {
   userPlanId?: number;
 }
 
+export type SubscriptionHistoryEventType =
+  | 'purchased'
+  | 'renewed'
+  | 'upgraded'
+  | 'trial_started'
+  | string;
+
+export interface SubscriptionHistoryQuery {
+  page?: number;
+  limit?: number;
+  eventType?: SubscriptionHistoryEventType;
+}
+
+export interface SubscriptionHistoryItem {
+  id: number;
+  userId?: number;
+  planId?: number;
+  eventType?: string;
+  plan?: {
+    id?: number;
+    name?: string;
+    description?: string;
+    price?: string | number;
+    period?: string;
+    currency?: string;
+  };
+  startDate?: string;
+  endDate?: string;
+  paymentStatus?: string;
+  amount?: string | number;
+  currency?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  [key: string]: unknown;
+}
+
+export interface SubscriptionHistoryResponse {
+  status: number;
+  data: SubscriptionHistoryItem[];
+  message?: string;
+  meta?: {
+    page?: number;
+    limit?: number;
+    total?: number;
+    totalPages?: number;
+    [key: string]: unknown;
+  };
+}
+
 /** GET /subscription-plans/invoice/:invoiceId/cryptapi-address response data. */
 export interface SubscriptionInvoiceCryptapiAddressData {
   deposit_address: string;

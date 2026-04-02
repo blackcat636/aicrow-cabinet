@@ -25,21 +25,12 @@ const formatAmountValue = (
   return num;
 };
 
-const formatCurrencyPrefix = (currency: string | undefined): string => {
-  const code = (currency || 'USD').toUpperCase();
-  if (code === 'CAD') return 'C$';
-  if (code === 'USD') return '$';
-  if (code === 'EUR') return 'EUR ';
-  if (code === 'UAH') return 'UAH ';
-  return `${code} `;
-};
-
-const formatAmount = (value: number | null, currency: string | undefined): string => {
+const formatAmount = (value: number | null): string => {
   if (value == null) return '—';
   const rounded = Math.round(value * 100) / 100;
   const formatted = rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2);
   const grouped = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  return `${formatCurrencyPrefix(currency)}${grouped}`;
+  return grouped;
 };
 
 const getFeatureLabel = (f: PlanFeature): string => {
@@ -57,20 +48,23 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   isMostPopular = false
 }) => {
   const t = useTranslations('billing');
+  const period = String(plan.period || '').toLowerCase();
+  const periodLabel =
+    period === 'monthly'
+      ? t('periodMonthly')
+      : period === 'yearly'
+        ? t('periodYearly')
+        : plan.period;
 
   const isCurrent = currentPlanId !== null && currentPlanId === plan.id;
   const hasTrial = plan.trialDays != null && plan.trialDays > 0;
   const features = Array.isArray(plan.features) ? plan.features : [];
 
-  const setupPrice = formatAmount(formatAmountValue(plan.price), plan.currency);
-  const supportPriceRaw = (plan as SubscriptionPlan & { supportPrice?: string | number }).supportPrice;
-  const supportPrice = formatAmount(
-    formatAmountValue(supportPriceRaw ?? plan.price),
-    plan.currency
-  );
+  const planPrice = formatAmount(formatAmountValue(plan.price));
+  const planCurrency = (plan.currency || 'USD').toUpperCase();
 
   return (
-    <div className="relative min-w-0 flex flex-col">
+    <div className={`relative min-w-0 flex flex-col ${isMostPopular ? 'mt-6' : ''}`}>
       {isMostPopular && (
         <div className="absolute -top-[22px] left-0 right-0 h-[22px] rounded-t-[10px] bg-[var(--color-main)] flex items-center justify-center gap-1">
           <span className="text-[11px] leading-[1.4] tracking-[0.22px] text-white">★</span>
@@ -87,14 +81,11 @@ export const PlanCard: React.FC<PlanCardProps> = ({
                 {plan.name}
               </h3>
               <p className="figma-body-1-medium text-[var(--color-secondary-5)]">
-                Setup from <span className="figma-heading-medium text-[var(--color-secondary-10)]">{setupPrice}</span> /one-time
-              </p>
-              <p className="figma-body-1-medium text-[var(--color-secondary-5)]">
-                Support from <span className="figma-heading-medium text-[var(--color-secondary-10)]">{supportPrice}</span> /monthly
+                <span className="figma-heading-medium text-[var(--color-secondary-10)]">{planPrice}</span> {planCurrency}/{periodLabel}
               </p>
             </div>
           </CardHeader>
-          <CardFooter className="px-4 pt-0 pb-4">
+          <CardFooter className="px-4 pt-0 pb-4 flex flex-col gap-2">
             <Button
               className="w-full h-12 rounded-[10px] border border-[var(--color-main)] bg-transparent figma-body-1-semibold text-[var(--color-main)] hover:bg-[var(--color-main)] hover:text-[var(--color-secondary-10)] transition-colors"
               onClick={() => onSubscribe(plan.id, hasTrial)}
@@ -105,6 +96,11 @@ export const PlanCard: React.FC<PlanCardProps> = ({
           </CardFooter>
           <div className="h-px bg-[var(--color-secondary-4)] w-full" />
           <CardContent className="flex-1 px-4 py-4">
+            {plan.description ? (
+              <p className="figma-body-3-regular text-[var(--color-secondary-6)] break-words">
+                {plan.description}
+              </p>
+            ) : null}
             {features.length > 0 && (
               <ul className="space-y-3">
                 {features.map((f, i) => (

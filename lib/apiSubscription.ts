@@ -5,6 +5,8 @@ import {
   CheckoutSessionResponse,
   CreateCheckoutSessionRequest,
   type CreateSubscriptionInvoiceRequest,
+  type SubscriptionHistoryQuery,
+  type SubscriptionHistoryResponse,
   type SubscriptionInvoiceCryptapiAddressResponse,
   type SubscriptionPurchaseResult
 } from '@/types/subscription';
@@ -109,6 +111,31 @@ export const subscriptionApi = {
 
     const result = (await response.json()) as ActivePlanResponse;
     return result.data ?? null;
+  },
+
+  /** GET /subscription-plans/my/history?page=&limit=&eventType= */
+  getMyHistory: async (
+    query: SubscriptionHistoryQuery = {}
+  ): Promise<SubscriptionHistoryResponse> => {
+    const params = new URLSearchParams();
+    if (query.page != null) params.set('page', String(query.page));
+    if (query.limit != null) params.set('limit', String(query.limit));
+    if (query.eventType) params.set('eventType', String(query.eventType));
+
+    const url = `${API_BASE_URL}${ENDPOINTS.MY_HISTORY}${params.toString() ? `?${params.toString()}` : ''}`;
+    const response = await fetchWithAuth(url, {
+      method: 'GET',
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    if (!response.ok) {
+      const errorMessage = await getJsonMessage(response);
+      const error = new Error(errorMessage || 'Failed to load subscription history');
+      (error as Error & { status?: number }).status = response.status;
+      throw error;
+    }
+
+    return (await response.json()) as SubscriptionHistoryResponse;
   },
 
   /** POST /subscription-plans/:id/checkout — create Stripe Checkout Session, returns checkoutUrl for redirect. */
