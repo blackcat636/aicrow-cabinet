@@ -39,5 +39,5 @@ next-env.d.ts
 .env
 uncar-rent-front.code-workspace
 
-# cursor local config
+# cursor local config (rules, skills, plans)
 .cursor/

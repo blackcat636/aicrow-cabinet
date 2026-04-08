@@ -1,8 +1,23 @@
+const normalizeBaseUrl = (value?: string): string => {
+  if (!value) {
+    return '';
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === '/') {
+    return '';
+  }
+
+  return trimmed.replace(/\/+$/, '');
+};
+
+const resolvedBaseUrl =
+  normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL) ||
+  normalizeBaseUrl(process.env.API_BASE_URL) ||
+  'https://api.tempdomain.site';
+
 export const API_CONFIG = {
-  BASE_URL:
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.API_BASE_URL ||
-    'https://api.tempdomain.site',
+  BASE_URL: resolvedBaseUrl,
 
   ENDPOINTS: {
     AUTH: {
