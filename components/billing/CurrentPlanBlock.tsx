@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useTranslations } from 'next-intl';
 import type { ActivePlanResponse } from '@/types/subscription';
+import { formatPlanDescriptionForDisplay } from '@/lib/format-plan-description';
 
 interface CurrentPlanBlockProps {
   /** Active subscription data from GET /subscription-plans/my/active. Null when no plan or expired. */
@@ -139,8 +140,8 @@ export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
                   <p className="text-xs tracking-wide text-[var(--color-secondary-10)]">
                     {t('fieldDescription')}
                   </p>
-                  <p className="figma-body-3-regular text-[var(--color-secondary-10)] break-words">
-                    {planDescription}
+                  <p className="figma-body-3-regular text-[var(--color-secondary-10)] break-words whitespace-pre-line">
+                    {formatPlanDescriptionForDisplay(planDescription)}
                   </p>
                 </div>
               ) : null}

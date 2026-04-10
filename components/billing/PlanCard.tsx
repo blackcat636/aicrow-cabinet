@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Camera } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import type { SubscriptionPlan, PlanFeature } from '@/types/subscription';
+import { formatPlanDescriptionForDisplay } from '@/lib/format-plan-description';
 
 interface PlanCardProps {
   plan: SubscriptionPlan;
@@ -99,8 +100,8 @@ export const PlanCard: React.FC<PlanCardProps> = ({
           <div className="h-px bg-[var(--color-secondary-4)] w-full" />
           <CardContent className="flex-1 px-4 py-4">
             {plan.description ? (
-              <p className="figma-body-3-regular text-[var(--color-secondary-6)] break-words">
-                {plan.description}
+              <p className="figma-body-3-regular text-[var(--color-secondary-6)] break-words whitespace-pre-line">
+                {formatPlanDescriptionForDisplay(plan.description)}
               </p>
             ) : null}
             {features.length > 0 && (
