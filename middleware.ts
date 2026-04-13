@@ -178,9 +178,10 @@ export async function middleware(request: NextRequest) {
       const location = intlResponse.headers.get('location');
       let redirectedPath: string | null = null;
       let redirectedLocale: string | null = null;
+      let locationUrl: URL | null = null;
 
       if (location) {
-        const locationUrl = new URL(location, request.url);
+        locationUrl = new URL(location, request.url);
         redirectedPath = locationUrl.pathname;
         redirectedLocale = getLocaleFromPathname(redirectedPath);
 
@@ -210,7 +211,14 @@ export async function middleware(request: NextRequest) {
           return NextResponse.redirect(finalUrl);
         }
       }
-      return intlResponse;
+
+      // next-intl (localePrefix: as-needed) may respond with 307 to an unprefixed path
+      // (e.g. /billing). Returning that skips the rewrite below, so the first segment is
+      // wrongly treated as [locale] ("billing") and app/[locale]/layout calls notFound().
+      if (locationUrl && locationUrl.origin !== request.nextUrl.origin) {
+        return intlResponse;
+      }
+      // Same-origin unprefixed redirect: fall through to explicit /{defaultLocale}/... rewrite.
     }
 
     currentLocale = routing.defaultLocale;
