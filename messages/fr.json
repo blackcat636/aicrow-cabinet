@@ -480,7 +480,10 @@
     "addWorkflow": "Ajouter un workflow",
     "unnamedWorkflow": "Sans nom",
     "alreadyAdded": "Ce workflow a déjà été ajouté",
-    "addedSuccessfully": "Workflow ajouté avec succès !"
+    "addedSuccessfully": "Workflow ajouté avec succès !",
+    "allAutomationsTitle": "Automatisation maximale atteinte 🚀",
+    "allAutomationsSubtitle": "Vous avez collecté toutes les automatisations que nous proposons actuellement. Vous êtes officiellement un utilisateur avancé ! Il est temps de les mettre au travail.",
+    "viewActiveAutomations": "Voir les automatisations actives"
   },
   "workflows": {
     "title": "Flux de travail disponibles",

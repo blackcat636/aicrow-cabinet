@@ -10,6 +10,7 @@ import { TelegramStatusResponse } from '@/types/telegram';
 import { WorkflowForm } from '@/components/workflow/WorkflowForm';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/i18n/routing';
 import { ChevronLeftIcon } from '@/components/icons';
 
 export const dynamic = 'force-dynamic';
@@ -77,6 +78,8 @@ export default function MarketPage() {
   };
 
   const hasWorkflows = availableWorkflows.length > 0;
+  const hasCollectedAllAutomations =
+    hasWorkflows && availableWorkflows.every((w) => myWorkflowIds.has(w.id));
 
   if (isLoading) {
     return (
@@ -99,6 +102,8 @@ export default function MarketPage() {
             <div className="rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-6 text-center">
               <p className="figma-body-1-regular text-[var(--color-secondary-6)]">{t('noItemsAvailable')}</p>
             </div>
+          ) : hasCollectedAllAutomations ? (
+            <MarketAllAutomationsComplete t={t} />
           ) : selectedMobileWorkflow ? (
             <MobileWorkflowDetail
               workflow={selectedMobileWorkflow}
@@ -144,30 +149,36 @@ export default function MarketPage() {
         </div>
 
         <div className="hidden md:block">
-          <h2 className="figma-heading-semibold text-[var(--color-secondary-10)] mb-6">{t('title')}</h2>
-
           {!hasWorkflows ? (
-            <div className="rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-10 text-center">
-              <p className="figma-body-1-regular text-[var(--color-secondary-6)]">{t('noItemsAvailable')}</p>
-            </div>
+            <>
+              <h2 className="figma-heading-semibold text-[var(--color-secondary-10)] mb-6">{t('title')}</h2>
+              <div className="rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-10 text-center">
+                <p className="figma-body-1-regular text-[var(--color-secondary-6)]">{t('noItemsAvailable')}</p>
+              </div>
+            </>
+          ) : hasCollectedAllAutomations ? (
+            <MarketAllAutomationsComplete t={t} />
           ) : (
-            <div className="flex flex-col gap-8">
-              <section>
-                <h3 className="figma-body-2-semibold text-[var(--color-secondary-10)] mb-4">{t('sectionWorkflow')}</h3>
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-                  {availableWorkflows.map((workflow) => (
-                    <WorkflowCardAvailable
-                      key={workflow.id}
-                      workflow={workflow}
-                      isCreated={isWorkflowCreated(workflow.id)}
-                      onAdd={() => handleAddWorkflow(workflow)}
-                      t={t}
-                      tWorkflow={tWorkflow}
-                    />
-                  ))}
-                </div>
-              </section>
-            </div>
+            <>
+              <h2 className="figma-heading-semibold text-[var(--color-secondary-10)] mb-6">{t('title')}</h2>
+              <div className="flex flex-col gap-8">
+                <section>
+                  <h3 className="figma-body-2-semibold text-[var(--color-secondary-10)] mb-4">{t('sectionWorkflow')}</h3>
+                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                    {availableWorkflows.map((workflow) => (
+                      <WorkflowCardAvailable
+                        key={workflow.id}
+                        workflow={workflow}
+                        isCreated={isWorkflowCreated(workflow.id)}
+                        onAdd={() => handleAddWorkflow(workflow)}
+                        t={t}
+                        tWorkflow={tWorkflow}
+                      />
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </>
           )}
         </div>
 
@@ -184,6 +195,21 @@ export default function MarketPage() {
         )}
       </div>
     </AppLayout>
+  );
+}
+
+function MarketAllAutomationsComplete({ t }: { t: (key: string) => string }) {
+  return (
+    <div className="rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-6 md:p-10 text-center">
+      <h2 className="figma-heading-semibold text-[var(--color-secondary-10)] mb-3 md:mb-4">{t('allAutomationsTitle')}</h2>
+      <p className="figma-body-1-regular text-[var(--color-secondary-8)] mb-6 max-w-xl mx-auto">{t('allAutomationsSubtitle')}</p>
+      <Link
+        href="/dashboard"
+        className="inline-flex h-12 items-center justify-center rounded-[10px] bg-[var(--color-main)] px-6 figma-body-1-semibold text-[var(--color-secondary-10)]"
+      >
+        {t('viewActiveAutomations')}
+      </Link>
+    </div>
   );
 }
 

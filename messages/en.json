@@ -486,7 +486,10 @@
     "addWorkflow": "Add Workflow",
     "unnamedWorkflow": "Unnamed",
     "alreadyAdded": "This workflow has already been added",
-    "addedSuccessfully": "Workflow added successfully!"
+    "addedSuccessfully": "Workflow added successfully!",
+    "allAutomationsTitle": "Maximum Automation Achieved 🚀",
+    "allAutomationsSubtitle": "You've collected every single automation we currently offer. You are officially a power user! Time to put them to work.",
+    "viewActiveAutomations": "View Active Automations"
   },
   "workflows": {
     "title": "Available Workflows",

@@ -486,7 +486,10 @@
     "addWorkflow": "Додати workflow",
     "unnamedWorkflow": "Без назви",
     "alreadyAdded": "Цей workflow вже додано",
-    "addedSuccessfully": "Workflow успішно додано!"
+    "addedSuccessfully": "Workflow успішно додано!",
+    "allAutomationsTitle": "Максимум автоматизації досягнуто 🚀",
+    "allAutomationsSubtitle": "Ви зібрали всі автоматизації, які ми зараз пропонуємо. Ви офіційно power user! Час їх запускати.",
+    "viewActiveAutomations": "Переглянути активні автоматизації"
   },
   "workflows": {
     "title": "Доступні робочі процеси",
