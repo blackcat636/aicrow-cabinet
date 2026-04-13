@@ -11,7 +11,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
 import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
+import { resolveLocalizedApiField } from '@/lib/resolve-localized-api-field';
 import { toast } from 'sonner';
 import { useRouter } from '@/i18n/routing';
 import type {
@@ -28,6 +29,7 @@ interface PendingSubscriptionPayment {
 }
 
 export const BillingList: React.FC = () => {
+  const locale = useLocale();
   const t = useTranslations('billing');
   const router = useRouter();
   const { user } = useAuth();
@@ -237,7 +239,7 @@ export const BillingList: React.FC = () => {
     return (
       <div className="space-y-5 min-h-[400px]">
         <h2 className="figma-heading-semibold text-[var(--color-secondary-10)]">
-          Subscription
+          {t('plansSectionTitle')}
         </h2>
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
           {[1, 2, 3].map((i) => (
@@ -285,7 +287,7 @@ export const BillingList: React.FC = () => {
       />
 
       <h2 className="figma-heading-semibold text-[var(--color-secondary-10)]">
-        Subscription
+        {t('plansSectionTitle')}
       </h2>
 
       {showCreditsRemaining && (
@@ -296,7 +298,7 @@ export const BillingList: React.FC = () => {
           </span>
           {t('creditsRemainingSuffix')}
           <span className="inline-flex items-center rounded-md bg-[#757575] px-2.5 py-0.5 text-[16px] font-semibold leading-[1.4] tracking-[0.32px] text-[var(--color-secondary-10)]">
-            {activeData?.plan?.name ?? ''}
+            {resolveLocalizedApiField(activeData?.plan?.name, locale)}
           </span>
           {t('creditsRemainingPlan')}
         </div>
@@ -348,7 +350,9 @@ export const BillingList: React.FC = () => {
                     const activationDate = item.startDate
                       ? new Date(item.startDate).toLocaleDateString()
                       : '—';
-                    const planName = item.plan?.name || t('historyPlanFallback');
+                    const planName =
+                      resolveLocalizedApiField(item.plan?.name, locale) ||
+                      t('historyPlanFallback');
                     const rawPrice = item.plan?.price ?? item.amount;
                     const priceNum =
                       rawPrice == null

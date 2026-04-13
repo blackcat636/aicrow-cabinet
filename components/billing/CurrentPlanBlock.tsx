@@ -4,9 +4,10 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { ActivePlanResponse } from '@/types/subscription';
 import { formatPlanDescriptionForDisplay } from '@/lib/format-plan-description';
+import { resolveLocalizedApiField } from '@/lib/resolve-localized-api-field';
 
 interface CurrentPlanBlockProps {
   /** Active subscription data from GET /subscription-plans/my/active. Null when no plan or expired. */
@@ -31,48 +32,56 @@ const formatDate = (iso: string | undefined): string => {
   }
 };
 
-/** Format price for display (handles API string e.g. "1000.00000000"). */
-const formatPriceDisplay = (
-  price: string | number | undefined,
-): string => {
-  if (price == null) return '—';
-  const num = typeof price === 'string' ? parseFloat(price) : Number(price);
-  if (Number.isNaN(num) || num < 0) return '—';
-  if (num === 0) return 'Free';
-  
-  // Simple number formatting without locale-specific formatting for edge runtime compatibility
-  const rounded = Math.round(num * 100) / 100;
-  const formatted = rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2);
-  const formattedWithCommas = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-  
-  return formattedWithCommas;
-};
-
 export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
   activeData,
   onConvertTrial,
   isConverting
 }) => {
+  const locale = useLocale();
   const t = useTranslations('billing');
+
+  /** Format price for display (handles API string e.g. "1000.00000000"). */
+  const formatPriceDisplay = (price: string | number | undefined): string => {
+    if (price == null) return '—';
+    const num = typeof price === 'string' ? parseFloat(price) : Number(price);
+    if (Number.isNaN(num) || num < 0) return '—';
+    if (num === 0) return t('priceFree');
+
+    // Simple number formatting without locale-specific formatting for edge runtime compatibility
+    const rounded = Math.round(num * 100) / 100;
+    const formatted = rounded % 1 === 0 ? rounded.toString() : rounded.toFixed(2);
+    const formattedWithCommas = formatted.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+    return formattedWithCommas;
+  };
 
   const hasActive = Boolean(activeData?.isActive && activeData?.plan);
   const isTrial = Boolean(activeData?.isTrial);
   const userPlanId = activeData?.id;
-  const planName = activeData?.plan?.name;
-  const planDescription = activeData?.plan?.description;
+  const planName = resolveLocalizedApiField(activeData?.plan?.name, locale);
+  const planDescriptionRaw = activeData?.plan?.description;
+  const planDescriptionText = formatPlanDescriptionForDisplay(
+    planDescriptionRaw,
+    locale
+  );
   const planPrice = formatPriceDisplay(activeData?.plan?.price);
   const planCurrency = (activeData?.plan?.currency || 'USD').toUpperCase();
-  const planPeriod = String(activeData?.plan?.period || '').toLowerCase();
+  const planPeriodResolved = resolveLocalizedApiField(
+    activeData?.plan?.period,
+    locale
+  );
+  const planPeriod = planPeriodResolved.toLowerCase();
   const planPeriodLabel =
     planPeriod === 'monthly'
       ? t('periodMonthly')
       : planPeriod === 'yearly'
         ? t('periodYearly')
-        : activeData?.plan?.period;
+        : planPeriodResolved || undefined;
   const endDate = activeData?.trialEndDate ?? activeData?.endDate ?? undefined;
   const tokensLeft = activeData?.tokensLeft;
   const showSideColumn = Boolean(
-    planDescription || (hasActive && isTrial && userPlanId != null && onConvertTrial)
+    planDescriptionText.trim() !== '' ||
+      (hasActive && isTrial && userPlanId != null && onConvertTrial)
   );
 
   return (
@@ -135,13 +144,13 @@ export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
               )}
             </div>
             <div className="min-w-0 space-y-3">
-              {planDescription ? (
+              {planDescriptionText.trim() !== '' ? (
                 <div className="space-y-1">
                   <p className="text-xs tracking-wide text-[var(--color-secondary-10)]">
                     {t('fieldDescription')}
                   </p>
                   <p className="figma-body-3-regular text-[var(--color-secondary-10)] break-words whitespace-pre-line">
-                    {formatPlanDescriptionForDisplay(planDescription)}
+                    {planDescriptionText}
                   </p>
                 </div>
               ) : null}

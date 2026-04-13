@@ -1,34 +1,95 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useEffect, useState } from 'react';
+import { NextIntlClientProvider, useTranslations } from 'next-intl';
+import type { AbstractIntlMessages } from 'next-intl';
+import { routing } from '@/i18n/routing';
+import en from '@/messages/en.json';
+import uk from '@/messages/uk.json';
+import fr from '@/messages/fr.json';
+import es from '@/messages/es.json';
+import ru from '@/messages/ru.json';
 
-export default function Error({
+const MESSAGES: Record<(typeof routing.locales)[number], AbstractIntlMessages> =
+  {
+    en: en as AbstractIntlMessages,
+    uk: uk as AbstractIntlMessages,
+    fr: fr as AbstractIntlMessages,
+    es: es as AbstractIntlMessages,
+    ru: ru as AbstractIntlMessages
+  };
+
+function detectLocale(): (typeof routing.locales)[number] {
+  if (typeof window === 'undefined') {
+    return routing.defaultLocale;
+  }
+  const { pathname } = window.location;
+  for (const loc of routing.locales) {
+    if (pathname === `/${loc}` || pathname.startsWith(`/${loc}/`)) {
+      return loc;
+    }
+  }
+  const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/);
+  const fromCookie = match?.[1]?.trim();
+  if (
+    fromCookie &&
+    (routing.locales as readonly string[]).includes(fromCookie)
+  ) {
+    return fromCookie as (typeof routing.locales)[number];
+  }
+  return routing.defaultLocale;
+}
+
+function ErrorContent({
   error,
   reset
 }: {
-  error: Error;
+  error: Error & { digest?: string };
   reset: () => void;
 }) {
   const t = useTranslations('error');
-  
+
   useEffect(() => {
-    // Log the error to an error reporting service
     /* eslint-disable no-console */
     console.error(error);
   }, [error]);
 
   return (
-    <div>
-      <h2>{t('title') || 'Something went wrong!'}</h2>
+    <div className="min-h-[40vh] flex flex-col items-center justify-center gap-4 px-4 text-center text-white">
+      <h2 className="text-xl font-semibold">{t('title')}</h2>
       <button
-        onClick={
-          // Attempt to recover by trying to re-render the segment
-          () => reset()
-        }
+        type="button"
+        onClick={() => reset()}
+        className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium hover:bg-purple-700"
       >
-        {t('tryAgain') || 'Try again'}
+        {t('tryAgain')}
       </button>
     </div>
+  );
+}
+
+export default function Error({
+  error,
+  reset
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  // Root error.tsx renders outside [locale]/layout, so there is no NextIntlClientProvider
+  // from the locale tree. Match locale after mount to avoid SSR/client hydration mismatch.
+  const [locale, setLocale] = useState<(typeof routing.locales)[number]>(
+    routing.defaultLocale
+  );
+
+  useEffect(() => {
+    setLocale(detectLocale());
+  }, []);
+
+  const messages = MESSAGES[locale] ?? MESSAGES[routing.defaultLocale];
+
+  return (
+    <NextIntlClientProvider locale={locale} messages={messages}>
+      <ErrorContent error={error} reset={reset} />
+    </NextIntlClientProvider>
   );
 }

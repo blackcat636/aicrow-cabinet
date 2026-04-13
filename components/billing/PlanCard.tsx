@@ -4,9 +4,10 @@ import React from 'react';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Camera } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import type { SubscriptionPlan, PlanFeature } from '@/types/subscription';
 import { formatPlanDescriptionForDisplay } from '@/lib/format-plan-description';
+import { resolveLocalizedApiField } from '@/lib/resolve-localized-api-field';
 
 interface PlanCardProps {
   plan: SubscriptionPlan;
@@ -34,10 +35,12 @@ const formatAmount = (value: number | null): string => {
   return grouped;
 };
 
-const getFeatureLabel = (f: PlanFeature): string => {
+const getFeatureLabel = (f: PlanFeature, locale: string): string => {
   if (typeof f === 'string') return f;
-  if (f?.name) return f.name;
-  if (f?.key) return String(f.key);
+  const fromName = f?.name != null ? resolveLocalizedApiField(f.name, locale) : '';
+  if (fromName !== '') return fromName;
+  const fromKey = f?.key != null ? resolveLocalizedApiField(f.key, locale) : '';
+  if (fromKey !== '') return fromKey;
   return '—';
 };
 
@@ -48,14 +51,17 @@ export const PlanCard: React.FC<PlanCardProps> = ({
   isPurchasing = false,
   isMostPopular = false
 }) => {
+  const locale = useLocale();
   const t = useTranslations('billing');
-  const period = String(plan.period || '').toLowerCase();
+  const planName = resolveLocalizedApiField(plan.name, locale);
+  const periodResolved = resolveLocalizedApiField(plan.period, locale);
+  const period = periodResolved.toLowerCase();
   const periodLabel =
     period === 'monthly'
       ? t('periodMonthly')
       : period === 'yearly'
         ? t('periodYearly')
-        : plan.period;
+        : periodResolved || '—';
 
   const isCurrent = currentPlanId !== null && currentPlanId === plan.id;
   const hasTrial = plan.trialDays != null && plan.trialDays > 0;
@@ -63,13 +69,19 @@ export const PlanCard: React.FC<PlanCardProps> = ({
 
   const planPrice = formatAmount(formatAmountValue(plan.price));
   const planCurrency = (plan.currency || 'USD').toUpperCase();
+  const descriptionDisplay = formatPlanDescriptionForDisplay(
+    plan.description,
+    locale
+  );
 
   return (
     <div className={`relative min-w-0 flex flex-col ${isMostPopular ? 'mt-5 xl:mt-0' : ''}`}>
       {isMostPopular && (
         <div className="absolute -top-[22px] left-0 right-0 h-[22px] rounded-t-[10px] bg-[var(--color-main)] flex items-center justify-center gap-1">
           <span className="text-[11px] leading-[1.4] tracking-[0.22px] text-white">★</span>
-          <span className="text-[14px] leading-[1.4] tracking-[0.28px] text-white">Most popular</span>
+          <span className="text-[14px] leading-[1.4] tracking-[0.28px] text-white">
+            {t('mostPopular')}
+          </span>
         </div>
       )}
       <Card
@@ -81,7 +93,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
           <CardHeader className="p-4 pb-3">
             <div className="space-y-1">
               <h3 className="figma-heading-medium text-[var(--color-secondary-10)] uppercase">
-                {plan.name}
+                {planName}
               </h3>
               <p className="figma-body-1-medium text-[var(--color-secondary-5)]">
                 <span className="figma-heading-medium text-[var(--color-secondary-10)]">{planPrice}</span> {planCurrency}/{periodLabel}
@@ -99,9 +111,9 @@ export const PlanCard: React.FC<PlanCardProps> = ({
           </CardFooter>
           <div className="h-px bg-[var(--color-secondary-4)] w-full" />
           <CardContent className="flex-1 px-4 py-4">
-            {plan.description ? (
+            {descriptionDisplay.trim() !== '' ? (
               <p className="figma-body-3-regular text-[var(--color-secondary-6)] break-words whitespace-pre-line">
-                {formatPlanDescriptionForDisplay(plan.description)}
+                {descriptionDisplay}
               </p>
             ) : null}
             {features.length > 0 && (
@@ -110,7 +122,7 @@ export const PlanCard: React.FC<PlanCardProps> = ({
                   <li key={i} className="flex items-center gap-2 min-w-0">
                     <Camera className="w-4 h-4 text-[var(--color-secondary-10)] flex-shrink-0" strokeWidth={1.75} />
                     <span className="figma-body-3-regular text-[var(--color-secondary-10)] break-words">
-                      {getFeatureLabel(f)}
+                      {getFeatureLabel(f, locale)}
                     </span>
                   </li>
                 ))}
