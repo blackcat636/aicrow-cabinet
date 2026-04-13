@@ -14,7 +14,7 @@ const normalizeBaseUrl = (value?: string): string => {
 const resolvedBaseUrl =
   normalizeBaseUrl(process.env.NEXT_PUBLIC_API_URL) ||
   normalizeBaseUrl(process.env.API_BASE_URL) ||
-  'https://api.tempdomain.site';
+  'https://app.aipills.ca';
 
 export const API_CONFIG = {
   BASE_URL: resolvedBaseUrl,
