@@ -3,7 +3,6 @@
 import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { useLocale, useTranslations } from 'next-intl';
 import type { ActivePlanResponse } from '@/types/subscription';
 import { formatPlanDescriptionForDisplay } from '@/lib/format-plan-description';
@@ -79,10 +78,7 @@ export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
         : planPeriodResolved || undefined;
   const endDate = activeData?.trialEndDate ?? activeData?.endDate ?? undefined;
   const tokensLeft = activeData?.tokensLeft;
-  const showSideColumn = Boolean(
-    planDescriptionText.trim() !== '' ||
-      (hasActive && isTrial && userPlanId != null && onConvertTrial)
-  );
+  const showSideColumn = Boolean(planDescriptionText.trim() !== '');
 
   return (
     <div className="relative min-w-0 w-full">
@@ -154,15 +150,6 @@ export const CurrentPlanBlock: React.FC<CurrentPlanBlockProps> = ({
                   </p>
                 </div>
               ) : null}
-              {hasActive && isTrial && userPlanId != null && onConvertTrial && (
-                <Button
-                  className="bg-[var(--color-main)] hover:opacity-90 text-white border-0"
-                  onClick={() => onConvertTrial(userPlanId)}
-                  disabled={isConverting}
-                >
-                  {isConverting ? t('processing') : t('convertToPaid')}
-                </Button>
-              )}
             </div>
           </div>
         </CardContent>

@@ -28,9 +28,22 @@ export function formatPlanDescriptionForDisplay(
   text: unknown,
   locale: string = routing.defaultLocale
 ): string {
-  const fromLocales = resolveLocalizedApiField(text, locale);
-  const normalized =
-    fromLocales !== '' ? fromLocales : toDescriptionString(text);
+  const fromLocales = resolveLocalizedApiField(text, locale, {
+    allowAnyLocaleFallback: false
+  });
+  let normalized = fromLocales;
+  if (normalized === '') {
+    if (text != null && typeof text === 'object') {
+      return '';
+    }
+    if (typeof text === 'string') {
+      const trimmed = text.trim();
+      if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+        return '';
+      }
+    }
+    normalized = toDescriptionString(text);
+  }
   const trimmed = normalized.trim();
   if (trimmed.length === 0) return normalized;
   if (trimmed.includes('\n')) return normalized;

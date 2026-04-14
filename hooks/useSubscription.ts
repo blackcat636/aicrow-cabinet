@@ -1,10 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useLocale } from 'next-intl';
 import { subscriptionApi } from '@/lib/apiSubscription';
 import { ActiveSubscriptionData } from '@/types/subscription';
+import { resolveLocalizedApiField } from '@/lib/resolve-localized-api-field';
 
 export const useSubscription = () => {
+  const locale = useLocale();
   const [activePlan, setActivePlan] = useState<ActiveSubscriptionData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -31,7 +34,9 @@ export const useSubscription = () => {
     activePlan,
     isLoading,
     error,
-    planName: activePlan?.plan?.name || null,
+    planName: activePlan?.plan?.name
+      ? resolveLocalizedApiField(activePlan.plan.name, locale)
+      : null,
     isTrial: activePlan?.isTrial || false,
     isActive: activePlan?.isActive || false
   };
