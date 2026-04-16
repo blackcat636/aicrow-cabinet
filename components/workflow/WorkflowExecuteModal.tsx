@@ -250,7 +250,13 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
           return;
         }
         const fullKey = prefix ? `${prefix}.${field.key}` : field.key;
-        const value = prefix ? (formData[prefix]?.[field.key]) : formData[field.key];
+        let value: unknown;
+        if (prefix) {
+          const group = formData[prefix] as Record<string, unknown> | undefined;
+          value = group ? group[field.key] : undefined;
+        } else {
+          value = formData[field.key];
+        }
 
         // Check if field is empty
         // For boolean fields, only undefined/null is considered empty (false is a valid value)
@@ -361,7 +367,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         // Validate email
         if (field.type === 'email' && value) {
           const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!emailRegex.test(value)) {
+          if (!emailRegex.test(String(value))) {
             newErrors[fullKey] = `${field.label} must be a valid email address`;
             return;
           }
@@ -369,13 +375,14 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
 
         // Validate URL - allow URLs without protocol, will add https:// automatically
         if (field.type === 'url' && value) {
+          const urlString = String(value);
           try {
             // Try to validate as-is first
-            new URL(value);
+            new URL(urlString);
           } catch {
             // If fails, try adding https://
             try {
-              new URL(`https://${value}`);
+              new URL(`https://${urlString}`);
             } catch {
               newErrors[fullKey] = `${field.label} must be a valid URL`;
               return;
@@ -419,7 +426,13 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
       // Helper function to build payload recursively
       const buildPayload = (fieldList: UserField[], parentKey?: string) => {
         fieldList.forEach(field => {
-          const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
+          let value: unknown;
+          if (parentKey) {
+            const group = formData[parentKey] as Record<string, unknown> | undefined;
+            value = group ? group[field.key] : undefined;
+          } else {
+            value = formData[field.key];
+          }
           
           if (field.type === 'object' && field.fields) {
             // Skip object fields - they are not included in payload
@@ -471,8 +484,9 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
               }
               
               if (parentKey) {
-                if (!payload[parentKey]) payload[parentKey] = {};
-                payload[parentKey][field.key] = valueToSend;
+                const group = (payload[parentKey] as Record<string, unknown> | undefined) ?? {};
+                group[field.key] = valueToSend;
+                payload[parentKey] = group;
               } else {
                 payload[field.key] = valueToSend;
               }
@@ -543,7 +557,13 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
     }
 
     const fullKey = parentKey ? `${parentKey}.${field.key}` : field.key;
-    const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
+    let value: unknown;
+    if (parentKey) {
+      const group = formData[parentKey] as Record<string, unknown> | undefined;
+      value = group ? group[field.key] : undefined;
+    } else {
+      value = formData[field.key];
+    }
     const error = errors[fullKey];
     const hasError = !!error;
     const translatedLabel = translateFieldText(field.label, 'label');
@@ -565,7 +585,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
             </label>
             <input
               type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : 'text'}
-              value={value || ''}
+              value={value == null ? '' : String(value)}
               onChange={(e) => handleFieldChange(field.key, e.target.value, parentKey)}
               className={`w-full px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
                 hasError
@@ -590,7 +610,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
             </label>
             <input
               type="number"
-              value={value || ''}
+              value={value == null ? '' : String(value)}
               onChange={(e) => handleFieldChange(field.key, e.target.value ? Number(e.target.value) : '', parentKey)}
               className={`w-full px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
                 hasError
@@ -615,7 +635,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
                 <InfoIcon description={translatedDescription || field.description || ''} />
               )}
               <Switch
-                checked={value || false}
+                checked={Boolean(value)}
                 onCheckedChange={(checked) => handleFieldChange(field.key, checked, parentKey)}
               />
             </div>

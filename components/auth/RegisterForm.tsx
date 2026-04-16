@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { VerifyEmailForm } from "./VerifyEmailForm";
 
 import { useAuth } from "@/contexts/AuthContext";
-import { RegisterRequest } from "@/types/auth";
+import { RegisterRequest, RegisterResponse } from "@/types/auth";
 import { EyeIcon, EyeOffIcon } from "@/components/icons";
 import { useTranslations } from 'next-intl';
 // import { FacebookLoginButton } from "./FacebookLoginButton"; // Facebook auth disabled
@@ -98,7 +98,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({
 
     try {
       // Don't clear error here - let it persist if registration fails
-      const result = await register(formData);
+      const result = (await register(formData)) as RegisterResponse;
 
       // Registration successful - clear any previous errors
       clearError();

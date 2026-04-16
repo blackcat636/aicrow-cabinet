@@ -38,8 +38,9 @@ export const UserImpersonationModal: React.FC<Props> = ({
       setLoading(true);
       try {
         const data = await authApi.getUsersList();
-        const list: UserListItem[] = data?.data || data || [];
-        setUsers(Array.isArray(list) ? list : []);
+        const raw = (data as { data?: unknown })?.data ?? data;
+        const list = Array.isArray(raw) ? (raw as UserListItem[]) : [];
+        setUsers(list);
       } catch (error: any) {
         toast.error(error?.message || t('loadUsersError'));
       } finally {

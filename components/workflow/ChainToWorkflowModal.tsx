@@ -280,7 +280,14 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
         }
         
         const fullKey = prefix ? `${prefix}.${field.key}` : field.key;
-        const value = prefix ? (formData[prefix]?.[field.key]) : formData[field.key];
+
+        let value: unknown;
+        if (prefix) {
+          const group = formData[prefix] as Record<string, unknown> | undefined;
+          value = group ? group[field.key] : undefined;
+        } else {
+          value = formData[field.key];
+        }
 
         let isEmpty = false;
         if (field.type === 'boolean') {
@@ -413,7 +420,14 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
     
 
     const fullKey = parentKey ? `${parentKey}.${field.key}` : field.key;
-    const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
+
+    let value: unknown;
+    if (parentKey) {
+      const group = formData[parentKey] as Record<string, unknown> | undefined;
+      value = group ? group[field.key] : undefined;
+    } else {
+      value = formData[field.key];
+    }
     const error = errors[fullKey];
     const hasError = !!error;
 
@@ -549,7 +563,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
             </label>
             <input
               type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : 'text'}
-              value={value || ''}
+              value={value == null ? '' : String(value)}
               onChange={(e) => handleFieldChange(field.key, e.target.value, parentKey)}
               className={`w-full px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
                 hasError
@@ -574,7 +588,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
             </label>
             <input
               type="number"
-              value={value || ''}
+              value={value == null ? '' : String(value)}
               onChange={(e) => handleFieldChange(field.key, e.target.value ? Number(e.target.value) : '', parentKey)}
               className={`w-full px-4 py-2.5 bg-[#1a1b1f] border rounded-lg text-white placeholder-gray-500 focus:outline-none focus:ring-2 transition-all ${
                 hasError
@@ -599,7 +613,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                 <InfoIcon description={field.description} />
               )}
               <Switch
-                checked={value || false}
+                checked={Boolean(value)}
                 onCheckedChange={(checked) => handleFieldChange(field.key, checked, parentKey)}
               />
             </div>
@@ -999,7 +1013,13 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
             !((typeof fieldValue === 'string' && fieldValue === '') || 
               (Array.isArray(fieldValue) && fieldValue.length === 0));
           
-          const value = parentKey ? (formData[parentKey]?.[field.key]) : formData[field.key];
+          let value: unknown;
+          if (parentKey) {
+            const group = formData[parentKey] as Record<string, unknown> | undefined;
+            value = group ? group[field.key] : undefined;
+          } else {
+            value = formData[field.key];
+          }
           const valueToUse = (!allowEditPrefilled && isPrefilled && hasPrefilledValue) ? fieldValue : value;
           
           // Skip socials field if no availableSocialAccounts
@@ -1060,8 +1080,9 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
               }
               
               if (parentKey) {
-                if (!formPayload[parentKey]) formPayload[parentKey] = {};
-                formPayload[parentKey][field.key] = valueToSend;
+                const group = (formPayload[parentKey] as Record<string, unknown> | undefined) ?? {};
+                group[field.key] = valueToSend;
+                formPayload[parentKey] = group;
               } else {
                 formPayload[field.key] = valueToSend;
               }

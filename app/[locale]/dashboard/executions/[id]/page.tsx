@@ -36,6 +36,8 @@ export default function ExecutionDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [userWorkflowId, setUserWorkflowId] = useState<number | null>(null);
 
+  const hasInputData = !!(execution && (execution as any).inputData != null);
+
   useEffect(() => {
     if (executionId && isAuthenticated) {
       fetchExecutionDetails();
@@ -315,9 +317,11 @@ export default function ExecutionDetailsPage() {
             </div>
 
             {/* Input Data */}
-            {execution.inputData && (
+            {(hasInputData && (
               <div className="mb-4">
-                <h3 className="text-sm font-medium text-gray-300 mb-2">{t('inputData')}:</h3>
+                <h3 className="text-sm font-medium text-gray-300 mb-2">
+                  {t('inputData')}:
+                </h3>
                 <div className="p-3 bg-gray-800/50 rounded border border-gray-700/50">
                   {typeof execution.inputData === 'string' ? (
                     <pre className="text-xs text-gray-300 whitespace-pre-wrap break-words">
@@ -325,7 +329,9 @@ export default function ExecutionDetailsPage() {
                     </pre>
                   ) : (
                     <div className="space-y-2">
-                      {Object.entries(execution.inputData).map(([key, value]) => (
+                      {Object.entries(
+                        (execution.inputData || {}) as Record<string, unknown>
+                      ).map(([key, value]) => (
                         <div key={key} className="text-xs text-gray-300">
                           <span className="font-medium text-gray-400">{key}:</span>{' '}
                           <span className="break-words">
@@ -339,7 +345,7 @@ export default function ExecutionDetailsPage() {
                   )}
                 </div>
               </div>
-            )}
+            )) as any}
 
             {/* Result Data */}
             {execution.resultData && (

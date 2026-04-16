@@ -15,6 +15,12 @@ export interface RegisterRequest {
   phone?: string;
 }
 
+export interface RegisterResponse {
+  requiresVerification?: boolean;
+  email?: string;
+  [key: string]: unknown;
+}
+
 export interface LoginResponse {
   status: number;
   data: {
@@ -124,7 +130,7 @@ export interface ConfirmEmailChangeRequest {
 
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginRequest) => Promise<void>;
-  register: (userData: RegisterRequest) => Promise<void>;
+  register: (userData: RegisterRequest) => Promise<RegisterResponse>;
   logout: () => void;
   refreshAccessToken: () => Promise<void>;
   clearError: () => void;

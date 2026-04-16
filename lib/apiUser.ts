@@ -59,12 +59,13 @@ export const userApi = {
     try {
       // Clean up the data: remove undefined values and convert empty strings to null for optional fields
       const cleanedData: Partial<UpdateProfileRequest> = {};
-      Object.keys(profileData).forEach(key => {
-        const value = profileData[key as keyof UpdateProfileRequest];
+      const profileKeys = Object.keys(profileData) as Array<keyof UpdateProfileRequest>;
+      profileKeys.forEach(key => {
+        const value = profileData[key];
         if (value !== undefined) {
           // Convert empty strings to null for optional fields
           if ((key === 'phone' || key === 'photo' || key === 'dateOfBirth') && value === '') {
-            cleanedData[key] = null;
+            (cleanedData as Record<string, unknown>)[key] = null;
           } else {
             if (key === 'photo' && typeof value === 'string') {
               let url = getAvatarUrl(value) ?? value;
@@ -74,9 +75,9 @@ export const userApi = {
                   url = new URL(url, window.location.origin).toString();
                 } catch {}
               }
-              cleanedData[key] = url;
+              (cleanedData as Record<string, unknown>)[key] = url;
             } else {
-              cleanedData[key] = value;
+              (cleanedData as Record<string, unknown>)[key] = value;
             }
           }
         }

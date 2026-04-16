@@ -219,7 +219,7 @@ const ExecutionCard: React.FC<{
           </div>
 
           {/* Input Data */}
-          {execution.inputData && (
+          {(execution.inputData &&
             <div className="mb-3">
               <h4 className="text-sm font-medium text-gray-300 mb-1">{t('inputData')}:</h4>
               <div className="p-2 bg-gray-700 rounded text-xs text-gray-300">
@@ -231,7 +231,9 @@ const ExecutionCard: React.FC<{
                   />
                 ) : (
                   <div className="space-y-1">
-                    {Object.entries(execution.inputData).slice(0, 3).map(([key, value]) => (
+                    {Object.entries(
+                      (execution.inputData || {}) as Record<string, unknown>
+                    ).slice(0, 3).map(([key, value]) => (
                       <div key={key} className="break-all">
                         <span className="font-medium text-gray-400">{key}:</span>{' '}
                         <span>
@@ -241,16 +243,19 @@ const ExecutionCard: React.FC<{
                         </span>
                       </div>
                     ))}
-                    {Object.keys(execution.inputData).length > 3 && (
+                    {Object.keys(
+                      (execution.inputData || {}) as Record<string, unknown>
+                    ).length > 3 && (
                       <div className="text-gray-400 text-xs">
-                        ... і ще {Object.keys(execution.inputData).length - 3}
+                        ... і ще {Object.keys(
+                          (execution.inputData || {}) as Record<string, unknown>
+                        ).length - 3}
                       </div>
                     )}
                   </div>
                 )}
               </div>
-            </div>
-          )}
+            </div>) as any}
 
           {/* Output Data */}
           {execution.outputData && (

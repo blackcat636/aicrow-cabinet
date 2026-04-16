@@ -831,7 +831,7 @@ const ExecutionCard: React.FC<{
           </div>
 
           {/* Input Data */}
-          {execution.inputData && (
+          {(execution.inputData && (
             <div className="mb-4 mt-4">
               <h4 className="text-sm font-medium text-gray-300 mb-2">{tWorkflow('inputData')}:</h4>
               <div className="p-3 bg-gray-700 rounded text-sm text-gray-300">
@@ -839,7 +839,9 @@ const ExecutionCard: React.FC<{
                   <pre className="whitespace-pre-wrap break-all font-mono">{execution.inputData}</pre>
                 ) : (
                   <div className="space-y-2">
-                    {Object.entries(execution.inputData).map(([key, value]) => (
+                    {Object.entries(
+                      (execution.inputData || {}) as Record<string, unknown>
+                    ).map(([key, value]) => (
                       <div key={key} className="break-all">
                         <span className="font-medium text-gray-400">{key}:</span>{' '}
                         <span>
@@ -853,7 +855,7 @@ const ExecutionCard: React.FC<{
                 )}
               </div>
             </div>
-          )}
+          )) as any}
 
           {/* Output Data */}
           {execution.outputData && (

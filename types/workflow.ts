@@ -45,7 +45,7 @@ export interface WorkflowExecution {
   n8nExecutionId?: string;
   status: string;
   triggerType: TriggerType;
-  inputData: string;
+  inputData?: string | Record<string, unknown> | null;
   outputData?: string | null;
   resultData?: unknown;
   notificationSent: boolean;
