@@ -298,7 +298,8 @@
     "resettingPassword": "Resetting Password...",
     "passwordResetSuccess": "Password reset successfully!",
     "failedToSendResetCode": "Failed to send reset code",
-    "failedToResetPassword": "Failed to reset password"
+    "failedToResetPassword": "Failed to reset password",
+    "invalidCredentials": "Incorrect email or password"
   },
   "dashboard": {
     "title": "Dashboard",

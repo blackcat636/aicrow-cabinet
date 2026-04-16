@@ -1,7 +1,5 @@
 import { NextRequest } from 'next/server';
-import { User } from '@/types/auth';
-import { ensureValidToken, refreshAccessToken } from './auth-utils';
-import { decodeToken } from './auth-utils';
+import { API_CONFIG } from '@/config/api';
 import { ImpersonationInfo } from '@/types/auth';
 
 export interface AuthTokens {
@@ -69,24 +67,7 @@ const getCookieValue = (name: string): string | null => {
 
 export const setTokens = (tokens: AuthTokens) => {
   if (typeof window === 'undefined') return;
-
-  const nowSec = Math.floor(Date.now() / 1000);
-  const accessExp = decodeToken(tokens.accessToken)?.exp;
-  const refreshExp = decodeToken(tokens.refreshToken)?.exp;
-  const accessMaxAge = accessExp ? Math.max(0, accessExp - nowSec) : 60 * 60;
-  const refreshMaxAge = refreshExp
-    ? Math.max(0, refreshExp - nowSec)
-    : 365 * 24 * 60 * 60;
-
-  setCookieValue('access_token', tokens.accessToken, accessMaxAge);
-  setCookieValue('refresh_token', tokens.refreshToken, refreshMaxAge);
   setCookieValue('device_id', tokens.deviceId, 365 * 24 * 60 * 60);
-
-  setTimeout(() => {
-    const savedAccessToken = getCookieValue('access_token');
-    const savedRefreshToken = getCookieValue('refresh_token');
-    const savedDeviceId = getCookieValue('device_id');
-  }, 100);
 };
 
 export const getTokens = (request?: NextRequest) => {
@@ -100,8 +81,8 @@ export const getTokens = (request?: NextRequest) => {
     return tokens;
   } else {
     const tokens = {
-      accessToken: getCookieValue('access_token'),
-      refreshToken: getCookieValue('refresh_token'),
+      accessToken: null,
+      refreshToken: null,
       deviceId: getCookieValue('device_id')
     };
 
@@ -110,11 +91,11 @@ export const getTokens = (request?: NextRequest) => {
 };
 
 export const getAccessToken = (): string | null => {
-  return getCookieValue('access_token');
+  return null;
 };
 
 export const getRefreshToken = (): string | null => {
-  return getCookieValue('refresh_token');
+  return null;
 };
 
 export const removeTokens = () => {
@@ -123,8 +104,6 @@ export const removeTokens = () => {
   const secure = process.env.NODE_ENV === 'production';
   const secureFlag = secure ? 'secure; ' : '';
 
-  document.cookie = `access_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
-  document.cookie = `refresh_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
   document.cookie = `device_id=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; ${secureFlag}samesite=strict`;
 };
 
@@ -149,15 +128,9 @@ export const getImpersonationMeta = (): ImpersonationInfo | null => {
 };
 
 export const getAuthHeaders = (): HeadersInit => {
-  const accessToken = getAccessToken();
   const deviceId = getDeviceId();
 
-  if (!accessToken) {
-    return {};
-  }
-
   const headers: HeadersInit = {
-    Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json'
   };
 
@@ -169,62 +142,50 @@ export const getAuthHeaders = (): HeadersInit => {
 };
 
 const inflightRequests = new Map<string, Promise<Response>>();
+const API_ORIGIN = API_CONFIG.BASE_URL.replace(/\/$/, '');
+
+const toProxyUrl = (inputUrl: string): string => {
+  if (inputUrl.startsWith('/api/')) {
+    return inputUrl;
+  }
+
+  if (inputUrl.startsWith('/')) {
+    const normalized = inputUrl.replace(/^\/+/, '');
+    return `/api/proxy/${normalized}`;
+  }
+
+  const url = new URL(inputUrl);
+  if (url.origin !== API_ORIGIN) {
+    throw new Error('fetchWithAuth supports only API base origin');
+  }
+
+  const normalizedPath = url.pathname.replace(/^\/+/, '');
+  return `/api/proxy/${normalizedPath}${url.search}`;
+};
 
 const doFetchWithAuth = async (
   url: string,
-  options: RequestInit = {},
-  retryCount = 0
+  options: RequestInit = {}
 ): Promise<Response> => {
-  const maxRetries = 2;
-
-  try {
-    await ensureValidToken();
-
-    const authHeaders = getAuthHeaders();
-    const finalHeaders = {
-      ...authHeaders,
+  const response = await fetch(toProxyUrl(url), {
+    ...options,
+    headers: {
+      ...getAuthHeaders(),
       ...options.headers
-    };
+    },
+    credentials: 'include',
+    cache: 'no-cache'
+  });
 
-    const response = await fetch(url, {
-      ...options,
-      headers: finalHeaders,
-      cache: 'no-cache'
-    });
-
-    if (response.status === 401 && retryCount < maxRetries) {
-      try {
-        const refreshSuccess = await refreshAccessToken();
-        if (refreshSuccess) {
-          return fetchWithAuth(url, options, retryCount + 1);
-        } else {
-          removeTokens();
-          window.location.href = '/';
-          throw new Error('Unauthorized');
-        }
-      } catch (refreshError) {
-        removeTokens();
-        window.location.href = '/';
-        throw new Error('Unauthorized');
-      }
-    }
-
-    return response;
-  } catch (error) {
-    if (retryCount < maxRetries && error instanceof TypeError) {
-      const delay = Math.pow(2, retryCount) * 1000;
-      await new Promise((resolve) => setTimeout(resolve, delay));
-      return doFetchWithAuth(url, options, retryCount + 1);
-    }
-
-    throw error;
+  if (response.status === 401 && typeof window !== 'undefined') {
+    window.location.href = '/login';
   }
+  return response;
 };
 
 export const fetchWithAuth = async (
   url: string,
-  options: RequestInit = {},
-  retryCount = 0
+  options: RequestInit = {}
 ): Promise<Response> => {
   const method = (options.method || 'GET').toUpperCase();
   if (method === 'GET') {
@@ -233,7 +194,7 @@ export const fetchWithAuth = async (
     if (existing) {
       return existing.then((res) => res.clone());
     }
-    const promise = doFetchWithAuth(url, options, retryCount).finally(() => {
+    const promise = doFetchWithAuth(url, options).finally(() => {
       inflightRequests.delete(key);
     });
     inflightRequests.set(key, promise);
@@ -241,5 +202,5 @@ export const fetchWithAuth = async (
     return res.clone();
   }
 
-  return doFetchWithAuth(url, options, retryCount);
+  return doFetchWithAuth(url, options);
 };

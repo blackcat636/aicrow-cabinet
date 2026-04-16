@@ -19,6 +19,13 @@ import {
 import { buildApiUrl, API_CONFIG } from '@/config/api';
 import { fetchWithAuth } from './auth';
 
+type UserWorkflowUpdatePayload = Partial<
+  Pick<
+    AttachWorkflowRequest,
+    'credentialData' | 'inputDataTemplate' | 'name' | 'description'
+  >
+>;
+
 // API Functions
 export const workflowApi = {
   // Workflows
@@ -128,7 +135,7 @@ export const workflowApi = {
       // Create API data object according to API documentation
       // Fields allowed: credentialData, inputDataTemplate, name, description
       // Exclude workflowId and credentialType - they should not be changed
-      const apiData: any = {};
+      const apiData: UserWorkflowUpdatePayload = {};
       if (data.credentialData !== undefined)
         apiData.credentialData = data.credentialData;
       if (data.inputDataTemplate !== undefined)
@@ -161,11 +168,11 @@ export const workflowApi = {
       );
 
       const result = await response.json();
-      const userWorkflow = result.userWorkflow || result.data || result;
+      const userWorkflow: UserWorkflow = result.userWorkflow || result.data || result;
 
       // Ensure id is present in the response
       if (!userWorkflow.id && id) {
-        userWorkflow.id = id;
+        return { ...userWorkflow, id };
       }
 
       return userWorkflow;
@@ -398,10 +405,10 @@ export const workflowApi = {
 
       // Ensure the execution has an id for stable keying
       if (!execution?.id && id) {
-        execution.id = id;
+        return { ...execution, id } as WorkflowExecution;
       }
 
-      return execution;
+      return execution as WorkflowExecution;
     } catch (error) {
       throw error;
     }

@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { decodeToken } from '@/lib/auth-utils';
+import {
+  getAuthTokenCookieOptions,
+  getClearAdminTokenCookieOptions,
+  getClearAuthTokenCookieOptions,
+  getClearDeviceCookieOptions,
+  getClearImpersonationMetaCookieOptions,
+  getDeviceCookieOptions
+} from '@/lib/auth-cookies';
 
 export const runtime = 'edge';
 
@@ -16,15 +24,18 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
       response.cookies.set('impersonation_meta', '', {
-        path: '/',
-        maxAge: 0
+        ...getClearImpersonationMetaCookieOptions()
       });
-      response.cookies.set('access_token', '', { path: '/', maxAge: 0 });
-      response.cookies.set('refresh_token', '', { path: '/', maxAge: 0 });
-      response.cookies.set('device_id', '', { path: '/', maxAge: 0 });
-      response.cookies.set('admin_access_token', '', { path: '/', maxAge: 0 });
-      response.cookies.set('admin_refresh_token', '', { path: '/', maxAge: 0 });
-      response.cookies.set('admin_device_id', '', { path: '/', maxAge: 0 });
+      response.cookies.set('access_token', '', { ...getClearAuthTokenCookieOptions() });
+      response.cookies.set('refresh_token', '', { ...getClearAuthTokenCookieOptions() });
+      response.cookies.set('device_id', '', { ...getClearDeviceCookieOptions() });
+      response.cookies.set('admin_access_token', '', {
+        ...getClearAdminTokenCookieOptions()
+      });
+      response.cookies.set('admin_refresh_token', '', {
+        ...getClearAdminTokenCookieOptions()
+      });
+      response.cookies.set('admin_device_id', '', { ...getClearDeviceCookieOptions() });
       return response;
     }
 
@@ -42,29 +53,26 @@ export async function POST(request: NextRequest) {
     );
 
     response.cookies.set('access_token', adminAccessToken, {
-      path: '/',
-      maxAge: accessMaxAge,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      ...getAuthTokenCookieOptions(accessMaxAge)
     });
     response.cookies.set('refresh_token', adminRefreshToken, {
-      path: '/',
-      maxAge: refreshMaxAge,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      ...getAuthTokenCookieOptions(refreshMaxAge)
     });
     response.cookies.set('device_id', adminDeviceId, {
-      path: '/',
-      maxAge: 365 * 24 * 60 * 60,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      ...getDeviceCookieOptions(365 * 24 * 60 * 60)
     });
 
     // Clear impersonation and admin backup cookies
-    response.cookies.set('impersonation_meta', '', { path: '/', maxAge: 0 });
-    response.cookies.set('admin_access_token', '', { path: '/', maxAge: 0 });
-    response.cookies.set('admin_refresh_token', '', { path: '/', maxAge: 0 });
-    response.cookies.set('admin_device_id', '', { path: '/', maxAge: 0 });
+    response.cookies.set('impersonation_meta', '', {
+      ...getClearImpersonationMetaCookieOptions()
+    });
+    response.cookies.set('admin_access_token', '', {
+      ...getClearAdminTokenCookieOptions()
+    });
+    response.cookies.set('admin_refresh_token', '', {
+      ...getClearAdminTokenCookieOptions()
+    });
+    response.cookies.set('admin_device_id', '', { ...getClearDeviceCookieOptions() });
 
     return response;
   } catch (error) {

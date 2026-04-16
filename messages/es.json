@@ -292,7 +292,8 @@
     "resettingPassword": "Restableciendo contraseña...",
     "passwordResetSuccess": "¡Contraseña restablecida exitosamente!",
     "failedToSendResetCode": "Error al enviar el código de restablecimiento",
-    "failedToResetPassword": "Error al restablecer la contraseña"
+    "failedToResetPassword": "Error al restablecer la contraseña",
+    "invalidCredentials": "Correo o contraseña incorrectos"
   },
   "dashboard": {
     "title": "Panel de control",

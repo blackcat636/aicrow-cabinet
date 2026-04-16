@@ -16,6 +16,30 @@ import { API_CONFIG } from '@/config/api';
 
 const API_BASE_URL = API_CONFIG.BASE_URL;
 
+type ApiError = Error & {
+  status?: number;
+};
+
+type ErrorPayload = {
+  message?: string;
+  error?: string;
+};
+
+type UsersListResponse = Record<string, unknown>;
+
+const setErrorStatus = (error: Error, status: number): ApiError => {
+  const typedError = error as ApiError;
+  typedError.status = status;
+  return typedError;
+};
+
+const parseErrorPayload = (payload: unknown): ErrorPayload => {
+  if (typeof payload !== 'object' || payload === null) {
+    return {};
+  }
+  return payload as ErrorPayload;
+};
+
 export const authApi = {
   login: async (
     email: string,
@@ -41,7 +65,7 @@ export const authApi = {
           errorMessage = 'Invalid credentials';
         } else {
           try {
-            const errorData = await response.json();
+            const errorData = parseErrorPayload(await response.json());
 
             if (errorData.message) {
               if (errorData.message === 'Invalid credentials') {
@@ -64,9 +88,7 @@ export const authApi = {
           }
         }
 
-        const error = new Error(errorMessage);
-        (error as any).status = response.status;
-        throw error;
+        throw setErrorStatus(new Error(errorMessage), response.status);
       }
 
       const data = (await response.json()) as LoginResponse;
@@ -119,9 +141,7 @@ export const authApi = {
           }
         }
 
-        const error = new Error(errorMessage);
-        (error as any).status = response.status;
-        throw error;
+        throw setErrorStatus(new Error(errorMessage), response.status);
       }
 
       const data = await response.json();
@@ -153,7 +173,7 @@ export const authApi = {
           errorMessage = 'Invalid refresh token';
         } else {
           try {
-            errorData = await response.json();
+            errorData = parseErrorPayload(await response.json());
             if (errorData.message) {
               errorMessage = errorData.message;
             } else if (errorData.error) {
@@ -171,9 +191,7 @@ export const authApi = {
           }
         }
 
-        const error = new Error(errorMessage);
-        (error as any).status = response.status;
-        throw error;
+        throw setErrorStatus(new Error(errorMessage), response.status);
       }
 
       const data = (await response.json()) as RefreshTokenResponse;
@@ -194,11 +212,9 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = parseErrorPayload(await response.json().catch(() => ({})));
       const errorMessage = errorData.error || errorData.message || 'Impersonation failed';
-      const error = new Error(errorMessage);
-      (error as any).status = response.status;
-      throw error;
+      throw setErrorStatus(new Error(errorMessage), response.status);
     }
 
     return (await response.json()) as ImpersonateResponse;
@@ -214,15 +230,13 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = parseErrorPayload(await response.json().catch(() => ({})));
       const errorMessage = errorData.error || errorData.message || 'Failed to stop impersonation';
-      const error = new Error(errorMessage);
-      (error as any).status = response.status;
-      throw error;
+      throw setErrorStatus(new Error(errorMessage), response.status);
     }
   },
 
-  getUsersList: async (): Promise<any> => {
+  getUsersList: async (): Promise<UsersListResponse> => {
     const response = await fetch('/api/admin/users', {
       method: 'GET',
       headers: {
@@ -232,11 +246,9 @@ export const authApi = {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
+      const errorData = parseErrorPayload(await response.json().catch(() => ({})));
       const errorMessage = errorData.error || errorData.message || 'Failed to load users';
-      const error = new Error(errorMessage);
-      (error as any).status = response.status;
-      throw error;
+      throw setErrorStatus(new Error(errorMessage), response.status);
     }
 
     return await response.json();
@@ -256,7 +268,7 @@ export const authApi = {
         let errorMessage = 'Logout failed';
 
         try {
-          const errorData = await response.json();
+          const errorData = parseErrorPayload(await response.json());
           if (errorData.message) {
             errorMessage = errorData.message;
           } else if (errorData.error) {
@@ -273,9 +285,7 @@ export const authApi = {
           }
         }
 
-        const error = new Error(errorMessage);
-        (error as any).status = response.status;
-        throw error;
+        throw setErrorStatus(new Error(errorMessage), response.status);
       }
 
       const data = await response.json();
@@ -297,12 +307,11 @@ export const authApi = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        const error = new Error(
-          errorData.message || 'Failed to send reset code'
+        const errorData = parseErrorPayload(await response.json());
+        throw setErrorStatus(
+          new Error(errorData.message || 'Failed to send reset code'),
+          response.status
         );
-        (error as any).status = response.status;
-        throw error;
       }
 
       return await response.json();
@@ -323,12 +332,11 @@ export const authApi = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        const error = new Error(
-          errorData.message || 'Failed to reset password'
+        const errorData = parseErrorPayload(await response.json());
+        throw setErrorStatus(
+          new Error(errorData.message || 'Failed to reset password'),
+          response.status
         );
-        (error as any).status = response.status;
-        throw error;
       }
 
       return await response.json();
@@ -349,12 +357,11 @@ export const authApi = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        const error = new Error(
-          errorData.message || 'Email verification failed'
+        const errorData = parseErrorPayload(await response.json());
+        throw setErrorStatus(
+          new Error(errorData.message || 'Email verification failed'),
+          response.status
         );
-        (error as any).status = response.status;
-        throw error;
       }
 
       return await response.json();
@@ -375,12 +382,11 @@ export const authApi = {
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        const error = new Error(
-          errorData.message || 'Failed to resend verification code'
+        const errorData = parseErrorPayload(await response.json());
+        throw setErrorStatus(
+          new Error(errorData.message || 'Failed to resend verification code'),
+          response.status
         );
-        (error as any).status = response.status;
-        throw error;
       }
 
       return await response.json();
@@ -419,9 +425,10 @@ export const authApi = {
     const data = (await response.json()) as SSOInitiateCheckResponse;
 
     if (!response.ok) {
-      const error = new Error(data?.message || 'SSO initiate check failed');
-      (error as any).status = response.status;
-      throw error;
+      throw setErrorStatus(
+        new Error(data?.message || 'SSO initiate check failed'),
+        response.status
+      );
     }
 
     return data;
@@ -449,9 +456,10 @@ export const authApi = {
     const data = (await response.json()) as SSOExchangeResponse;
 
     if (!response.ok) {
-      const error = new Error(data?.message || 'SSO exchange failed');
-      (error as any).status = response.status;
-      throw error;
+      throw setErrorStatus(
+        new Error(data?.message || 'SSO exchange failed'),
+        response.status
+      );
     }
 
     return data;
@@ -472,7 +480,7 @@ export const authApi = {
         let errorMessage = 'Failed to send email change request';
 
         try {
-          const errorData = await response.json();
+          const errorData = parseErrorPayload(await response.json());
           if (errorData.message) {
             errorMessage = errorData.message;
           } else if (errorData.error) {
@@ -489,9 +497,7 @@ export const authApi = {
           }
         }
 
-        const error = new Error(errorMessage);
-        (error as any).status = response.status;
-        throw error;
+        throw setErrorStatus(new Error(errorMessage), response.status);
       }
     } catch (error) {
       throw error;
@@ -513,7 +519,7 @@ export const authApi = {
         let errorMessage = 'Failed to confirm email change';
 
         try {
-          const errorData = await response.json();
+          const errorData = parseErrorPayload(await response.json());
           if (errorData.message) {
             errorMessage = errorData.message;
           } else if (errorData.error) {
@@ -530,9 +536,7 @@ export const authApi = {
           }
         }
 
-        const error = new Error(errorMessage);
-        (error as any).status = response.status;
-        throw error;
+        throw setErrorStatus(new Error(errorMessage), response.status);
       }
     } catch (error) {
       throw error;

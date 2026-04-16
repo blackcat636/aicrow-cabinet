@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTokens, removeTokens } from '@/lib/auth';
+import { getTokens } from '@/lib/auth';
 import { API_CONFIG } from '@/config/api';
+import {
+  getClearAuthTokenCookieOptions,
+  getClearDeviceCookieOptions
+} from '@/lib/auth-cookies';
 
 export const runtime = 'edge';
 
@@ -25,10 +29,7 @@ export async function POST(request: NextRequest) {
           throw new Error('Logout failed');
         }
       } catch (error) {
-        console.warn(
-          '⚠️ API Logout warning: Could not reach external API',
-          error
-        );
+        console.warn('Logout upstream call failed');
       }
     }
 
@@ -40,36 +41,19 @@ export async function POST(request: NextRequest) {
 
     // Clear cookies
     nextResponse.cookies.set('access_token', '', {
-      path: '/',
-      expires: new Date(0),
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      httpOnly: true
+      ...getClearAuthTokenCookieOptions()
     });
     nextResponse.cookies.set('refresh_token', '', {
-      path: '/',
-      expires: new Date(0),
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      httpOnly: true
+      ...getClearAuthTokenCookieOptions()
     });
     nextResponse.cookies.set('device_id', '', {
-      path: '/',
-      expires: new Date(0),
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      ...getClearDeviceCookieOptions()
     });
 
     return nextResponse;
   } catch (error) {
-    console.error('❌ API Logout error:', error);
-    console.error('❌ Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
-    });
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { message: 'Internal server error' },
       { status: 500 }
     );
   }

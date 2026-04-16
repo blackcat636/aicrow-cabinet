@@ -3,11 +3,16 @@ import { fetchWithAuth, getDeviceId } from '@/lib/auth';
 import { FacebookAuthResponse, FacebookStatusResponse } from '@/types/auth';
 
 const API_BASE_URL = API_CONFIG.BASE_URL;
+type ApiError = Error & {
+  status?: number;
+  data?: unknown;
+  responseText?: string;
+};
 
-const buildError = async (response: Response, fallback: string) => {
+const buildError = async (response: Response, fallback: string): Promise<ApiError> => {
   try {
     const text = await response.text();
-    let data: any = {};
+    let data: Record<string, unknown> = {};
     
     try {
       data = JSON.parse(text);
@@ -16,15 +21,19 @@ const buildError = async (response: Response, fallback: string) => {
       data = { message: text || response.statusText || fallback };
     }
     
-    const message = data?.message || data?.error || data?.error_description || fallback;
-    const error = new Error(message);
-    (error as any).status = response.status;
-    (error as any).data = data;
-    (error as any).responseText = text;
+    const message =
+      (typeof data.message === 'string' && data.message) ||
+      (typeof data.error === 'string' && data.error) ||
+      (typeof data.error_description === 'string' && data.error_description) ||
+      fallback;
+    const error = new Error(message) as ApiError;
+    error.status = response.status;
+    error.data = data;
+    error.responseText = text;
     return error;
   } catch (err) {
-    const error = new Error(response.statusText || fallback);
-    (error as any).status = response.status;
+    const error = new Error(response.statusText || fallback) as ApiError;
+    error.status = response.status;
     return error;
   }
 };
@@ -69,7 +78,7 @@ export const facebookApi = {
     code: string,
     link = false
   ): Promise<FacebookAuthResponse | { status: number }> => {
-    const url = `${API_BASE_URL}/auth/facebook/verify`;
+    const url = '/api/auth/facebook/verify';
     const headers: HeadersInit = {
       'Content-Type': 'application/json'
     };
@@ -91,14 +100,15 @@ export const facebookApi = {
       cache: 'no-cache'
     };
 
-    const response = link
-      ? await fetchWithAuth(url, requestInit)
-      : await fetch(url, requestInit);
+    const response = await fetch(url, {
+      ...requestInit,
+      credentials: 'include'
+    });
 
     if (!response.ok) {
       const error = await buildError(response, 'Facebook verification failed');
-      const errorData = (error as any).data || {};
-      const responseText = (error as any).responseText || '';
+      const errorData = error.data || {};
+      const responseText = error.responseText || '';
       
       // Log detailed error information
       console.group('❌ [Facebook OAuth] Verification Failed');

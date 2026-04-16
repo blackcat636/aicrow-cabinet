@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { API_CONFIG } from '@/config/api';
 import { getTokens } from '@/lib/auth';
 import { decodeToken } from '@/lib/auth-utils';
+import {
+  getAdminTokenCookieOptions,
+  getAuthTokenCookieOptions,
+  getDeviceCookieOptions,
+  getImpersonationMetaCookieOptions
+} from '@/lib/auth-cookies';
 
 export const runtime = 'edge';
 
@@ -63,46 +69,28 @@ export async function POST(
       : refreshMaxAge;
 
     nextResponse.cookies.set('admin_access_token', accessToken, {
-      path: '/',
-      maxAge: adminAccessMaxAge,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      ...getAdminTokenCookieOptions(adminAccessMaxAge)
     });
     if (refreshToken) {
       nextResponse.cookies.set('admin_refresh_token', refreshToken, {
-        path: '/',
-        maxAge: adminRefreshMaxAge,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getAdminTokenCookieOptions(adminRefreshMaxAge)
       });
     }
     if (deviceId) {
       nextResponse.cookies.set('admin_device_id', deviceId, {
-        path: '/',
-        maxAge: 365 * 24 * 60 * 60,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getDeviceCookieOptions(365 * 24 * 60 * 60)
       });
     }
 
     // Set impersonated session tokens
     nextResponse.cookies.set('access_token', data.data.accessToken, {
-      path: '/',
-      maxAge: accessMaxAge,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      ...getAuthTokenCookieOptions(accessMaxAge)
     });
     nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
-      path: '/',
-      maxAge: refreshMaxAge,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      ...getAuthTokenCookieOptions(refreshMaxAge)
     });
     nextResponse.cookies.set('device_id', data.data.deviceId, {
-      path: '/',
-      maxAge: 365 * 24 * 60 * 60,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict'
+      ...getDeviceCookieOptions(365 * 24 * 60 * 60)
     });
 
     // Store impersonation meta for client UI
@@ -118,10 +106,7 @@ export async function POST(
         }
       }),
       {
-        path: '/',
-        maxAge: refreshMaxAge,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getImpersonationMetaCookieOptions(refreshMaxAge)
       }
     );
 

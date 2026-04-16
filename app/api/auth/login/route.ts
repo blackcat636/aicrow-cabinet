@@ -1,10 +1,54 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { API_CONFIG } from '@/config/api';
 import { decodeToken } from '@/lib/auth-utils';
+import {
+  getAuthTokenCookieOptions,
+  getDeviceCookieOptions
+} from '@/lib/auth-cookies';
 
 export const runtime = 'edge';
 
 const API_URL = API_CONFIG.BASE_URL.replace(/\/$/, '');
+type JsonObject = Record<string, unknown>;
+
+interface LoginPayload {
+  accessToken: string;
+  refreshToken: string;
+  deviceId: string;
+  user: unknown;
+  redirectUrl?: string;
+}
+
+interface BackendLoginResponse {
+  status?: number;
+  message?: string;
+  data?: LoginPayload;
+}
+
+const isRecord = (value: unknown): value is JsonObject =>
+  typeof value === 'object' && value !== null;
+
+const readErrorMessage = (payload: unknown, fallback: string): string => {
+  if (!isRecord(payload)) {
+    return fallback;
+  }
+  const message = payload.message;
+  const error = payload.error;
+  if (typeof message === 'string' && message.length > 0) {
+    return message;
+  }
+  if (typeof error === 'string' && error.length > 0) {
+    return error;
+  }
+  return fallback;
+};
+
+const toBackendLoginResponse = (payload: unknown): BackendLoginResponse => {
+  if (!isRecord(payload)) {
+    return {};
+  }
+  return payload as BackendLoginResponse;
+};
 const isAbsoluteHttpUrl = (value: string): boolean => {
   try {
     const url = new URL(value);
@@ -104,16 +148,17 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const data = await response.json();
+    const rawData: unknown = await response.json();
+    const data = toBackendLoginResponse(rawData);
     if (!response.ok) {
       return NextResponse.json(
-        { error: data.message || 'Login failed' },
+        { error: readErrorMessage(rawData, 'Login failed') },
         { status: response.status }
       );
     }
 
     // If backend returns redirectUrl in payload (SSO flow)
-    if (data?.data?.redirectUrl) {
+    if (data.data?.redirectUrl) {
       const targetLocation = resolveRedirectTarget(
         data.data.redirectUrl,
         frontendOrigin,
@@ -128,7 +173,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (data.status === 200 && data.data) {
+    if (
+      data.status === 200 &&
+      data.data &&
+      typeof data.data.accessToken === 'string' &&
+      typeof data.data.refreshToken === 'string' &&
+      typeof data.data.deviceId === 'string'
+    ) {
       // Set tokens in cookies
       const nextResponse = NextResponse.json(
         {
@@ -149,24 +200,15 @@ export async function POST(request: NextRequest) {
         : 365 * 24 * 60 * 60;
 
       nextResponse.cookies.set('access_token', data.data.accessToken, {
-        path: '/',
-        maxAge: accessMaxAge,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getAuthTokenCookieOptions(accessMaxAge)
       });
 
       nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
-        path: '/',
-        maxAge: refreshMaxAge,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getAuthTokenCookieOptions(refreshMaxAge)
       });
 
       nextResponse.cookies.set('device_id', data.data.deviceId, {
-        path: '/',
-        maxAge: 365 * 24 * 60 * 60,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getDeviceCookieOptions(365 * 24 * 60 * 60)
       });
 
       return nextResponse;

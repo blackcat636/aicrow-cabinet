@@ -14,10 +14,17 @@ import { useTranslations } from 'next-intl';
 interface WorkflowExecuteModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onExecute: (payload?: Record<string, any>) => Promise<void>;
+  onExecute: (payload?: Record<string, unknown>) => Promise<void>;
   workflowId: number; 
   workflowName?: string;
 }
+
+type SocialAccountsContainer = AvailableSocialAccounts & {
+  social_accounts?: AvailableSocialAccounts;
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string =>
+  error instanceof Error && error.message ? error.message : fallback;
 
 export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
   isOpen,
@@ -30,7 +37,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
   const [requirements, setRequirements] = useState<WorkflowRequirements | null>(null);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [availableSocialAccounts, setAvailableSocialAccounts] = useState<AvailableSocialAccounts | null>(null);
@@ -73,8 +80,8 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         setConfirmOpen(true);
       }
     };
-    window.addEventListener('keydown', handleKeyDown as any);
-    return () => window.removeEventListener('keydown', handleKeyDown as any);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
   const loadRequirements = async () => {
@@ -89,8 +96,13 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
         setAvailableSocialAccounts(data.availableSocialAccounts);
       }
       // Store allowedSocialNetworks from workflow if present
+      const workflowContainer = data as WorkflowRequirements & {
+        workflow?: { allowedSocialNetworks?: unknown };
+        allowedSocialNetworks?: unknown;
+      };
       const allowedFromWorkflow =
-        (data as any)?.workflow?.allowedSocialNetworks || (data as any)?.allowedSocialNetworks;
+        workflowContainer.workflow?.allowedSocialNetworks ||
+        workflowContainer.allowedSocialNetworks;
       if (Array.isArray(allowedFromWorkflow)) {
         setAllowedSocialNetworks(allowedFromWorkflow);
       } else {
@@ -155,7 +167,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
       
       setDefaults(fields);
       setFormData(initialData);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error loading requirements:', error);
       // If requirements endpoint fails, allow execution without fields
       setRequirements(null);
@@ -165,7 +177,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
     }
   };
 
-  const handleFieldChange = (key: string, value: any, parentKey?: string) => {
+  const handleFieldChange = (key: string, value: unknown, parentKey?: string) => {
     if (parentKey) {
       // Handle nested object field
       setFormData(prev => ({
@@ -205,18 +217,18 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
     const field = fields.find(f => f.key === key);
     if (!field || field.type !== 'array') return;
     
-    const currentArray = (formData[key] as any[]) || [];
+    const currentArray = (formData[key] as unknown[]) || [];
     const newItem = field.itemType === 'number' ? 0 : '';
     handleFieldChange(key, [...currentArray, newItem]);
   };
 
   const handleArrayItemRemove = (key: string, index: number) => {
-    const currentArray = (formData[key] as any[]) || [];
+    const currentArray = (formData[key] as unknown[]) || [];
     handleFieldChange(key, currentArray.filter((_, i) => i !== index));
   };
 
-  const handleArrayItemChange = (key: string, index: number, value: any) => {
-    const currentArray = (formData[key] as any[]) || [];
+  const handleArrayItemChange = (key: string, index: number, value: unknown) => {
+    const currentArray = (formData[key] as unknown[]) || [];
     const newArray = [...currentArray];
     newArray[index] = value;
     handleFieldChange(key, newArray);
@@ -402,7 +414,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
       
       // Build payload from form data
       const fields = requirements?.fields || requirements?.userFields || [];
-      const payload: Record<string, any> = {};
+      const payload: Record<string, unknown> = {};
       
       // Helper function to build payload recursively
       const buildPayload = (fieldList: UserField[], parentKey?: string) => {
@@ -489,7 +501,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
       await onExecute(Object.keys(payload).length > 0 ? payload : undefined);
       // Only close modal on success
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error handling is done in parent component
       // Don't close modal on error - let user see the error and try again
       console.error('Error executing workflow:', error);
@@ -622,8 +634,9 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
               ? availableSocialAccounts
               : null;
           const socialAccountsObj =
-            accountsContainer && (accountsContainer as any).social_accounts
-              ? (accountsContainer as any).social_accounts
+            accountsContainer &&
+            (accountsContainer as SocialAccountsContainer).social_accounts
+              ? (accountsContainer as SocialAccountsContainer).social_accounts
               : accountsContainer;
 
           // Normalize socialNetworks to a map by value (lowercased)

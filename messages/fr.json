@@ -292,7 +292,8 @@
     "resettingPassword": "Réinitialisation du mot de passe...",
     "passwordResetSuccess": "Mot de passe réinitialisé avec succès !",
     "failedToSendResetCode": "Échec de l'envoi du code de réinitialisation",
-    "failedToResetPassword": "Échec de la réinitialisation du mot de passe"
+    "failedToResetPassword": "Échec de la réinitialisation du mot de passe",
+    "invalidCredentials": "Email ou mot de passe incorrect"
   },
   "dashboard": {
     "title": "Tableau de bord",

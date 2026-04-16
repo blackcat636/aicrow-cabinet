@@ -298,7 +298,8 @@
     "resettingPassword": "Скидання пароля...",
     "passwordResetSuccess": "Пароль успішно скинуто!",
     "failedToSendResetCode": "Не вдалося відправити код скидання",
-    "failedToResetPassword": "Не вдалося скинути пароль"
+    "failedToResetPassword": "Не вдалося скинути пароль",
+    "invalidCredentials": "Не вдалося увійти: перевірте email і пароль."
   },
   "dashboard": {
     "title": "Панель керування",

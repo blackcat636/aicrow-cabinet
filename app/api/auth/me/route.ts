@@ -5,6 +5,25 @@ import { API_CONFIG } from '@/config/api';
 export const runtime = 'edge';
 
 const API_URL = API_CONFIG.BASE_URL;
+type JsonObject = Record<string, unknown>;
+
+interface BackendMeResponse {
+  status?: number;
+  message?: string;
+  data?: unknown;
+}
+
+const isRecord = (value: unknown): value is JsonObject =>
+  typeof value === 'object' && value !== null;
+
+const getMessage = (payload: unknown, fallback: string): string => {
+  if (!isRecord(payload)) return fallback;
+  const message = payload.message;
+  if (typeof message === 'string' && message.length > 0) {
+    return message;
+  }
+  return fallback;
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,11 +45,12 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const data = await response.json();
+    const rawData: unknown = await response.json();
+    const data = (isRecord(rawData) ? rawData : {}) as BackendMeResponse;
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: data.message || 'Failed to get user info' },
+        { message: getMessage(rawData, 'Failed to get user info') },
         { status: response.status }
       );
     }
@@ -39,20 +59,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ user: data.data }, { status: 200 });
     }
 
-    console.error('❌ Invalid response format:', data);
     return NextResponse.json(
-      { error: 'Invalid response format' },
+      { message: 'Invalid response format' },
       { status: 400 }
     );
   } catch (error) {
-    console.error('❌ API Me error:', error);
-    console.error('❌ Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
-    });
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { message: 'Internal server error' },
       { status: 500 }
     );
   }

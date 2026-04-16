@@ -13,6 +13,17 @@ import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { useLocale } from 'next-intl';
 
+type PrefilledField = UserField & {
+  value?: unknown;
+  prefilled?: boolean;
+};
+
+const asPrefilledField = (field: UserField): PrefilledField =>
+  field as PrefilledField;
+
+const getErrorMessage = (error: unknown, fallback: string): string =>
+  error instanceof Error && error.message ? error.message : fallback;
+
 interface ChainToWorkflowModalProps {
   isOpen: boolean;
   executionId: number;
@@ -39,7 +50,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [targetRequirements, setTargetRequirements] = useState<WorkflowRequirements | null>(null);
   const [loadingRequirements, setLoadingRequirements] = useState(false);
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formData, setFormData] = useState<Record<string, unknown>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // Whitelist of fields to show.
@@ -71,7 +82,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       const fields = targetRequirements.formFields;
       
       setFormData(prevFormData => {
-        const newFormData: Record<string, any> = { ...prevFormData };
+        const newFormData: Record<string, unknown> = { ...prevFormData };
         
         fields.forEach(field => {
           // Skip hidden fields
@@ -79,7 +90,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
             return;
           }
           
-          const fieldValue = (field as any).value;
+          const fieldValue = asPrefilledField(field).value;
           
           // Fill field with value if it exists and is not empty
           if (fieldValue !== undefined && fieldValue !== null) {
@@ -120,7 +131,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       
       // Initialize form data with values from API (formFields contains fields with values)
       const fields = requirements?.formFields || requirements?.fields || requirements?.userFields || [];
-      const initialData: Record<string, any> = {};
+      const initialData: Record<string, unknown> = {};
       
       const setDefaults = (fieldList: UserField[], prefix = '') => {
         fieldList.forEach(field => {
@@ -139,7 +150,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           
           // Use value from field if available (from chain-form API)
           // This is the main source of data - value contains pre-filled data
-          const fieldValue = (field as any).value;
+          const fieldValue = asPrefilledField(field).value;
           
           // Set value if it exists (not null/undefined) and is not empty
           // formFields values have priority over transformedData
@@ -199,7 +210,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       
       setDefaults(fields);
       setFormData(initialData);
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Silently handle error - requirements may not be available
       setTargetRequirements(null);
     } finally {
@@ -207,7 +218,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
     }
   };
 
-  const handleFieldChange = (key: string, value: any, parentKey?: string) => {
+  const handleFieldChange = (key: string, value: unknown, parentKey?: string) => {
     if (parentKey) {
       setFormData(prev => ({
         ...prev,
@@ -338,12 +349,12 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
   };
 
   // Build data array from formFields with non-empty values for display
-  const buildFormFieldsData = (): Array<{ label: string; value: any; key: string }> => {
+  const buildFormFieldsData = (): Array<{ label: string; value: unknown; key: string }> => {
     const fields = targetRequirements?.formFields || [];
-    const data: Array<{ label: string; value: any; key: string }> = [];
+    const data: Array<{ label: string; value: unknown; key: string }> = [];
     
     fields.forEach(field => {
-      const fieldValue = (field as any).value;
+      const fieldValue = asPrefilledField(field).value;
       if (fieldValue !== undefined && fieldValue !== null) {
         const isEmpty = 
           (typeof fieldValue === 'string' && fieldValue === '') ||
@@ -351,7 +362,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
         
         if (!isEmpty) {
           // Format value for display
-          let displayValue: any = fieldValue;
+          let displayValue: unknown = fieldValue;
           if ((field.type === 'enum' || field.type === 'radio') && field.options) {
             const option = field.options.find(opt => String(opt.value) === String(fieldValue));
             displayValue = option ? option.label : fieldValue;
@@ -382,8 +393,8 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
     }
     
     // Check if field value is an array (even if type is string)
-    const fieldValue = (field as any).value;
-    const isPrefilled = (field as any).prefilled === true;
+    const fieldValue = asPrefilledField(field).value;
+    const isPrefilled = asPrefilledField(field).prefilled === true;
     const hasValue = fieldValue !== undefined && fieldValue !== null && 
       !((typeof fieldValue === 'string' && fieldValue === '') || 
         (Array.isArray(fieldValue) && fieldValue.length === 0));
@@ -482,7 +493,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                 )}
               </label>
               <div className="space-y-2">
-                {arrayValue.map((item: any, index: number) => (
+                {arrayValue.map((item, index: number) => (
                   <div key={index} className="flex gap-2">
                     <input
                       type="text"
@@ -502,7 +513,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                     <button
                       type="button"
                       onClick={() => {
-                        const newArray = arrayValue.filter((_: any, i: number) => i !== index);
+                        const newArray = arrayValue.filter((_, i: number) => i !== index);
                         handleFieldChange(field.key, newArray, parentKey);
                       }}
                       className="px-4 py-2.5 bg-red-600/20 border border-red-600 text-red-400 rounded-lg hover:bg-red-600/30 transition-all"
@@ -948,8 +959,8 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
         setConfirmOpen(true);
       }
     };
-    window.addEventListener('keydown', handleKeyDown as any);
-    return () => window.removeEventListener('keydown', handleKeyDown as any);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
   const handleSubmit = async () => {
@@ -971,7 +982,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       // Build payload from form data
       // Use formFields from chain-form endpoint, fallback to fields/userFields
       const fields = targetRequirements?.formFields || targetRequirements?.fields || targetRequirements?.userFields || [];
-      const formPayload: Record<string, any> = {};
+      const formPayload: Record<string, unknown> = {};
       
       const buildPayload = (fieldList: UserField[], parentKey?: string) => {
         fieldList.forEach(field => {
@@ -982,8 +993,8 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
 
           // If field is prefilled and editing is not allowed, use value from formFields
           // Otherwise use value from formData (user input)
-          const fieldValue = (field as any).value;
-          const isPrefilled = (field as any).prefilled === true;
+          const fieldValue = asPrefilledField(field).value;
+          const isPrefilled = asPrefilledField(field).prefilled === true;
           const hasPrefilledValue = fieldValue !== undefined && fieldValue !== null && 
             !((typeof fieldValue === 'string' && fieldValue === '') || 
               (Array.isArray(fieldValue) && fieldValue.length === 0));
@@ -1007,7 +1018,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           } else {
             // Determine if field should be included in payload
             let shouldInclude = false;
-            let valueToSend: any = valueToUse;
+            let valueToSend: unknown = valueToUse;
             
             // Include fields if whitelist is empty (show all) or field is in whitelist
             if (isInWhitelist) {
@@ -1082,18 +1093,23 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
       } else {
         setError(t('chainModal.chainError'));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Parse error response to show detailed validation errors
-      let errorMessage = err.message || t('chainModal.networkError');
+      let errorMessage = getErrorMessage(err, t('chainModal.networkError'));
       
-      if (err.data) {
-        const errorData = err.data;
-        if (errorData.data?.errors && Array.isArray(errorData.data.errors)) {
-          errorMessage = errorData.data.errors.join(', ');
-        } else if (errorData.errors && Array.isArray(errorData.errors)) {
-          errorMessage = errorData.errors.join(', ');
-        } else if (errorData.message) {
-          errorMessage = errorData.message;
+      const errorData = (err as { data?: unknown }).data;
+      if (errorData && typeof errorData === 'object') {
+        const typedErrorData = errorData as {
+          data?: { errors?: string[] };
+          errors?: string[];
+          message?: string;
+        };
+        if (typedErrorData.data?.errors && Array.isArray(typedErrorData.data.errors)) {
+          errorMessage = typedErrorData.data.errors.join(', ');
+        } else if (typedErrorData.errors && Array.isArray(typedErrorData.errors)) {
+          errorMessage = typedErrorData.errors.join(', ');
+        } else if (typedErrorData.message) {
+          errorMessage = typedErrorData.message;
         }
       }
       
@@ -1290,7 +1306,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
         type="warning"
       />
     </>,
-    typeof document !== 'undefined' ? document.body : ({} as any)
-  ) as unknown as JSX.Element;
+    document.body
+  ) as JSX.Element;
 };
 

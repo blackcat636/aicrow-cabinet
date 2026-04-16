@@ -40,6 +40,19 @@ export const LoginForm: React.FC<LoginFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showResetPassword, setShowResetPassword] = useState(false);
 
+  const localizeAuthError = (rawError: string): string => {
+    const normalized = rawError.trim().toLowerCase();
+
+    if (
+      normalized === 'invalid credentials' ||
+      normalized === 'incorrect email or password'
+    ) {
+      return t('invalidCredentials');
+    }
+
+    return rawError;
+  };
+
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -115,7 +128,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
 
                 {error && (
                   <div className="rounded-[8px] border border-[#C42B2B] bg-[#C42B2B]/10 px-4 py-3 text-[14px] text-[#ff8d8d]">
-                    {error}
+                    {localizeAuthError(error)}
                   </div>
                 )}
 
@@ -228,7 +241,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
           {/* Error Message */}
           {error && (
             <div className="p-3 bg-red-900/20 border border-red-600 rounded-lg">
-              <p className="text-sm text-red-400">{error}</p>
+              <p className="text-sm text-red-400">{localizeAuthError(error)}</p>
             </div>
           )}
 

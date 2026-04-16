@@ -298,7 +298,8 @@
     "resettingPassword": "Сброс пароля...",
     "passwordResetSuccess": "Пароль успешно сброшен!",
     "failedToSendResetCode": "Не удалось отправить код сброса",
-    "failedToResetPassword": "Не удалось сбросить пароль"
+    "failedToResetPassword": "Не удалось сбросить пароль",
+    "invalidCredentials": "Неверная почта или пароль"
   },
   "dashboard": {
     "title": "Панель управления",

@@ -50,8 +50,7 @@
       {
         "args": "after-used",
         "ignoreRestSiblings": false,
-        "argsIgnorePattern": "^_.*?$",
-        "endOfLine": "auto"
+        "argsIgnorePattern": "^_.*?$"
       }
     ],
     "import/order": [

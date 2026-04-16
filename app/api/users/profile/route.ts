@@ -6,6 +6,25 @@ import { getAvatarUrl } from '@/lib/avatars';
 export const runtime = 'edge';
 
 const API_URL = API_CONFIG.BASE_URL;
+type JsonObject = Record<string, unknown>;
+
+interface BackendEnvelope {
+  status?: number;
+  message?: string;
+  data?: unknown;
+}
+
+const isRecord = (value: unknown): value is JsonObject =>
+  typeof value === 'object' && value !== null;
+
+const readMessage = (payload: unknown, fallback: string): string => {
+  if (!isRecord(payload)) return fallback;
+  const message = payload.message;
+  if (typeof message === 'string' && message.length > 0) {
+    return message;
+  }
+  return fallback;
+};
 
 export async function GET(request: NextRequest) {
   try {
@@ -27,11 +46,12 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    const data = await response.json();
+    const rawData: unknown = await response.json();
+    const data = (isRecord(rawData) ? rawData : {}) as BackendEnvelope;
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: data.message || 'Failed to get profile' },
+        { message: readMessage(rawData, 'Failed to get profile') },
         { status: response.status }
       );
     }
@@ -42,16 +62,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Fallback: if data is already the profile object
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(rawData, { status: 200 });
   } catch (error) {
-    console.error('❌ API Profile GET error:', error);
-    console.error('❌ Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
-    });
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { message: 'Internal server error' },
       { status: 500 }
     );
   }
@@ -91,25 +105,19 @@ export async function PUT(request: NextRequest) {
       body: JSON.stringify(body)
     });
 
-    const data = await response.json();
+    const rawData: unknown = await response.json();
 
     if (!response.ok) {
       return NextResponse.json(
-        { error: data.message || 'Failed to update profile' },
+        { message: readMessage(rawData, 'Failed to update profile') },
         { status: response.status }
       );
     }
 
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json(rawData, { status: 200 });
   } catch (error) {
-    console.error('❌ API Profile PUT error:', error);
-    console.error('❌ Error details:', {
-      message: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-      name: error instanceof Error ? error.name : 'Unknown'
-    });
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { message: 'Internal server error' },
       { status: 500 }
     );
   }

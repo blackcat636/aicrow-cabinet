@@ -1,12 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTokens, removeTokens } from '@/lib/auth';
+import { getTokens } from '@/lib/auth';
 
 import { API_CONFIG } from '@/config/api';
 import { decodeToken } from '@/lib/auth-utils';
+import {
+  getAuthTokenCookieOptions,
+  getClearAuthTokenCookieOptions,
+  getClearDeviceCookieOptions,
+  getDeviceCookieOptions
+} from '@/lib/auth-cookies';
 
 export const runtime = 'edge';
 
 const API_URL = API_CONFIG.BASE_URL;
+type JsonObject = Record<string, unknown>;
+
+interface RefreshPayload {
+  accessToken: string;
+  refreshToken: string;
+}
+
+interface BackendRefreshResponse {
+  status?: number;
+  message?: string;
+  data?: RefreshPayload;
+}
+
+const isRecord = (value: unknown): value is JsonObject =>
+  typeof value === 'object' && value !== null;
+
+const readMessage = (payload: unknown, fallback: string): string => {
+  if (!isRecord(payload)) {
+    return fallback;
+  }
+  const message = payload.message;
+  if (typeof message === 'string' && message.length > 0) {
+    return message;
+  }
+  return fallback;
+};
 
 export async function POST(request: NextRequest) {
   try {
@@ -28,9 +60,15 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({ refreshToken, deviceId })
     });
 
-    const data = await response.json();
+    const rawData: unknown = await response.json();
+    const data = (isRecord(rawData) ? rawData : {}) as BackendRefreshResponse;
 
-    if (data.status === 200 && data.data) {
+    if (
+      data.status === 200 &&
+      data.data &&
+      typeof data.data.accessToken === 'string' &&
+      typeof data.data.refreshToken === 'string'
+    ) {
       const nextResponse = NextResponse.json(
         { message: 'Token refreshed successfully' },
         { status: 200 }
@@ -44,24 +82,15 @@ export async function POST(request: NextRequest) {
 
       // Set cookies
       nextResponse.cookies.set('access_token', data.data.accessToken, {
-        path: '/',
-        maxAge: accessMaxAge,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getAuthTokenCookieOptions(accessMaxAge)
       });
 
       nextResponse.cookies.set('refresh_token', data.data.refreshToken, {
-        path: '/',
-        maxAge: refreshMaxAge,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getAuthTokenCookieOptions(refreshMaxAge)
       });
 
       nextResponse.cookies.set('device_id', deviceId, {
-        path: '/',
-        maxAge: 365 * 24 * 60 * 60,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getDeviceCookieOptions(365 * 24 * 60 * 60)
       });
 
       return nextResponse;
@@ -74,30 +103,19 @@ export async function POST(request: NextRequest) {
         );
         // Clear cookies
         nextResponse.cookies.set('access_token', '', {
-          path: '/',
-          expires: new Date(0),
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          httpOnly: true
+          ...getClearAuthTokenCookieOptions()
         });
         nextResponse.cookies.set('refresh_token', '', {
-          path: '/',
-          expires: new Date(0),
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          httpOnly: true
+          ...getClearAuthTokenCookieOptions()
         });
         nextResponse.cookies.set('device_id', '', {
-          path: '/',
-          expires: new Date(0),
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          ...getClearDeviceCookieOptions()
         });
         return nextResponse;
       }
 
       return NextResponse.json(
-        { error: data.message || 'Token refresh failed' },
+        { error: readMessage(rawData, 'Token refresh failed') },
         { status: response.status }
       );
     }

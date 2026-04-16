@@ -47,7 +47,7 @@ export interface WorkflowExecution {
   triggerType: TriggerType;
   inputData: string;
   outputData?: string | null;
-  resultData?: any;
+  resultData?: unknown;
   notificationSent: boolean;
   errorMessage?: string | null;
   priceUsd: string;
@@ -90,7 +90,7 @@ export interface CreateScheduleRequest {
 
 export interface ExecuteWorkflowRequest {
   inputData?: string;
-  payload?: Record<string, any>;
+  payload?: Record<string, unknown>;
   prompt?: string;
 }
 
@@ -116,12 +116,12 @@ export interface UserField {
   description?: string;
   hint?: string;
   placeholder?: string;
-  defaultValue?: any;
+  defaultValue?: unknown;
   itemType?: 'string' | 'number' | 'boolean' | 'email' | 'url';
   minItems?: number;
   maxItems?: number;
-  default?: any;
-  enum?: any[];
+  default?: unknown;
+  enum?: Array<string | number | boolean | null>;
   options?: EnumOption[];
   fields?: UserField[];
   hidden?: boolean;
@@ -133,12 +133,12 @@ export interface WorkflowRequirements {
   userFields?: UserField[];
   fields?: UserField[];
   formFields?: UserField[];
-  schema?: any;
-  existingValues?: Record<string, any>;
+  schema?: unknown;
+  existingValues?: Record<string, unknown>;
   sampleTemplate?: string;
   version?: number;
   defaultDataMapping?: Record<string, string>;
-  transformedData?: Record<string, any>;
+  transformedData?: Record<string, unknown>;
   sourceExecutionId?: number;
   targetUserWorkflowId?: number;
   targetWorkflow?: {
@@ -200,7 +200,7 @@ export interface AvailableChainsResponse {
 export interface ChainExecutionRequest {
   targetUserWorkflowId: number;
   dataMapping?: Record<string, string>;
-  additionalData?: Record<string, any>;
+  additionalData?: Record<string, unknown>;
   userText?: string;
 }
 

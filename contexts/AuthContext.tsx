@@ -1,8 +1,9 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback, useRef } from 'react';
-import { User, LoginRequest, RegisterRequest, ImpersonationInfo, FacebookAuthResponse } from '@/types/auth';
-import { removeTokens, getAccessToken, getRefreshToken, getImpersonationMeta, clearImpersonationMeta, setImpersonationMeta, setTokens, getDeviceId } from '@/lib/auth';
+import { User, LoginRequest, RegisterRequest, ImpersonationInfo } from '@/types/auth';
+import { UserProfile } from '@/types/user';
+import { getImpersonationMeta, clearImpersonationMeta, setImpersonationMeta } from '@/lib/auth';
 import { authApi } from '@/lib/apiAuth';
 import { userApi } from '@/lib/apiUser';
 import { facebookApi } from '@/lib/apiFacebook';
@@ -13,7 +14,7 @@ interface AuthContextType {
   isLoading: boolean;
   error: string | null;
   login: (credentials: LoginRequest) => Promise<void>;
-  register: (userData: RegisterRequest) => Promise<any>;
+  register: (userData: RegisterRequest) => Promise<unknown>;
   logout: () => Promise<void>;
   clearError: () => void;
   impersonationInfo: ImpersonationInfo | null;
@@ -26,6 +27,23 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const AUTH_LOG = true; // Set to false to disable auth debug logs
+type ProfileShape = {
+  id?: string | number | null;
+  email?: string | null;
+  username?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  phone?: string | null;
+  photo?: string | null;
+  role?: string | null;
+};
+
+const getErrorMessage = (error: unknown, fallback: string): string => {
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+  return fallback;
+};
 
 function authLog(message: string, data?: Record<string, unknown>) {
   if (AUTH_LOG && typeof window !== 'undefined') {
@@ -56,20 +74,28 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const authInitRequestIdRef = useRef(0);
   const [impersonationInfo, setImpersonationInfo] = useState<ImpersonationInfo | null>(null);
 
-  const mapProfileToUser = useCallback((profile: any): User => {
+  const mapProfileToUser = useCallback((profile: ProfileShape): User => {
     return {
       id: profile.id?.toString() || '',
-      email: profile.email,
-      username: profile.username,
+      email: profile.email || '',
+      username: profile.username || '',
       firstName: profile.firstName || '',
       lastName: profile.lastName || '',
-      phone: profile.phone,
-      photo: profile.photo,
-      role: profile.role,
+      phone: profile.phone || null,
+      photo: profile.photo || null,
+      role: profile.role || 'USER',
       balance: '0',
       frozenBalance: '0'
     };
   }, []);
+
+  const mapUserProfileToShape = useCallback(
+    (profile: UserProfile): ProfileShape => ({
+      ...profile,
+      id: profile.id
+    }),
+    []
+  );
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -112,7 +138,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     };
 
-    const applyAuthenticatedState = (profile: any) => {
+    const applyAuthenticatedState = (profile: ProfileShape) => {
       if (!isActive || requestId !== authInitRequestIdRef.current) return;
       authLog('applyAuthenticatedState', { requestId, username: profile?.username, id: profile?.id });
       setIsAuthenticated(true);
@@ -129,14 +155,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         if (currentPath === '/login' || currentPath === '/signup') {
           authLog('path is login/signup, clearing auth state');
           applyUnauthenticatedState(false, 'pathname_login_signup');
-          return;
-        }
-
-        const at = getAccessToken();
-        const rt = getRefreshToken();
-        if (!at && !rt) {
-          authLog('no tokens, applying unauthenticated');
-          applyUnauthenticatedState(true, 'no_tokens');
           return;
         }
 
@@ -170,12 +188,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               applyAuthenticatedState(profile);
             } else {
               authLog('profile after refresh failed', { requestId, status: profileRes.status });
-              removeTokens();
               applyUnauthenticatedState(true, 'profile_after_refresh_failed');
             }
           } else {
             authLog('refresh failed', { requestId });
-            removeTokens();
             applyUnauthenticatedState(true, 'refresh_failed');
           }
         } else {
@@ -186,21 +202,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         authLog('catch', {
           requestId,
           name: err?.name,
-          message: err?.message,
-          hasAccessToken: !!getAccessToken(),
-          hasRefreshToken: !!getRefreshToken()
+          message: err?.message
         });
         if (err?.name === 'AbortError') {
           authLog('AbortError, skipping');
           return;
         }
-        const at = getAccessToken();
-        const rt = getRefreshToken();
-        if (!at && !rt) {
-          applyUnauthenticatedState(true, 'catch_no_tokens');
-        } else {
-          authLog('catch with tokens: keeping user (no clear)');
-        }
+        applyUnauthenticatedState(true, 'catch_any_error');
       } finally {
         clearTimeout(timeoutId);
         if (isActive && requestId === authInitRequestIdRef.current) {
@@ -246,7 +254,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Continue to clear state and redirect even on network error
     } finally {
       clearImpersonationMeta();
-      removeTokens();
       setIsAuthenticated(false);
       setUser(null);
       setImpersonationInfo(null);
@@ -275,8 +282,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         throw new Error('Impersonation failed');
       }
-    } catch (error: any) {
-      setError(error.message || 'Impersonation failed');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'Impersonation failed'));
       throw error;
     } finally {
       setIsLoading(false);
@@ -295,15 +302,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       await authApi.stopImpersonation();
       clearImpersonationMeta();
       const profile = await userApi.getProfile();
-      setUser(mapProfileToUser(profile));
+      setUser(mapProfileToUser(mapUserProfileToShape(profile)));
       setIsAuthenticated(true);
       setImpersonationInfo(null);
-    } catch (error: any) {
-      removeTokens();
+    } catch (error: unknown) {
       setIsAuthenticated(false);
       setUser(null);
       setImpersonationInfo(null);
-      setError(error.message || 'Failed to stop impersonation');
+      setError(getErrorMessage(error, 'Failed to stop impersonation'));
       throw error;
     } finally {
       setIsLoading(false);
@@ -384,16 +390,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setIsAuthenticated(true);
         try {
           const profile = await userApi.getProfile();
-          setUser(mapProfileToUser(profile));
+          setUser(mapProfileToUser(mapUserProfileToShape(profile)));
         } catch (error) {
           setUser(data.user);
         }
       } else {
         throw new Error('Login failed');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[AuthContext] Login error:', error);
-      setError(error.message || 'Login failed');
+      setError(getErrorMessage(error, 'Login failed'));
       throw error;
     } finally {
       setIsLoading(false);
@@ -405,31 +411,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setError(null);
 
     try {
-      const result = (await facebookApi.verify(code, false)) as FacebookAuthResponse;
-      const data = result?.data;
-
-      if (!data?.accessToken || !data?.refreshToken) {
-        throw new Error('Invalid credentials');
-      }
-
-      const deviceId = data.deviceId || getDeviceId();
-
-      setTokens({
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        deviceId
-      });
-
+      const result = await facebookApi.verify(code, false);
       const profile = await userApi.getProfile();
-      setUser(mapProfileToUser(profile));
+      setUser(mapProfileToUser(mapUserProfileToShape(profile)));
       setIsAuthenticated(true);
       setImpersonationInfo(getImpersonationMeta());
-    } catch (error: any) {
-      removeTokens();
+    } catch (error: unknown) {
       setIsAuthenticated(false);
       setUser(null);
       setImpersonationInfo(null);
-      setError(error?.message || 'Invalid credentials');
+      setError(getErrorMessage(error, 'Invalid credentials'));
       throw error;
     } finally {
       setIsLoading(false);
@@ -443,17 +434,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await facebookApi.verify(code, true);
       const profile = await userApi.getProfile();
-      setUser(mapProfileToUser(profile));
+      setUser(mapProfileToUser(mapUserProfileToShape(profile)));
       setIsAuthenticated(true);
-    } catch (error: any) {
-      setError(error?.message || 'Facebook link failed');
+    } catch (error: unknown) {
+      setError(getErrorMessage(error, 'Facebook link failed'));
       throw error;
     } finally {
       setIsLoading(false);
     }
-  }, [mapProfileToUser]);
+  }, [mapProfileToUser, mapUserProfileToShape]);
 
-  const register = useCallback(async (userData: RegisterRequest): Promise<any> => {
+  const register = useCallback(async (userData: RegisterRequest): Promise<unknown> => {
     setIsLoading(true);
     setError(null);
 
@@ -475,8 +466,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       return data;
-    } catch (error: any) {
-      const errorMessage = error.message || 'Registration failed';
+    } catch (error: unknown) {
+      const errorMessage = getErrorMessage(error, 'Registration failed');
       setError(errorMessage);
       throw error;
     } finally {

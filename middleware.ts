@@ -4,6 +4,12 @@ import { getTokens } from '@/lib/auth';
 import { decodeToken } from '@/lib/auth-utils';
 import { authApi } from '@/lib/apiAuth';
 import { routing } from './i18n/routing';
+import {
+  getAuthTokenCookieOptions,
+  getClearAuthTokenCookieOptions,
+  getClearDeviceCookieOptions,
+  getDeviceCookieOptions
+} from '@/lib/auth-cookies';
 
 const protectedRoutes = [
   '/workflows',
@@ -28,6 +34,9 @@ const intlMiddleware = createMiddleware({
   ...routing,
   localeDetection: false
 });
+
+const isSupportedLocale = (value: string): value is (typeof routing.locales)[number] =>
+  (routing.locales as readonly string[]).includes(value);
 
 function getLocaleFromPathname(pathname: string): string | null {
   for (const locale of routing.locales) {
@@ -86,14 +95,14 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname === '/') {
-    const { accessToken, refreshToken } = getTokens(request);
+    const { accessToken, refreshToken, deviceId } = getTokens(request);
 
     const localeCookie =
       request.cookies.get('NEXT_LOCALE')?.value ||
       request.cookies.get('locale')?.value ||
       request.cookies.get('next-intl-locale')?.value;
     const currentLocale =
-      localeCookie && routing.locales.includes(localeCookie as any)
+      localeCookie && isSupportedLocale(localeCookie)
         ? localeCookie
         : routing.defaultLocale;
 
@@ -116,6 +125,43 @@ export async function middleware(request: NextRequest) {
           );
         }
       } catch (error) {
+        redirectResponse = NextResponse.redirect(
+          createLocalizedUrl('/login', currentLocale, request)
+        );
+      }
+    } else if (refreshToken && deviceId) {
+      try {
+        const refreshed = await authApi.refreshToken(refreshToken, deviceId);
+        if (refreshed.status === 200 && refreshed.data) {
+          const nextResponse = NextResponse.redirect(
+            createLocalizedUrl('/dashboard', currentLocale, request)
+          );
+          const nowSec = Math.floor(Date.now() / 1000);
+          const nextAccessExp = decodeToken(refreshed.data.accessToken)?.exp;
+          const nextRefreshExp = decodeToken(refreshed.data.refreshToken)?.exp;
+          const accessMaxAge = nextAccessExp
+            ? Math.max(0, nextAccessExp - nowSec)
+            : 60 * 60;
+          const refreshMaxAge = nextRefreshExp
+            ? Math.max(0, nextRefreshExp - nowSec)
+            : 365 * 24 * 60 * 60;
+
+          nextResponse.cookies.set('access_token', refreshed.data.accessToken, {
+            ...getAuthTokenCookieOptions(accessMaxAge)
+          });
+          nextResponse.cookies.set('refresh_token', refreshed.data.refreshToken, {
+            ...getAuthTokenCookieOptions(refreshMaxAge)
+          });
+          nextResponse.cookies.set('device_id', deviceId, {
+            ...getDeviceCookieOptions(365 * 24 * 60 * 60)
+          });
+          redirectResponse = nextResponse;
+        } else {
+          redirectResponse = NextResponse.redirect(
+            createLocalizedUrl('/login', currentLocale, request)
+          );
+        }
+      } catch {
         redirectResponse = NextResponse.redirect(
           createLocalizedUrl('/login', currentLocale, request)
         );
@@ -148,7 +194,7 @@ export async function middleware(request: NextRequest) {
     request.cookies.get('locale')?.value ||
     request.cookies.get('next-intl-locale')?.value;
   const preferredLocale =
-    localeCookie && routing.locales.includes(localeCookie as any)
+    localeCookie && isSupportedLocale(localeCookie)
       ? localeCookie
       : routing.defaultLocale;
 
@@ -239,7 +285,7 @@ export async function middleware(request: NextRequest) {
       request.cookies.get('locale')?.value ||
       request.cookies.get('next-intl-locale')?.value;
     const preferredLocale =
-      localeCookie && routing.locales.includes(localeCookie as any)
+      localeCookie && isSupportedLocale(localeCookie)
         ? localeCookie
         : routing.defaultLocale;
 
@@ -277,7 +323,9 @@ export async function middleware(request: NextRequest) {
       if (response.status === 200 && response.data) {
         const nextResponse =
           isAuthRoute && !isSSORoute
-            ? NextResponse.redirect(new URL('/dashboard', request.url))
+            ? NextResponse.redirect(
+                createLocalizedUrl('/dashboard', currentLocale, request)
+              )
             : NextResponse.next();
 
         const nowSec = Math.floor(Date.now() / 1000);
@@ -291,72 +339,45 @@ export async function middleware(request: NextRequest) {
           : 365 * 24 * 60 * 60;
 
         nextResponse.cookies.set('access_token', response.data.accessToken, {
-          path: '/',
-          maxAge: accessMaxAge,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          ...getAuthTokenCookieOptions(accessMaxAge),
         });
 
         nextResponse.cookies.set('refresh_token', response.data.refreshToken, {
-          path: '/',
-          maxAge: refreshMaxAge,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          ...getAuthTokenCookieOptions(refreshMaxAge),
         });
 
         nextResponse.cookies.set('device_id', deviceId, {
-          path: '/',
-          maxAge: 365 * 24 * 60 * 60,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          ...getDeviceCookieOptions(365 * 24 * 60 * 60),
         });
 
         return nextResponse;
       } else {
         const redirectResponse = NextResponse.redirect(
-          new URL('/login', request.url)
+          createLocalizedUrl('/login', currentLocale, request)
         );
         redirectResponse.cookies.set('access_token', '', {
-          path: '/',
-          expires: new Date(0),
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          ...getClearAuthTokenCookieOptions()
         });
         redirectResponse.cookies.set('refresh_token', '', {
-          path: '/',
-          expires: new Date(0),
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          ...getClearAuthTokenCookieOptions()
         });
         redirectResponse.cookies.set('device_id', '', {
-          path: '/',
-          expires: new Date(0),
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          ...getClearDeviceCookieOptions()
         });
         return redirectResponse;
       }
     } catch (error) {
       const redirectResponse = NextResponse.redirect(
-        new URL('/login', request.url)
+        createLocalizedUrl('/login', currentLocale, request)
       );
       redirectResponse.cookies.set('access_token', '', {
-        path: '/',
-        expires: new Date(0),
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getClearAuthTokenCookieOptions()
       });
       redirectResponse.cookies.set('refresh_token', '', {
-        path: '/',
-        expires: new Date(0),
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getClearAuthTokenCookieOptions()
       });
       redirectResponse.cookies.set('device_id', '', {
-        path: '/',
-        expires: new Date(0),
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getClearDeviceCookieOptions()
       });
       return redirectResponse;
     }
@@ -412,17 +433,11 @@ export async function middleware(request: NextRequest) {
           : 365 * 24 * 60 * 60;
 
         nextResponse.cookies.set('access_token', response.data.accessToken, {
-          path: '/',
-          maxAge: accessMaxAge,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          ...getAuthTokenCookieOptions(accessMaxAge),
         });
 
         nextResponse.cookies.set('refresh_token', response.data.refreshToken, {
-          path: '/',
-          maxAge: refreshMaxAge,
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          ...getAuthTokenCookieOptions(refreshMaxAge),
         });
 
         return nextResponse;
@@ -431,24 +446,13 @@ export async function middleware(request: NextRequest) {
           createLocalizedUrl('/login', currentLocale, request)
         );
         redirectResponse.cookies.set('access_token', '', {
-          path: '/',
-          expires: new Date(0),
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          httpOnly: true
+          ...getClearAuthTokenCookieOptions()
         });
         redirectResponse.cookies.set('refresh_token', '', {
-          path: '/',
-          expires: new Date(0),
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
-          httpOnly: true
+          ...getClearAuthTokenCookieOptions()
         });
         redirectResponse.cookies.set('device_id', '', {
-          path: '/',
-          expires: new Date(0),
-          secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict'
+          ...getClearDeviceCookieOptions()
         });
         return redirectResponse;
       }
@@ -457,24 +461,13 @@ export async function middleware(request: NextRequest) {
         createLocalizedUrl('/login', currentLocale, request)
       );
       redirectResponse.cookies.set('access_token', '', {
-        path: '/',
-        expires: new Date(0),
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        httpOnly: true
+        ...getClearAuthTokenCookieOptions()
       });
       redirectResponse.cookies.set('refresh_token', '', {
-        path: '/',
-        expires: new Date(0),
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        httpOnly: true
+          ...getClearAuthTokenCookieOptions()
       });
       redirectResponse.cookies.set('device_id', '', {
-        path: '/',
-        expires: new Date(0),
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
+        ...getClearDeviceCookieOptions()
       });
       return redirectResponse;
     }
