@@ -11,9 +11,9 @@ import {
   getDeviceCookieOptions,
 } from "@/lib/auth-cookies";
 
-export const isSupportedLocale = (
-  value: string,
-): value is (typeof routing.locales)[number] =>
+export type AppLocale = (typeof routing.locales)[number];
+
+export const isSupportedLocale = (value: string): value is AppLocale =>
   (routing.locales as readonly string[]).includes(value);
 
 /** Raw cookie chain (same order as middleware). */
@@ -27,10 +27,10 @@ export function readRawLocaleCookie(request: NextRequest): string | undefined {
 
 export function getLocaleContext(request: NextRequest): {
   rawLocaleCookie: string | undefined;
-  preferredLocale: string;
+  preferredLocale: AppLocale;
 } {
   const rawLocaleCookie = readRawLocaleCookie(request);
-  const preferredLocale =
+  const preferredLocale: AppLocale =
     rawLocaleCookie && isSupportedLocale(rawLocaleCookie)
       ? rawLocaleCookie
       : routing.defaultLocale;

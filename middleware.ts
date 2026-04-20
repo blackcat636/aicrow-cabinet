@@ -352,7 +352,7 @@ export async function middleware(request: NextRequest) {
       if (response.status === 200 && response.data) {
         const nextResponse = intlResponse || NextResponse.next();
 
-        applyRefreshedAuthCookies(nextResponse, response.data);
+        applyRefreshedAuthCookies(nextResponse, response.data, deviceId);
 
         return nextResponse;
       } else {
