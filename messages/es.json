@@ -89,6 +89,7 @@
     "facebookUnlinked": "Cuenta de Facebook desvinculada",
     "facebookLinked": "Cuenta de Facebook vinculada",
     "facebookLinkError": "No se pudo vincular la cuenta de Facebook",
+    "facebookAlreadyLinked": "Esta cuenta de Facebook ya está vinculada a otro usuario",
     "externalServicesTitle": "Servicios SSO externos",
     "externalServicesEmpty": "No hay servicios externos con acceso activo",
     "externalServicesLoadError": "No se pudieron cargar los servicios externos",
@@ -187,6 +188,7 @@
     "executions": "Ejecuciones",
     "balance": "Saldo",
     "billing": "Facturación",
+    "balanceLabel": "Saldo",
     "integrations": "Integraciones",
     "socialMedia": "Redes sociales",
     "profile": "Perfil",
@@ -216,6 +218,7 @@
     "or": "O",
     "socialLoginError": "Error al iniciar sesión con la red social",
     "facebookDisabled": "El inicio de sesión con Facebook no está disponible temporalmente",
+    "facebookAlreadyLinked": "Esta cuenta de Facebook ya está vinculada a otro usuario",
     "emailRequired": "El correo electrónico es requerido",
     "invalidEmailFormat": "Formato de correo electrónico inválido",
     "passwordRequired": "La contraseña es requerida",
@@ -230,6 +233,8 @@
     "verifyEmail": "Verificar correo electrónico",
     "verifyEmailDescription": "Por favor ingresa el código de verificación enviado a tu correo electrónico",
     "verificationCode": "Código de verificación",
+    "verificationCodeTitleLine1": "Verificación",
+    "verificationCodeTitleLine2": "Código",
     "verificationCodeRequired": "El código de verificación es requerido",
     "verifyEmailSuccess": "Correo electrónico verificado exitosamente",
     "verifyEmailError": "Error al verificar el correo electrónico",
@@ -243,6 +248,7 @@
     "enterYourEmail": "Ingresa tu correo electrónico",
     "enterYourPassword": "Ingresa tu contraseña",
     "createAccount": "Crear cuenta",
+    "next": "Siguiente",
     "createAPassword": "Crear una contraseña",
     "confirmYourPassword": "Confirma tu contraseña",
     "creatingAccount": "Creando cuenta...",
@@ -498,7 +504,13 @@
     "addedSuccessfully": "¡Flujo de trabajo agregado exitosamente!",
     "noWorkflowsYet": "Aún no hay flujos de trabajo",
     "getStarted": "Comienza adjuntando tu primer flujo de trabajo para automatizar tus tareas.",
-    "loading": "Cargando..."
+    "loading": "Cargando...",
+    "sections": {
+      "video": "Vídeo",
+      "photo": "Foto",
+      "socialMedia": "Redes sociales",
+      "other": "Otro"
+    }
   },
   "executions": {
     "title": "Historial de ejecuciones",
@@ -683,6 +695,7 @@
     "amount": "Cantidad",
     "date": "Fecha",
     "status": "Estado",
+    "transactionDescriptionLabel": "Descripción",
     "token": "Token",
     "transactionHistory": "Historial de transacciones",
     "viewAllTransactions": "Ver todas tus transacciones de saldo",

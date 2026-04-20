@@ -89,6 +89,7 @@
     "facebookUnlinked": "Compte Facebook dissocié",
     "facebookLinked": "Compte Facebook lié",
     "facebookLinkError": "Impossible de lier le compte Facebook",
+    "facebookAlreadyLinked": "Ce compte Facebook est déjà lié à un autre utilisateur",
     "externalServicesTitle": "Services SSO externes",
     "externalServicesEmpty": "Aucun service externe avec accès actif",
     "externalServicesLoadError": "Impossible de charger les services externes",
@@ -187,6 +188,7 @@
     "executions": "Exécutions",
     "balance": "Solde",
     "billing": "Facturation",
+    "balanceLabel": "Solde",
     "integrations": "Intégrations",
     "socialMedia": "Médias sociaux",
     "profile": "Profil",
@@ -216,6 +218,7 @@
     "or": "OU",
     "socialLoginError": "Échec de la connexion via le réseau social",
     "facebookDisabled": "La connexion Facebook est temporairement indisponible",
+    "facebookAlreadyLinked": "Ce compte Facebook est déjà lié à un autre utilisateur",
     "emailRequired": "Le courriel est requis",
     "invalidEmailFormat": "Format de courriel invalide",
     "passwordRequired": "Le mot de passe est requis",
@@ -230,6 +233,8 @@
     "verifyEmail": "Vérifier le courriel",
     "verifyEmailDescription": "Veuillez entrer le code de vérification envoyé à votre courriel",
     "verificationCode": "Code de vérification",
+    "verificationCodeTitleLine1": "Vérification",
+    "verificationCodeTitleLine2": "Code",
     "verificationCodeRequired": "Le code de vérification est requis",
     "verifyEmailSuccess": "Courriel vérifié avec succès",
     "verifyEmailError": "Échec de la vérification du courriel",
@@ -243,6 +248,7 @@
     "enterYourEmail": "Entrez votre courriel",
     "enterYourPassword": "Entrez votre mot de passe",
     "createAccount": "Créer un compte",
+    "next": "Suivant",
     "createAPassword": "Créer un mot de passe",
     "confirmYourPassword": "Confirmer votre mot de passe",
     "creatingAccount": "Création du compte...",
@@ -498,7 +504,13 @@
     "addedSuccessfully": "Flux de travail ajouté avec succès !",
     "noWorkflowsYet": "Aucun flux de travail pour le moment",
     "getStarted": "Commencez en ajoutant votre premier flux de travail pour automatiser vos tâches.",
-    "loading": "Chargement..."
+    "loading": "Chargement...",
+    "sections": {
+      "video": "Vidéo",
+      "photo": "Photo",
+      "socialMedia": "Médias sociaux",
+      "other": "Autre"
+    }
   },
   "executions": {
     "title": "Historique d'exécution",
@@ -683,6 +695,7 @@
     "amount": "Montant",
     "date": "Date",
     "status": "Statut",
+    "transactionDescriptionLabel": "Description",
     "token": "Jeton",
     "transactionHistory": "Historique des transactions",
     "viewAllTransactions": "Voir toutes vos transactions de solde",
