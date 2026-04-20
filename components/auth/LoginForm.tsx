@@ -3,7 +3,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginRequest } from '@/types/auth';
-import { getDeviceId } from '@/lib/auth';
 import { EyeIcon, EyeOffIcon } from '@/components/icons';
 import { ResetPasswordForm } from './ResetPasswordForm';
 import { useTranslations } from 'next-intl';
@@ -88,7 +87,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({
       if (isModal && onClose) {
         onClose();
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       // Error state is handled inside the auth context
       console.error('[LoginForm] Login error:', err);
     }

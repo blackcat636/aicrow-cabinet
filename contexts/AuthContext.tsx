@@ -5,7 +5,8 @@ import { User, LoginRequest, RegisterRequest, ImpersonationInfo } from '@/types/
 import { UserProfile } from '@/types/user';
 import { getImpersonationMeta, clearImpersonationMeta, setImpersonationMeta } from '@/lib/auth';
 import { authApi } from '@/lib/apiAuth';
-import { userApi } from '@/lib/apiUser';
+import { userApi, getHttpErrorStatus } from '@/lib/apiUser';
+import { readApiJsonMessage } from '@/lib/api-json-error';
 import { facebookApi } from '@/lib/apiFacebook';
 
 interface AuthContextType {
@@ -44,6 +45,9 @@ const getErrorMessage = (error: unknown, fallback: string): string => {
   }
   return fallback;
 };
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
 
 function authLog(message: string, data?: Record<string, unknown>) {
   if (AUTH_LOG && typeof window !== 'undefined') {
@@ -158,44 +162,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           return;
         }
 
-        authLog('fetching /api/users/profile', { requestId });
-        const res = await fetch('/api/users/profile', {
-          method: 'GET',
-          cache: 'no-cache',
-          signal: controller.signal
-        });
-        authLog('profile response', { requestId, status: res.status, ok: res.ok });
-
-        if (res.ok) {
-          const profile = await res.json();
-          applyAuthenticatedState(profile);
-        } else if (res.status === 401) {
-          authLog('401, trying refresh', { requestId });
-          const refreshRes = await fetch('/api/auth/refresh', {
-            method: 'POST',
-            cache: 'no-cache',
-            signal: controller.signal
-          });
-          authLog('refresh response', { requestId, status: refreshRes.status, ok: refreshRes.ok });
-          if (refreshRes.ok) {
-            const profileRes = await fetch('/api/users/profile', {
-              method: 'GET',
+        authLog('fetching profile via userApi.getProfile', { requestId });
+        try {
+          const profile = await userApi.getProfile({ signal: controller.signal });
+          authLog('profile ok', { requestId, username: profile.username });
+          applyAuthenticatedState(mapUserProfileToShape(profile));
+        } catch (firstErr: unknown) {
+          const status = getHttpErrorStatus(firstErr);
+          authLog('profile request outcome', { requestId, status, name: firstErr instanceof Error ? firstErr.name : undefined });
+          if (status === 401) {
+            authLog('401, trying refresh', { requestId });
+            const refreshRes = await fetch('/api/auth/refresh', {
+              method: 'POST',
               cache: 'no-cache',
+              credentials: 'include',
               signal: controller.signal
             });
-            if (profileRes.ok) {
-              const profile = await profileRes.json();
-              applyAuthenticatedState(profile);
+            authLog('refresh response', { requestId, status: refreshRes.status, ok: refreshRes.ok });
+            if (refreshRes.ok) {
+              try {
+                const profile = await userApi.getProfile({ signal: controller.signal });
+                applyAuthenticatedState(mapUserProfileToShape(profile));
+              } catch {
+                authLog('profile after refresh failed', { requestId });
+                applyUnauthenticatedState(true, 'profile_after_refresh_failed');
+              }
             } else {
-              authLog('profile after refresh failed', { requestId, status: profileRes.status });
-              applyUnauthenticatedState(true, 'profile_after_refresh_failed');
+              authLog('refresh failed', { requestId });
+              applyUnauthenticatedState(true, 'refresh_failed');
             }
+          } else if (status != null && status !== 401) {
+            authLog('non-401 profile error: keeping prior auth state', { requestId, status });
           } else {
-            authLog('refresh failed', { requestId });
-            applyUnauthenticatedState(true, 'refresh_failed');
+            throw firstErr;
           }
-        } else {
-          authLog('non-200 non-401: keeping user (no clear)', { requestId, status: res.status });
         }
       } catch (error) {
         const err = error as { name?: string; message?: string };
@@ -226,7 +226,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [mapProfileToUser]);
+  }, [mapProfileToUser, mapUserProfileToShape]);
 
   // When user navigates to login/signup, clear auth state (no re-fetch).
   useEffect(() => {
@@ -248,7 +248,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         headers: {
           'Content-Type': 'application/json'
         },
-        cache: 'no-cache'
+        cache: 'no-cache',
+        credentials: 'include'
       });
     } catch (error) {
       // Continue to clear state and redirect even on network error
@@ -323,7 +324,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const refreshInterval = setInterval(async () => {
       try {
         if (isLoggingOutRef.current) return;
-        const res = await fetch('/api/auth/refresh', { method: 'POST', cache: 'no-cache' });
+        const res = await fetch('/api/auth/refresh', {
+          method: 'POST',
+          cache: 'no-cache',
+          credentials: 'include'
+        });
         if (!res.ok) {
           logout();
         } else {
@@ -365,7 +370,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(credentials),
-        cache: 'no-cache'
+        cache: 'no-cache',
+        credentials: 'include'
       });
 
       if (response.redirected && response.url) {
@@ -373,26 +379,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return;
       }
 
+      const payload: unknown = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        console.error('[AuthContext] Login failed:', errorData);
-        throw new Error(errorData.error || 'Login failed');
+        console.error('[AuthContext] Login failed:', payload);
+        throw new Error(readApiJsonMessage(payload, 'Login failed'));
       }
 
-      const data = await response.json();
-
-      if (data?.data?.redirectUrl) {
-        window.location.href = data.data.redirectUrl;
-        return;
+      if (isRecord(payload)) {
+        const inner = payload.data;
+        if (
+          isRecord(inner) &&
+          typeof inner.redirectUrl === 'string' &&
+          inner.redirectUrl.length > 0
+        ) {
+          window.location.href = inner.redirectUrl;
+          return;
+        }
       }
 
-      if (data.user) {
+      if (isRecord(payload) && isRecord(payload.user)) {
         setIsAuthenticated(true);
         try {
           const profile = await userApi.getProfile();
           setUser(mapProfileToUser(mapUserProfileToShape(profile)));
-        } catch (error) {
-          setUser(data.user);
+        } catch {
+          setUser(mapProfileToUser(payload.user as ProfileShape));
         }
       } else {
         throw new Error('Login failed');
@@ -404,7 +416,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [mapProfileToUser, mapUserProfileToShape]);
 
   const loginWithFacebook = useCallback(async (code: string): Promise<void> => {
     setIsLoading(true);
@@ -455,16 +467,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({ email: userData.email, password: userData.password, confirmPassword: userData.confirmPassword }),
-        cache: 'no-cache'
+        cache: 'no-cache',
+        credentials: 'include'
       });
 
-      const data = await response.json();
+      const data: unknown = await response.json();
 
       if (!response.ok) {
-        const errorMessage = data.error || 'Registration failed';
-        throw new Error(errorMessage);
+        throw new Error(readApiJsonMessage(data, 'Registration failed'));
       }
-      
+
       return data;
     } catch (error: unknown) {
       const errorMessage = getErrorMessage(error, 'Registration failed');

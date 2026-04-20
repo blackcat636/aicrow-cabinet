@@ -2,9 +2,56 @@ import { UserProfile, UpdateProfileRequest, UpdateProfileResponse } from '@/type
 import { API_CONFIG } from '@/config/api';
 import { fetchWithAuth } from '@/lib/auth';
 import { getAvatarUrl } from '@/lib/avatars';
+import { readApiJsonMessage } from '@/lib/api-json-error';
 
 const API_BASE_URL = API_CONFIG.BASE_URL;
+
 type ApiError = Error & { status?: number };
+
+const withStatus = (error: Error, status: number): ApiError => {
+  const typed = error as ApiError;
+  typed.status = status;
+  return typed;
+};
+
+export function getHttpErrorStatus(error: unknown): number | undefined {
+  if (!(error instanceof Error)) {
+    return undefined;
+  }
+  const status = (error as ApiError).status;
+  return typeof status === 'number' ? status : undefined;
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
+const isNullableString = (value: unknown): value is string | null =>
+  value === null || typeof value === 'string';
+
+function isUserProfile(value: unknown): value is UserProfile {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return (
+    typeof value.id === 'number' &&
+    typeof value.uuid === 'string' &&
+    typeof value.email === 'string' &&
+    typeof value.username === 'string' &&
+    typeof value.firstName === 'string' &&
+    typeof value.lastName === 'string' &&
+    isNullableString(value.phone) &&
+    isNullableString(value.photo) &&
+    isNullableString(value.dateOfBirth) &&
+    typeof value.role === 'string' &&
+    typeof value.isEmailVerified === 'boolean' &&
+    isNullableString(value.referralCode) &&
+    isNullableString(value.referredByCode) &&
+    isNullableString(value.timezone) &&
+    typeof value.createdAt === 'string' &&
+    typeof value.updatedAt === 'string'
+  );
+}
+
 type ErrorPayload = {
   message?: string;
   error?: string;
@@ -22,36 +69,35 @@ const parseErrorPayload = (payload: unknown): ErrorPayload => {
   return payload as ErrorPayload;
 };
 
-const withStatus = (error: Error, status: number): ApiError => {
-  const typed = error as ApiError;
-  typed.status = status;
-  return typed;
-};
-
 export const userApi = {
-  // Get user profile
-  getProfile: async (): Promise<UserProfile> => {
-    try {
-      // Use Next.js API route
-      const response = await fetch('/api/users/profile', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        cache: 'no-cache'
-      });
+  getProfile: async (init?: Pick<RequestInit, 'signal'>): Promise<UserProfile> => {
+    const response = await fetch('/api/users/profile', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      cache: 'no-cache',
+      credentials: 'include',
+      ...init
+    });
 
-      if (!response.ok) {
-        const errorData = parseErrorPayload(await response.json());
-        const errorMessage = errorData.error || 'Failed to get profile';
-        throw withStatus(new Error(errorMessage), response.status);
+    let errorPayload: unknown;
+    if (!response.ok) {
+      try {
+        errorPayload = await response.json();
+      } catch {
+        errorPayload = {};
       }
-
-      const data = (await response.json()) as UserProfile;
-      return data;
-    } catch (error) {
-      throw error;
+      const msg = readApiJsonMessage(errorPayload, 'Failed to get profile');
+      throw withStatus(new Error(msg), response.status);
     }
+
+    const data: unknown = await response.json();
+    if (!isUserProfile(data)) {
+      // No HTTP status: invalid body must not be treated like a non-401 API error in auth init.
+      throw new Error('Invalid profile response');
+    }
+    return data;
   },
 
   // Update user profile
@@ -90,7 +136,8 @@ export const userApi = {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(cleanedData),
-        cache: 'no-cache'
+        cache: 'no-cache',
+        credentials: 'include'
       });
 
       if (!response.ok) {
@@ -106,11 +153,7 @@ export const userApi = {
         } else {
           try {
             const errorData = parseErrorPayload(await response.json());
-            if (errorData.message) {
-              errorMessage = errorData.message;
-            } else if (errorData.error) {
-              errorMessage = errorData.error;
-            }
+            errorMessage = readApiJsonMessage(errorData, errorMessage);
           } catch (e) {
             // If JSON parsing fails, try to get text
             try {
@@ -129,7 +172,10 @@ export const userApi = {
         throw withStatus(new Error(errorMessage), response.status);
       }
 
-      const data = (await response.json()) as UpdateProfileResponse;
+      const data: unknown = await response.json();
+      if (!isUserProfile(data)) {
+        throw withStatus(new Error('Invalid profile response'), response.status);
+      }
       return data;
     } catch (error) {
       throw error;
@@ -149,7 +195,7 @@ export const userApi = {
 
       if (!response.ok) {
         let errorMessage = 'Failed to get social up access URL';
-        
+
         if (response.status === 401) {
           errorMessage = 'Unauthorized access';
         } else if (response.status === 403) {
@@ -199,12 +245,12 @@ export const userApi = {
         }
         return result.data;
       }
-      
+
       // Validate direct response format
       if (!result.access_url) {
         throw new Error('Access URL not found in response');
       }
-      
+
       return result;
     } catch (error: unknown) {
       // Re-throw error as-is - localization should be handled in UI components
@@ -212,4 +258,3 @@ export const userApi = {
     }
   }
 };
-
