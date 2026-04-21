@@ -7,6 +7,8 @@ import { useTranslations } from 'next-intl';
 
 // Disable static generation to avoid prerender issues with translations
 export const dynamic = 'force-dynamic';
+/** Required for @cloudflare/next-on-pages (non-static routes must use Edge). */
+export const runtime = 'edge';
 
 // Fallback translations for when next-intl is not available during SSR/prerender
 const fallbackTranslations: Record<string, string> = {
