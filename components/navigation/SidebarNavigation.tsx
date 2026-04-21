@@ -66,7 +66,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   ];
 
   const isActive = (href: string) => {
-    const normalizedHref = normalizePath(href);
+    const normalizedHref = stripLocalePrefixFromPathname(href);
     if (normalizedHref === '/dashboard') {
       return normalizedPath === '/dashboard' || normalizedPath === '/' || normalizedPath.startsWith('/dashboard/');
     }
