@@ -12,6 +12,7 @@ import {
   applyClearedAuthCookies,
   appendDefaultLocaleCookieIfMissing,
 } from "@/lib/middleware-auth-locale";
+import { applySecurityHeaders } from "@/lib/security-response-headers";
 const authRoutes = [
   "/login",
   "/signup",
@@ -78,7 +79,9 @@ function createLocalizedUrl(
   return url;
 }
 
-export async function middleware(request: NextRequest) {
+async function runAuthIntlMiddleware(
+  request: NextRequest,
+): Promise<NextResponse> {
   const { pathname } = request.nextUrl;
 
   if (
@@ -389,6 +392,13 @@ export async function middleware(request: NextRequest) {
   return NextResponse.redirect(
     createLocalizedUrl("/login", currentLocale, request),
   );
+}
+
+export async function middleware(
+  request: NextRequest,
+): Promise<NextResponse> {
+  const response = await runAuthIntlMiddleware(request);
+  return applySecurityHeaders(response);
 }
 
 export const config = {
