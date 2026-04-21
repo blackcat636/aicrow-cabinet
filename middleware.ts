@@ -12,7 +12,10 @@ import {
   applyClearedAuthCookies,
   appendDefaultLocaleCookieIfMissing,
 } from "@/lib/middleware-auth-locale";
-import { applySecurityHeaders } from "@/lib/security-response-headers";
+import {
+  applySecurityHeaders,
+  enrichRequestWithCsp,
+} from "@/lib/security-response-headers";
 const authRoutes = [
   "/login",
   "/signup",
@@ -397,8 +400,9 @@ async function runAuthIntlMiddleware(
 export async function middleware(
   request: NextRequest,
 ): Promise<NextResponse> {
-  const response = await runAuthIntlMiddleware(request);
-  return applySecurityHeaders(response);
+  const { req, cspHeader } = enrichRequestWithCsp(request);
+  const response = await runAuthIntlMiddleware(req);
+  return applySecurityHeaders(response, cspHeader);
 }
 
 export const config = {

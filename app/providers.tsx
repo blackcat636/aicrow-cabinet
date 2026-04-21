@@ -9,14 +9,16 @@ import { TawkToWidget } from "@/components/TawkToWidget";
 export interface ProvidersProps {
   children: React.ReactNode;
   themeProps?: ThemeProviderProps;
+  /** CSP nonce from middleware (x-nonce) for third-party Script tags. */
+  cspNonce?: string;
 }
 
-export function Providers({ children, themeProps }: ProvidersProps) {
+export function Providers({ children, themeProps, cspNonce }: ProvidersProps) {
   return (
     <NextThemesProvider {...themeProps}>
       <AuthProvider>
         {children}
-        <TawkToWidget />
+        <TawkToWidget cspNonce={cspNonce} />
       </AuthProvider>
     </NextThemesProvider>
   );

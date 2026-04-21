@@ -1,5 +1,6 @@
 import '@/styles/globals.css';
 import { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
 import clsx from 'clsx';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -26,11 +27,13 @@ export const viewport: Viewport = {
   ]
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children
 }: {
   children: React.ReactNode;
 }) {
+  const cspNonce = (await headers()).get('x-nonce') ?? undefined;
+
   return (
     <html suppressHydrationWarning lang='en' className="dark">
       <head />
@@ -41,7 +44,10 @@ export default function RootLayout({
           fontSans.className
         )}
       >
-        <Providers themeProps={{ attribute: 'class', defaultTheme: 'dark' }}>
+        <Providers
+          themeProps={{ attribute: 'class', defaultTheme: 'dark' }}
+          cspNonce={cspNonce}
+        >
           <main role="main" className="h-full bg-black">{children}</main>
           <Toaster />
         </Providers>

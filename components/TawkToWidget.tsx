@@ -21,7 +21,7 @@ declare global {
   }
 }
 
-export function TawkToWidget() {
+export function TawkToWidget({ cspNonce }: { cspNonce?: string }) {
   const { user, isAuthenticated } = useAuth();
   
   // Get IDs from env or use fallback values from embed script
@@ -115,6 +115,7 @@ export function TawkToWidget() {
       id="tawk-to-script"
       strategy="afterInteractive"
       src={`https://embed.tawk.to/${propertyId}/${widgetId}`}
+      nonce={cspNonce}
       crossOrigin="anonymous"
       onLoad={() => {
         // Apply attributes after script loads if user is authenticated
