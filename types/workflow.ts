@@ -102,6 +102,9 @@ export interface EnumOption {
 export interface UserField {
   key: string;
   label: string;
+  /** Populated by requirements / chain-form API for pre-filled UI */
+  value?: unknown;
+  prefilled?: boolean;
   type:
     | 'string'
     | 'number'
@@ -130,6 +133,15 @@ export interface UserField {
 export interface WorkflowRequirements {
   workflowId?: number;
   workflowName?: string;
+  /** Nested workflow metadata from requirements API */
+  workflow?: {
+    id?: number;
+    name?: string;
+    description?: string;
+    allowedSocialNetworks?: string[];
+  };
+  /** Allowed networks at root level (alternate API shape) */
+  allowedSocialNetworks?: string[];
   userFields?: UserField[];
   fields?: UserField[];
   formFields?: UserField[];

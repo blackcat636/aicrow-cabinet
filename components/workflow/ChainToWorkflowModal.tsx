@@ -5,21 +5,12 @@ import { createPortal } from 'react-dom';
 import { workflowApi } from '@/lib/apiWorkflow';
 import { AvailableChain, ChainExecutionRequest, WorkflowRequirements, UserField } from '@/types/workflow';
 import { XIcon } from '@/components/icons';
-import { DataMappingEditor } from './DataMappingEditor';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { InfoIcon } from '@/components/ui/InfoIcon';
 import { Switch } from '@/components/ui/switch';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 import { useLocale } from 'next-intl';
-
-type PrefilledField = UserField & {
-  value?: unknown;
-  prefilled?: boolean;
-};
-
-const asPrefilledField = (field: UserField): PrefilledField =>
-  field as PrefilledField;
 
 const getErrorMessage = (error: unknown, fallback: string): string =>
   error instanceof Error && error.message ? error.message : fallback;
@@ -90,7 +81,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
             return;
           }
           
-          const fieldValue = asPrefilledField(field).value;
+          const fieldValue = field.value;
           
           // Fill field with value if it exists and is not empty
           if (fieldValue !== undefined && fieldValue !== null) {
@@ -150,7 +141,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           
           // Use value from field if available (from chain-form API)
           // This is the main source of data - value contains pre-filled data
-          const fieldValue = asPrefilledField(field).value;
+          const fieldValue = field.value;
           
           // Set value if it exists (not null/undefined) and is not empty
           // formFields values have priority over transformedData
@@ -361,7 +352,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
     const data: Array<{ label: string; value: unknown; key: string }> = [];
     
     fields.forEach(field => {
-      const fieldValue = asPrefilledField(field).value;
+      const fieldValue = field.value;
       if (fieldValue !== undefined && fieldValue !== null) {
         const isEmpty = 
           (typeof fieldValue === 'string' && fieldValue === '') ||
@@ -400,8 +391,8 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
     }
     
     // Check if field value is an array (even if type is string)
-    const fieldValue = asPrefilledField(field).value;
-    const isPrefilled = asPrefilledField(field).prefilled === true;
+    const fieldValue = field.value;
+    const isPrefilled = field.prefilled === true;
     const hasValue = fieldValue !== undefined && fieldValue !== null && 
       !((typeof fieldValue === 'string' && fieldValue === '') || 
         (Array.isArray(fieldValue) && fieldValue.length === 0));
@@ -847,7 +838,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
           handleFieldChange(field.key, [...currentArray, newItem], parentKey);
         };
 
-        const handleArrayItemChange = (index: number, newValue: any) => {
+        const handleArrayItemChange = (index: number, newValue: unknown) => {
           const currentArray = Array.isArray(value) ? [...value] : [];
           currentArray[index] = newValue;
           handleFieldChange(field.key, currentArray, parentKey);
@@ -1007,8 +998,8 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
 
           // If field is prefilled and editing is not allowed, use value from formFields
           // Otherwise use value from formData (user input)
-          const fieldValue = asPrefilledField(field).value;
-          const isPrefilled = asPrefilledField(field).prefilled === true;
+          const fieldValue = field.value;
+          const isPrefilled = field.prefilled === true;
           const hasPrefilledValue = fieldValue !== undefined && fieldValue !== null && 
             !((typeof fieldValue === 'string' && fieldValue === '') || 
               (Array.isArray(fieldValue) && fieldValue.length === 0));
@@ -1230,7 +1221,7 @@ export const ChainToWorkflowModal: React.FC<ChainToWorkflowModalProps> = ({
                               <div className="text-xs font-medium text-gray-400">{item.label}</div>
                               {Array.isArray(item.value) ? (
                                 <div className="space-y-1">
-                                  {item.value.map((val: any, idx: number) => (
+                                  {item.value.map((val: unknown, idx: number) => (
                                     <div key={idx} className="text-sm text-gray-300 break-words whitespace-normal">
                                       {String(val)}
                                     </div>

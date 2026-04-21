@@ -95,14 +95,8 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
       if (data.availableSocialAccounts) {
         setAvailableSocialAccounts(data.availableSocialAccounts);
       }
-      // Store allowedSocialNetworks from workflow if present
-      const workflowContainer = data as WorkflowRequirements & {
-        workflow?: { allowedSocialNetworks?: unknown };
-        allowedSocialNetworks?: unknown;
-      };
       const allowedFromWorkflow =
-        workflowContainer.workflow?.allowedSocialNetworks ||
-        workflowContainer.allowedSocialNetworks;
+        data.workflow?.allowedSocialNetworks ?? data.allowedSocialNetworks;
       if (Array.isArray(allowedFromWorkflow)) {
         setAllowedSocialNetworks(allowedFromWorkflow);
       } else {
@@ -113,7 +107,7 @@ export const WorkflowExecuteModal: React.FC<WorkflowExecuteModalProps> = ({
       const fields = data.fields || data.userFields || [];
       
       // Initialize form data with existing values or defaults
-      const initialData: Record<string, any> = {};
+      const initialData: Record<string, unknown> = {};
       if (data.existingValues) {
         Object.assign(initialData, data.existingValues);
       }

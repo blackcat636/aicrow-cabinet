@@ -16,7 +16,7 @@ import {
   SocialNetwork,
   AvailableSocialAccounts
 } from '@/types/workflow';
-import { buildApiUrl, API_CONFIG } from '@/config/api';
+import { buildApiUrl } from '@/config/api';
 import { fetchWithAuth } from './auth';
 
 type UserWorkflowUpdatePayload = Partial<
@@ -25,6 +25,240 @@ type UserWorkflowUpdatePayload = Partial<
     'credentialData' | 'inputDataTemplate' | 'name' | 'description'
   >
 >;
+
+async function readJson(response: Response): Promise<unknown> {
+  return response.json();
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function parseWorkflowList(data: unknown): Workflow[] {
+  if (Array.isArray(data)) {
+    return data as Workflow[];
+  }
+  if (!isRecord(data)) {
+    return [];
+  }
+  if (Array.isArray(data.workflows)) {
+    return data.workflows as Workflow[];
+  }
+  if (Array.isArray(data.data)) {
+    return data.data as Workflow[];
+  }
+  return [];
+}
+
+function parseUserWorkflowList(data: unknown): UserWorkflow[] {
+  if (Array.isArray(data)) {
+    return data as UserWorkflow[];
+  }
+  if (!isRecord(data)) {
+    return [];
+  }
+  if (Array.isArray(data.userWorkflows)) {
+    return data.userWorkflows as UserWorkflow[];
+  }
+  if (Array.isArray(data.data)) {
+    return data.data as UserWorkflow[];
+  }
+  return [];
+}
+
+function parseUserWorkflowEntity(data: unknown): UserWorkflow {
+  if (!isRecord(data)) {
+    throw new Error('User workflow not found');
+  }
+  if (isRecord(data.userWorkflow)) {
+    return data.userWorkflow as unknown as UserWorkflow;
+  }
+  if (isRecord(data.data)) {
+    return data.data as unknown as UserWorkflow;
+  }
+  throw new Error('User workflow not found');
+}
+
+function parseUserWorkflowMutation(data: unknown): UserWorkflow {
+  if (!isRecord(data)) {
+    throw new Error('Invalid user workflow response');
+  }
+  return (data.userWorkflow ?? data) as UserWorkflow;
+}
+
+function parseUserWorkflowToggle(data: unknown, requestId: number): UserWorkflow {
+  if (!isRecord(data)) {
+    return { id: requestId } as UserWorkflow;
+  }
+  const uw = (data.userWorkflow ?? data.data ?? data) as UserWorkflow;
+  if (!uw.id && requestId) {
+    return { ...uw, id: requestId };
+  }
+  return uw;
+}
+
+function parseSchedulesList(data: unknown): WorkflowSchedule[] {
+  if (Array.isArray(data)) {
+    return data as WorkflowSchedule[];
+  }
+  if (isRecord(data) && Array.isArray(data.schedules)) {
+    return data.schedules as WorkflowSchedule[];
+  }
+  return [];
+}
+
+function parseScheduleMutation(data: unknown): WorkflowSchedule {
+  if (!isRecord(data)) {
+    throw new Error('Invalid schedule response');
+  }
+  return (data.schedule ?? data) as WorkflowSchedule;
+}
+
+function parseExecutionsList(
+  data: unknown,
+  params?: GetExecutionsParams
+): ExecutionsResponse {
+  const empty: ExecutionsResponse = {
+    items: [],
+    total: 0,
+    page: params?.page ?? 1,
+    limit: params?.limit ?? 20,
+    totalPages: 0
+  };
+  if (!isRecord(data)) {
+    return empty;
+  }
+  if (data.data !== undefined && data.data !== null) {
+    return data.data as ExecutionsResponse;
+  }
+  if (Array.isArray(data.items)) {
+    return data as unknown as ExecutionsResponse;
+  }
+  return empty;
+}
+
+/** POST execute / similar: body.execution or whole body */
+function parseWorkflowExecutionMutation(data: unknown): WorkflowExecution {
+  if (!isRecord(data)) {
+    return data as WorkflowExecution;
+  }
+  return (data.execution ?? data) as WorkflowExecution;
+}
+
+/** GET execution detail: nested execution or data envelope */
+function parseWorkflowExecutionDetail(data: unknown, fallbackId: number): WorkflowExecution {
+  let candidate: unknown = data;
+  if (isRecord(data)) {
+    if (data.execution !== undefined) {
+      candidate = data.execution;
+    } else if (isRecord(data.data)) {
+      const inner = data.data;
+      candidate =
+        inner.execution !== undefined ? inner.execution : inner;
+    } else {
+      candidate = data;
+    }
+  }
+  if (!isRecord(candidate)) {
+    return { id: fallbackId } as WorkflowExecution;
+  }
+  if (typeof candidate.id !== 'number' && fallbackId !== undefined) {
+    return { ...candidate, id: fallbackId } as unknown as WorkflowExecution;
+  }
+  return candidate as unknown as WorkflowExecution;
+}
+
+function parseRequirementsEnvelope(data: unknown): WorkflowRequirements {
+  if (!isRecord(data)) {
+    return data as WorkflowRequirements;
+  }
+  return (data.data ?? data) as WorkflowRequirements;
+}
+
+function parseAvailableChainsEnvelope(data: unknown): AvailableChainsResponse {
+  if (!isRecord(data)) {
+    return data as AvailableChainsResponse;
+  }
+  return (data.data ?? data) as AvailableChainsResponse;
+}
+
+function parseDataOrSelf(data: unknown): unknown {
+  if (isRecord(data) && data.data !== undefined && data.data !== null) {
+    return data.data;
+  }
+  return data;
+}
+
+function parseChainExecutionResponse(data: unknown): ChainExecutionResponse {
+  const body = parseDataOrSelf(data);
+  return body as ChainExecutionResponse;
+}
+
+function parseWorkflowExecutionFromDataField(data: unknown): WorkflowExecution {
+  return parseDataOrSelf(data) as WorkflowExecution;
+}
+
+function parseChainHistoryEnvelope(data: unknown): ChainHistoryData {
+  const body = parseDataOrSelf(data);
+  return body as ChainHistoryData;
+}
+
+function parseSocialNetworksList(data: unknown): SocialNetwork[] {
+  if (Array.isArray(data)) {
+    return data as SocialNetwork[];
+  }
+  if (!isRecord(data)) {
+    return [];
+  }
+  if (Array.isArray(data.data)) {
+    return data.data as SocialNetwork[];
+  }
+  if (Array.isArray(data.socialNetworks)) {
+    return data.socialNetworks as SocialNetwork[];
+  }
+  return [];
+}
+
+function parseSocialAccountsPayload(data: unknown): AvailableSocialAccounts | null {
+  if (!isRecord(data)) {
+    if (
+      data !== null &&
+      typeof data === 'object' &&
+      !Array.isArray(data)
+    ) {
+      return data as AvailableSocialAccounts;
+    }
+    return null;
+  }
+  if (data.data !== undefined) {
+    return data.data as AvailableSocialAccounts | null;
+  }
+  if (data.socialAccounts !== undefined) {
+    return data.socialAccounts as AvailableSocialAccounts | null;
+  }
+  return data as AvailableSocialAccounts;
+}
+
+function readErrorMessage(body: unknown): string | undefined {
+  if (!isRecord(body)) {
+    return undefined;
+  }
+  if (typeof body.message === 'string') {
+    return body.message;
+  }
+  const inner = body.data;
+  if (isRecord(inner) && typeof inner.message === 'string') {
+    return inner.message;
+  }
+  const err = body.error;
+  if (isRecord(err) && typeof err.message === 'string') {
+    return err.message;
+  }
+  if (typeof body.error === 'string') {
+    return body.error;
+  }
+  return undefined;
+}
 
 // API Functions
 export const workflowApi = {
@@ -37,17 +271,8 @@ export const workflowApi = {
         method: 'GET'
       });
 
-      const data = await response.json();
-
-      if (data.workflows) {
-        return data.workflows;
-      } else if (data.data) {
-        return data.data;
-      } else if (Array.isArray(data)) {
-        return data;
-      } else {
-        return [];
-      }
+      const data = await readJson(response);
+      return parseWorkflowList(data);
     } catch (error) {
       throw error;
     }
@@ -61,17 +286,8 @@ export const workflowApi = {
         method: 'GET'
       });
 
-      const data = await response.json();
-
-      if (data.userWorkflows) {
-        return data.userWorkflows;
-      } else if (data.data) {
-        return data.data;
-      } else if (Array.isArray(data)) {
-        return data;
-      } else {
-        return [];
-      }
+      const data = await readJson(response);
+      return parseUserWorkflowList(data);
     } catch (error) {
       throw error;
     }
@@ -85,15 +301,8 @@ export const workflowApi = {
         method: 'GET'
       });
 
-      const data = await response.json();
-
-      if (data.userWorkflow) {
-        return data.userWorkflow;
-      } else if (data.data) {
-        return data.data;
-      } else {
-        throw new Error('User workflow not found');
-      }
+      const data = await readJson(response);
+      return parseUserWorkflowEntity(data);
     } catch (error) {
       throw error;
     }
@@ -120,8 +329,8 @@ export const workflowApi = {
         }
       );
 
-      const result = await response.json();
-      return result.userWorkflow || result;
+      const result = await readJson(response);
+      return parseUserWorkflowMutation(result);
     } catch (error) {
       throw error;
     }
@@ -151,8 +360,8 @@ export const workflowApi = {
         }
       );
 
-      const result = await response.json();
-      return result.userWorkflow || result;
+      const result = await readJson(response);
+      return parseUserWorkflowMutation(result);
     } catch (error) {
       throw error;
     }
@@ -167,15 +376,8 @@ export const workflowApi = {
         }
       );
 
-      const result = await response.json();
-      const userWorkflow: UserWorkflow = result.userWorkflow || result.data || result;
-
-      // Ensure id is present in the response
-      if (!userWorkflow.id && id) {
-        return { ...userWorkflow, id };
-      }
-
-      return userWorkflow;
+      const result = await readJson(response);
+      return parseUserWorkflowToggle(result, id);
     } catch (error) {
       throw error;
     }
@@ -205,8 +407,8 @@ export const workflowApi = {
         }
       );
 
-      const data = await response.json();
-      return data.schedules || data;
+      const data = await readJson(response);
+      return parseSchedulesList(data);
     } catch (error) {
       throw error;
     }
@@ -227,8 +429,8 @@ export const workflowApi = {
         }
       );
 
-      const result = await response.json();
-      return result.schedule || result;
+      const result = await readJson(response);
+      return parseScheduleMutation(result);
     } catch (error) {
       throw error;
     }
@@ -247,8 +449,8 @@ export const workflowApi = {
         }
       );
 
-      const result = await response.json();
-      return result.schedule || result;
+      const result = await readJson(response);
+      return parseScheduleMutation(result);
     } catch (error) {
       throw error;
     }
@@ -281,24 +483,17 @@ export const workflowApi = {
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
-          const errorData = await response.json();
-          // Handle validation errors (400 status with errors array)
+          const errorData = await readJson(response);
+          const nestedData = isRecord(errorData) ? errorData.data : undefined;
           if (
             response.status === 400 &&
-            errorData.data &&
-            errorData.data.errors &&
-            Array.isArray(errorData.data.errors)
+            isRecord(nestedData) &&
+            Array.isArray(nestedData.errors)
           ) {
-            // Return errors in a format that can be parsed by the caller
-            errorMessage = JSON.stringify({ errors: errorData.data.errors });
+            errorMessage = JSON.stringify({ errors: nestedData.errors });
           } else {
-            // Try multiple paths for error message
             errorMessage =
-              errorData.message ||
-              errorData.data?.message ||
-              errorData.error?.message ||
-              errorData.error ||
-              errorMessage;
+              readErrorMessage(errorData) ?? errorMessage;
           }
         } catch (parseError) {
           // If we can't parse the error response, try to get text
@@ -316,8 +511,8 @@ export const workflowApi = {
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      return result.execution || result;
+      const result = await readJson(response);
+      return parseWorkflowExecutionMutation(result);
     } catch (error) {
       throw error;
     }
@@ -369,21 +564,8 @@ export const workflowApi = {
         };
       }
 
-      const data = await response.json();
-
-      if (data.data) {
-        return data.data;
-      } else if (data.items) {
-        return data;
-      } else {
-        return {
-          items: [],
-          total: 0,
-          page: params?.page || 1,
-          limit: params?.limit || 20,
-          totalPages: 0
-        };
-      }
+      const data = await readJson(response);
+      return parseExecutionsList(data, params);
     } catch (error) {
       throw error;
     }
@@ -398,17 +580,8 @@ export const workflowApi = {
         }
       );
 
-      const result = await response.json();
-      // API sometimes wraps execution in data / data.execution
-      const execution =
-        result?.execution || result?.data?.execution || result?.data || result;
-
-      // Ensure the execution has an id for stable keying
-      if (!execution?.id && id) {
-        return { ...execution, id } as WorkflowExecution;
-      }
-
-      return execution as WorkflowExecution;
+      const result = await readJson(response);
+      return parseWorkflowExecutionDetail(result, id);
     } catch (error) {
       throw error;
     }
@@ -426,16 +599,16 @@ export const workflowApi = {
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          const errorData = await readJson(response);
+          errorMessage = readErrorMessage(errorData) ?? errorMessage;
         } catch (parseError) {
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      return result.data || result;
+      const result = await readJson(response);
+      return parseRequirementsEnvelope(result);
     } catch (error) {
       throw error;
     }
@@ -456,16 +629,16 @@ export const workflowApi = {
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          const errorData = await readJson(response);
+          errorMessage = readErrorMessage(errorData) ?? errorMessage;
         } catch (parseError) {
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      return result.data || result;
+      const result = await readJson(response);
+      return parseRequirementsEnvelope(result);
     } catch (error) {
       throw error;
     }
@@ -488,16 +661,16 @@ export const workflowApi = {
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          const errorData = await readJson(response);
+          errorMessage = readErrorMessage(errorData) ?? errorMessage;
         } catch (parseError) {
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      return result.data || result;
+      const result = await readJson(response);
+      return parseAvailableChainsEnvelope(result);
     } catch (error) {
       throw error;
     }
@@ -519,16 +692,16 @@ export const workflowApi = {
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          const errorData = await readJson(response);
+          errorMessage = readErrorMessage(errorData) ?? errorMessage;
         } catch (parseError) {
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      return result.data || result;
+      const result = await readJson(response);
+      return parseChainExecutionResponse(result);
     } catch (error) {
       throw error;
     }
@@ -546,16 +719,16 @@ export const workflowApi = {
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          const errorData = await readJson(response);
+          errorMessage = readErrorMessage(errorData) ?? errorMessage;
         } catch (parseError) {
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      return result.data || result;
+      const result = await readJson(response);
+      return parseWorkflowExecutionFromDataField(result);
     } catch (error) {
       throw error;
     }
@@ -573,16 +746,16 @@ export const workflowApi = {
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          const errorData = await readJson(response);
+          errorMessage = readErrorMessage(errorData) ?? errorMessage;
         } catch (parseError) {
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      return result.data || result;
+      const result = await readJson(response);
+      return parseChainHistoryEnvelope(result);
     } catch (error) {
       throw error;
     }
@@ -599,25 +772,16 @@ export const workflowApi = {
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          const errorData = await readJson(response);
+          errorMessage = readErrorMessage(errorData) ?? errorMessage;
         } catch (parseError) {
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      // Handle different response formats
-      if (Array.isArray(result)) {
-        return result;
-      } else if (result.data && Array.isArray(result.data)) {
-        return result.data;
-      } else if (result.socialNetworks && Array.isArray(result.socialNetworks)) {
-        return result.socialNetworks;
-      } else {
-        return [];
-      }
+      const result = await readJson(response);
+      return parseSocialNetworksList(result);
     } catch (error) {
       throw error;
     }
@@ -639,25 +803,16 @@ export const workflowApi = {
         
         let errorMessage = `HTTP error! status: ${response.status}`;
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
+          const errorData = await readJson(response);
+          errorMessage = readErrorMessage(errorData) ?? errorMessage;
         } catch (parseError) {
           errorMessage = response.statusText || errorMessage;
         }
         throw new Error(errorMessage);
       }
 
-      const result = await response.json();
-      // Handle different response formats
-      if (result.data !== undefined) {
-        return result.data;
-      } else if (result.socialAccounts !== undefined) {
-        return result.socialAccounts;
-      } else if (result !== null && typeof result === 'object') {
-        return result;
-      } else {
-        return null;
-      }
+      const result = await readJson(response);
+      return parseSocialAccountsPayload(result);
     } catch (error) {
       // If it's a known error about missing accounts, return null instead of throwing
       if (error instanceof Error && error.message.includes('profile not found')) {
