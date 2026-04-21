@@ -127,4 +127,12 @@ describe("middleware auth flow", () => {
     expect(setCookie).toContain("access_token=");
     expect(setCookie).toContain("refresh_token=");
   });
+
+  it("does not redirect robots.txt to login (crawler metadata)", async () => {
+    const { middleware } = await import("@/middleware");
+    const response = await middleware(makeRequest("/robots.txt"));
+
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.status).toBe(200);
+  });
 });
