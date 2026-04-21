@@ -11,6 +11,7 @@ import {
 } from '@/components/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { LogoutConfirmDialog } from '@/components/ui/LogoutConfirmDialog';
+import { stripLocalePrefixFromPathname } from '@/lib/client-locale';
 
 interface SidebarNavigationProps {
   currentPath?: string;
@@ -34,12 +35,7 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
   const [showLogoutConfirm, setShowLogoutConfirm] = React.useState(false);
   const [logoutLoading, setLogoutLoading] = React.useState(false);
 
-  // Normalize pathname (remove locale prefix if present)
-  const normalizePath = (path: string) => {
-    return path.replace(/^\/(uk|en|fr)(\/|$)/, '/') || '/';
-  };
-
-  const normalizedPath = normalizePath(currentPath);
+  const normalizedPath = stripLocalePrefixFromPathname(currentPath);
 
   // Navigation items configuration
   const navItems: NavItem[] = [

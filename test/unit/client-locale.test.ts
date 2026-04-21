@@ -2,7 +2,20 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   getClientPreferredLocale,
   getLocalizedAppPath,
+  stripLocalePrefixFromPathname,
 } from '@/lib/client-locale';
+
+describe('stripLocalePrefixFromPathname', () => {
+  it('removes supported locale prefix', () => {
+    expect(stripLocalePrefixFromPathname('/es/dashboard')).toBe('/dashboard');
+    expect(stripLocalePrefixFromPathname('/ru')).toBe('/');
+  });
+
+  it('leaves path unchanged when no prefix', () => {
+    expect(stripLocalePrefixFromPathname('/login')).toBe('/login');
+    expect(stripLocalePrefixFromPathname('/dashboard')).toBe('/dashboard');
+  });
+});
 
 describe('client-locale', () => {
   afterEach(() => {

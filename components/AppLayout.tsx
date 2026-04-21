@@ -26,6 +26,7 @@ import { LanguageSwitcherMenu } from '@/components/LanguageSwitcherMenu';
 import { Sidebar } from '@/components/navigation';
 import { toast } from 'sonner';
 import { getImpersonationMeta } from '@/lib/auth';
+import { stripLocalePrefixFromPathname } from '@/lib/client-locale';
 import { LogoutConfirmDialog } from '@/components/ui/LogoutConfirmDialog';
 import { Badge } from '@/components/ui/badge';
 
@@ -206,8 +207,8 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
     
     const updatePathname = () => {
       const currentPath = window.location.pathname;
-      // Remove locale prefix if present (uk, en, fr)
-      const normalizedPath = currentPath.replace(/^\/(uk|en|fr)(\/|$)/, '/') || '/';
+      // Remove locale prefix if present (all APP_LOCALES)
+      const normalizedPath = stripLocalePrefixFromPathname(currentPath);
       setPathname(normalizedPath);
     };
     

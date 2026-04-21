@@ -4,6 +4,10 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useMe
 import { User, LoginRequest, RegisterRequest, ImpersonationInfo } from '@/types/auth';
 import { UserProfile } from '@/types/user';
 import { getImpersonationMeta, clearImpersonationMeta, setImpersonationMeta } from '@/lib/auth';
+import {
+  getLocalizedAppPath,
+  stripLocalePrefixFromPathname,
+} from '@/lib/client-locale';
 import { authApi } from '@/lib/apiAuth';
 import { userApi, getHttpErrorStatus } from '@/lib/apiUser';
 import { readApiJsonMessage } from '@/lib/api-json-error';
@@ -106,7 +110,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     const updatePathname = () => {
       const currentPath = window.location.pathname;
-      const normalizedPath = currentPath.replace(/^\/(uk|en|fr)(\/|$)/, '/') || '/';
+      const normalizedPath = stripLocalePrefixFromPathname(currentPath);
       setPathname(normalizedPath);
     };
     
@@ -129,7 +133,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 10000);
 
-    const currentPath = window.location.pathname.replace(/^\/(uk|en|fr)(\/|$)/, '/') || '/';
+    const currentPath = stripLocalePrefixFromPathname(window.location.pathname);
     authLog('effect run (mount only)', { requestId, pathname: currentPath });
 
     const applyUnauthenticatedState = (clearImpersonation: boolean, reason: string) => {
@@ -260,7 +264,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setImpersonationInfo(null);
       // Keep isLoading true until redirect so header shows "…" instead of "User" flash
       if (typeof window !== 'undefined') {
-        window.location.href = '/login';
+        window.location.href = getLocalizedAppPath('/login');
       } else {
         setIsLoading(false);
       }

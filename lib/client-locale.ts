@@ -8,6 +8,21 @@ import {
 const isSupportedLocale = (value: string): value is AppLocale =>
   (APP_LOCALES as readonly string[]).includes(value);
 
+const LOCALE_PATH_PREFIX_RE = new RegExp(
+  `^/(?:${APP_LOCALES.join('|')})(?=/|$)`,
+);
+
+/**
+ * Strip leading /{locale} from a pathname (e.g. window.location.pathname).
+ */
+export function stripLocalePrefixFromPathname(pathname: string): string {
+  const withoutPrefix = pathname.replace(LOCALE_PATH_PREFIX_RE, '');
+  if (withoutPrefix === '') {
+    return '/';
+  }
+  return withoutPrefix.startsWith('/') ? withoutPrefix : `/${withoutPrefix}`;
+}
+
 function readClientCookie(name: string): string | null {
   if (typeof document === 'undefined') {
     return null;
