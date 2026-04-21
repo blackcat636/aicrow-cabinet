@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { API_CONFIG } from '@/config/api';
+import { getLocalizedAppPath } from '@/lib/client-locale';
 import { ImpersonationInfo } from '@/types/auth';
 
 export interface AuthTokens {
@@ -178,7 +179,7 @@ const doFetchWithAuth = async (
   });
 
   if (response.status === 401 && typeof window !== 'undefined') {
-    window.location.href = '/login';
+    window.location.href = getLocalizedAppPath('/login');
   }
   return response;
 };

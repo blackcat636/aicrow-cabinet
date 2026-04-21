@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { NextIntlClientProvider, useTranslations } from 'next-intl';
 import type { AbstractIntlMessages } from 'next-intl';
 import { routing } from '@/i18n/routing';
+import { getClientPreferredLocale } from '@/lib/client-locale';
 import en from '@/messages/en.json';
 import uk from '@/messages/uk.json';
 import fr from '@/messages/fr.json';
@@ -18,27 +19,6 @@ const MESSAGES: Record<(typeof routing.locales)[number], AbstractIntlMessages> =
     es: es as AbstractIntlMessages,
     ru: ru as AbstractIntlMessages
   };
-
-function detectLocale(): (typeof routing.locales)[number] {
-  if (typeof window === 'undefined') {
-    return routing.defaultLocale;
-  }
-  const { pathname } = window.location;
-  for (const loc of routing.locales) {
-    if (pathname === `/${loc}` || pathname.startsWith(`/${loc}/`)) {
-      return loc;
-    }
-  }
-  const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]+)/);
-  const fromCookie = match?.[1]?.trim();
-  if (
-    fromCookie &&
-    (routing.locales as readonly string[]).includes(fromCookie)
-  ) {
-    return fromCookie as (typeof routing.locales)[number];
-  }
-  return routing.defaultLocale;
-}
 
 function ErrorContent({
   error,
@@ -82,7 +62,7 @@ export default function Error({
   );
 
   useEffect(() => {
-    setLocale(detectLocale());
+    setLocale(getClientPreferredLocale());
   }, []);
 
   const messages = MESSAGES[locale] ?? MESSAGES[routing.defaultLocale];

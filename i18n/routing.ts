@@ -1,15 +1,18 @@
 import { defineRouting } from 'next-intl/routing';
 import { createNavigation } from 'next-intl/navigation';
 
+import {
+  APP_LOCALES,
+  DEFAULT_LOCALE,
+  LOCALE_PREFIX,
+} from '@/i18n/locale-config';
+
 export const routing = defineRouting({
-  // A list of all locales that are supported
-  locales: ['uk', 'en', 'fr', 'es', 'ru'],
+  locales: [...APP_LOCALES],
 
-  // Used when no locale matches
-  defaultLocale: 'en',
+  defaultLocale: DEFAULT_LOCALE,
 
-  // The locale prefix strategy
-  localePrefix: 'as-needed', // Options: 'always', 'as-needed', 'never'
+  localePrefix: LOCALE_PREFIX,
 
   // Disable automatic locale detection from Accept-Language header
   // Always use default locale unless explicitly set via cookie or URL
