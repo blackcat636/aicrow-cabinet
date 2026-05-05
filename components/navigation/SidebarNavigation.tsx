@@ -98,17 +98,21 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
                 key={item.href}
                 href={item.href}
                 onClick={item.onClick}
-                className="relative flex h-[56px] items-center px-[24px] transition-all duration-200 group"
+                className="group relative flex h-[56px] items-center px-[24px] transition-all duration-200"
               >
-                {active && (
-                  <div className="absolute -left-[1px] top-[4px] bottom-[2px] w-[5px] bg-[var(--color-secondary-10)] rounded-[10px]" />
-                )}
+                <div
+                  className={`absolute -left-[1px] top-[4px] bottom-[2px] w-[5px] rounded-[10px] bg-[var(--color-secondary-10)] transition-all duration-200 ease-out ${
+                    active
+                      ? 'opacity-100 translate-x-0'
+                      : 'opacity-0 -translate-x-1'
+                  }`}
+                />
                 
                 <div
                   className={`absolute inset-0 rounded-lg transition-all duration-200 ${
                     active
-                      ? 'left-[24px] right-[24px] top-[2px] bottom-[2px] bg-[var(--color-secondary-3)] rounded-[10px]'
-                      : 'bg-transparent'
+                      ? 'left-[24px] right-[24px] top-[2px] bottom-[2px] bg-[var(--color-secondary-3)] rounded-[10px] opacity-100 scale-100'
+                      : 'bg-transparent opacity-70 scale-[0.985]'
                   }`}
                 />
                 
@@ -133,11 +137,11 @@ export const SidebarNavigation: React.FC<SidebarNavigationProps> = ({
         <div className="border-t border-[var(--color-secondary-4)] mt-auto">
           <button
             onClick={() => setShowLogoutConfirm(true)}
-            className="relative w-full h-[56px] flex items-center px-[24px] transition-all duration-200"
+            className="group relative flex h-[56px] w-full items-center px-[24px] transition-all duration-200"
           >
             <div className="relative z-10 flex w-full items-center gap-3 px-[16px] py-[13px]">
-              <LogOutIcon className="w-5 h-5 flex-shrink-0 text-[var(--color-secondary-5)]" />
-              <span className="figma-body-1-medium text-[var(--color-secondary-5)]">
+              <LogOutIcon className="h-5 w-5 flex-shrink-0 text-red-400 transition-colors group-hover:text-red-300" />
+              <span className="figma-body-1-medium text-red-400 transition-colors group-hover:text-red-300">
                 Log Out
               </span>
             </div>

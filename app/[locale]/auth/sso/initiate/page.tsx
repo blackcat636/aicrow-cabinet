@@ -14,6 +14,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useTranslations } from 'next-intl';
+import { PageLoader } from '@/components/ui/PageLoader';
 
 type Status = 'loading' | 'redirecting' | 'error';
 
@@ -90,15 +91,17 @@ export default function SSOInitiatePage() {
     void initiate();
   }, [searchParams, isMounted, t]);
 
+  if (status === 'loading' || status === 'redirecting') {
+    const label =
+      status === 'loading' ? `${message} ${t('pleaseWait')}` : message;
+    return <PageLoader label={label} />;
+  }
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-black text-white">
       <div className="rounded-lg border border-white/10 bg-white/5 px-6 py-4 shadow-lg">
         <div className="flex items-center gap-3">
-          <div className="h-3 w-3 animate-pulse rounded-full bg-purple-400" />
-          <p className="text-sm">
-            {message}
-            {status === 'loading' && ` ${t('pleaseWait')}`}
-          </p>
+          <p className="text-sm">{message}</p>
         </div>
         {status === 'error' && (
           <div className="mt-4 space-y-2">

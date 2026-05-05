@@ -23,11 +23,10 @@ declare global {
 
 export function TawkToWidget({ cspNonce }: { cspNonce?: string }) {
   const { user, isAuthenticated } = useAuth();
-  
-  // Get IDs from env or use fallback values from embed script
-  const propertyId = process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID || '69677baf020bfc1979148986';
-  const widgetId = process.env.NEXT_PUBLIC_TAWK_WIDGET_ID || '1jeu3ma3k';
-  
+
+  const propertyId = process.env.NEXT_PUBLIC_TAWK_PROPERTY_ID?.trim();
+  const widgetId = process.env.NEXT_PUBLIC_TAWK_WIDGET_ID?.trim();
+
   // Allow disabling Tawk.to via environment variable
   const isTawkEnabled = process.env.NEXT_PUBLIC_TAWK_ENABLED !== 'false';
 
@@ -54,6 +53,20 @@ export function TawkToWidget({ cspNonce }: { cspNonce?: string }) {
     return null;
   }
 
+  const buildVisitorAttributes = () => {
+    if (!user) return null;
+
+    const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || '';
+    const email = typeof user.email === 'string' ? user.email.trim() : '';
+    const id = user.id != null ? String(user.id).trim() : '';
+    const name = fullName || email || 'User';
+
+    const attributes: { name: string; email?: string; id?: string } = { name };
+    if (email) attributes.email = email;
+    if (id) attributes.id = id;
+    return attributes;
+  };
+
   // Apply visitor attributes when user data changes
   useEffect(() => {
     if (!isAuthenticated || !user || typeof window === 'undefined' || !window.Tawk_API) {
@@ -62,13 +75,9 @@ export function TawkToWidget({ cspNonce }: { cspNonce?: string }) {
 
     const applyAttributes = () => {
       if (window.Tawk_API?.setAttributes) {
-        const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || '';
-        
-        window.Tawk_API.setAttributes({
-          name: fullName || user.email || 'User',
-          email: user.email || '',
-          id: user.id || ''
-        });
+        const attributes = buildVisitorAttributes();
+        if (!attributes) return;
+        window.Tawk_API.setAttributes(attributes);
       }
     };
 
@@ -97,12 +106,13 @@ export function TawkToWidget({ cspNonce }: { cspNonce?: string }) {
           setTimeout(() => {
             if (window.Tawk_API?.setAttributes) {
               const fullName = [currentUser.firstName, currentUser.lastName].filter(Boolean).join(' ') || currentUser.username || '';
-              
-              window.Tawk_API.setAttributes({
-                name: fullName || currentUser.email || 'User',
-                email: currentUser.email || '',
-                id: currentUser.id || ''
-              });
+              const email = typeof currentUser.email === 'string' ? currentUser.email.trim() : '';
+              const id = currentUser.id != null ? String(currentUser.id).trim() : '';
+              const name = fullName || email || 'User';
+              const attributes: { name: string; email?: string; id?: string } = { name };
+              if (email) attributes.email = email;
+              if (id) attributes.id = id;
+              window.Tawk_API.setAttributes(attributes);
             }
           }, 1000);
         }
@@ -122,13 +132,9 @@ export function TawkToWidget({ cspNonce }: { cspNonce?: string }) {
         if (isAuthenticated && user && window.Tawk_API) {
           setTimeout(() => {
             if (window.Tawk_API) {
-              const fullName = [user.firstName, user.lastName].filter(Boolean).join(' ') || user.username || '';
-              
-              window.Tawk_API.setAttributes({
-                name: fullName || user.email || 'User',
-                email: user.email || '',
-                id: user.id || ''
-              });
+              const attributes = buildVisitorAttributes();
+              if (!attributes) return;
+              window.Tawk_API.setAttributes(attributes);
             }
           }, 1000);
         }

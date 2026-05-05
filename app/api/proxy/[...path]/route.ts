@@ -15,8 +15,14 @@ const DEVICE_HEADER = 'x-device-id';
 
 type ProxyContext = { params: Promise<{ path: string[] }> };
 
-const buildBackendUrl = (segments: string[], search: string): string =>
-  `${API_ORIGIN}/${segments.join('/')}${search}`;
+const buildBackendUrl = (segments: string[], search: string): string => {
+  const params = new URLSearchParams(search);
+  // Some clients/framework layers may leak route helper param `path`.
+  // Backend DTOs reject unknown fields, so strip this transport detail.
+  params.delete('path');
+  const query = params.toString();
+  return `${API_ORIGIN}/${segments.join('/')}${query ? `?${query}` : ''}`;
+};
 
 const readBody = async (request: NextRequest): Promise<BodyInit | undefined> => {
   const method = request.method.toUpperCase();

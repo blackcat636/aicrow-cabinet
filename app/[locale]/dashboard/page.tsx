@@ -12,6 +12,7 @@ import { workflowApi } from '@/lib/apiWorkflow';
 import { toast } from 'sonner';
 import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
+import { PageLoader } from '@/components/ui/PageLoader';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -37,14 +38,7 @@ export default function DashboardPage() {
   
   // Show loading state
   if (isLoading) {
-    return (
-      <div className="h-full bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-300">{tCommon('loading')}</p>
-        </div>
-      </div>
-    );
+    return <PageLoader label={tCommon('loading')} />;
   }
 
   const handleAddWorkflow = () => {

@@ -8,6 +8,7 @@ import { AlertCircle, ChevronDown, Search, X } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { CalendarDetailedIcon, ChevronLeftIcon, ChevronRightIcon, DownloadSquareIcon } from '@/components/icons';
 import { BalanceDepositModal } from '@/components/balance/BalanceDepositModal';
+import { PageLoader } from '@/components/ui/PageLoader';
 
 interface TransactionHistoryProps {
   balances: BalanceData[];
@@ -88,6 +89,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   const { isLoading: authLoading } = useAuth();
   const t = useTranslations('balance');
   const tDeposit = useTranslations('balance.deposit');
+  const tCommon = useTranslations('common');
 
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -139,13 +141,13 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
 
   useEffect(() => {
     if (!isCalendarOpen) return;
-    const onOutsideClick = (event: MouseEvent) => {
+    const onOutsideClick = (event: PointerEvent) => {
       if (!calendarRef.current?.contains(event.target as Node)) {
         setIsCalendarOpen(false);
       }
     };
-    document.addEventListener('mousedown', onOutsideClick);
-    return () => document.removeEventListener('mousedown', onOutsideClick);
+    document.addEventListener('pointerdown', onOutsideClick);
+    return () => document.removeEventListener('pointerdown', onOutsideClick);
   }, [isCalendarOpen]);
 
   const filteredTransactions = useMemo(() => {
@@ -236,13 +238,7 @@ export const TransactionHistory: React.FC<TransactionHistoryProps> = ({
   }, [appliedRange]);
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        {Array.from({ length: 8 }).map((_, idx) => (
-          <div key={idx} className="h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] animate-pulse" />
-        ))}
-      </div>
-    );
+    return <PageLoader label={tCommon('loading')} />;
   }
 
   if (error) {

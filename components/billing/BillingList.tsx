@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PlanCard } from './PlanCard';
 import { CurrentPlanBlock } from './CurrentPlanBlock';
 import { SubscriptionPaymentModal } from './SubscriptionPaymentModal';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle } from 'lucide-react';
@@ -31,6 +32,7 @@ interface PendingSubscriptionPayment {
 export const BillingList: React.FC = () => {
   const locale = useLocale();
   const t = useTranslations('billing');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   const { user } = useAuth();
   const [activeData, setActiveData] = useState<ActivePlanResponse['data'] | null>(
@@ -236,21 +238,7 @@ export const BillingList: React.FC = () => {
   });
 
   if (isLoading) {
-    return (
-      <div className="space-y-5 min-h-[400px]">
-        <h2 className="figma-heading-semibold text-[var(--color-secondary-10)]">
-          {t('plansSectionTitle')}
-        </h2>
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-3">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="h-[430px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)]/80 animate-pulse min-w-0"
-            />
-          ))}
-        </div>
-      </div>
-    );
+    return <PageLoader label={tCommon('loading')} />;
   }
 
   if (error) {
@@ -303,7 +291,7 @@ export const BillingList: React.FC = () => {
           {t('creditsRemainingPlan')}
         </div>
       )}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-3 min-w-0 pt-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 min-w-0 pt-3">
         {sortedPlans.map((plan, index) => (
           <PlanCard
             key={plan.id}

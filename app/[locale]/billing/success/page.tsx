@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { useTranslations } from 'next-intl';
 import { useRouter } from '@/i18n/routing';
 export const dynamic = 'force-dynamic';
@@ -46,10 +47,7 @@ export default function BillingSuccessPage() {
     <AppLayout>
       <div className="flex flex-col items-center justify-center min-h-[400px] space-y-6">
         {phase === 'verifying' ? (
-          <>
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600" />
-            <p className="text-gray-300 text-lg">{t('verifyingPayment')}</p>
-          </>
+          <PageLoader label={t('verifyingPayment')} />
         ) : (
           <>
             <div className="rounded-full bg-emerald-500/20 p-4">

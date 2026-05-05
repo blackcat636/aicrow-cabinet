@@ -12,7 +12,7 @@ export default function SignupPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-[#1A1A1A] md:bg-[var(--color-secondary-1)]">
+    <div className="min-h-screen min-h-[100dvh] relative overflow-hidden bg-[#1A1A1A] md:bg-[var(--color-secondary-1)]">
       {/* Mobile: subtle purple gradient from bottom; Desktop: original gradients (same as login) */}
       <div
         className="fixed inset-0 pointer-events-none z-0"
@@ -34,7 +34,7 @@ export default function SignupPage() {
         <LanguageSwitcherCompact />
       </div>
 
-      <div className="relative z-20 min-h-screen flex items-center justify-center p-0 md:px-4 md:py-8">
+      <div className="relative z-20 min-h-screen min-h-[100dvh] flex items-center justify-center p-0 md:px-4 md:py-8">
         <RegisterForm
           variant="modal"
           isOpen={true}

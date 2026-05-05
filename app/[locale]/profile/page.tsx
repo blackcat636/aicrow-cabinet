@@ -19,6 +19,7 @@ import { useRouter } from '@/i18n/routing';
 // import { FacebookIntegration } from '@/components/profile/FacebookIntegration'; // Facebook auth disabled
 import { ExternalServicesIntegration } from '@/components/profile/ExternalServicesIntegration';
 import { CalendarDetailedIcon, ChevronLeftIcon } from '@/components/icons';
+import { PageLoader } from '@/components/ui/PageLoader';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -35,6 +36,7 @@ const getInitials = (firstName: string, lastName: string, username: string) => {
 
 export default function ProfilePage() {
   const t = useTranslations('profile');
+  const tCommon = useTranslations('common');
   const router = useRouter();
   // Use profile ID + timestamp for unique ID to avoid duplicates in React Strict Mode
   const [dateOfBirthId, setDateOfBirthId] = useState<string>('');
@@ -274,16 +276,7 @@ export default function ProfilePage() {
   };
 
   if (loading) {
-    return (
-      <AppLayout>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-300">{t('loading')}</p>
-          </div>
-        </div>
-      </AppLayout>
-    );
+    return <PageLoader label={tCommon('loading')} />;
   }
 
   if (!profile) {
@@ -317,7 +310,7 @@ export default function ProfilePage() {
         </div>
 
         <div className="space-y-4">
-          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+          <div className="min-h-[138px] md:min-h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
             <div className="min-w-0 w-full">
               <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('email')}</p>
               <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)] truncate">{profile.email || '—'}</p>
@@ -325,13 +318,13 @@ export default function ProfilePage() {
             <Button
               type="button"
               onClick={() => setShowChangeEmailForm(true)}
-              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+              className="min-h-12 h-auto w-full md:w-[211px] py-2 rounded-[10px] border border-[var(--color-main)] bg-transparent px-3 text-center text-[16px] leading-[1.2] tracking-[0.32px] font-semibold whitespace-normal text-[var(--color-main)] hover:bg-transparent"
             >
               {t('changeEmail')}
             </Button>
           </div>
 
-          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+          <div className="min-h-[138px] md:min-h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
             <div className="min-w-0 w-full">
               <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('password')}</p>
               <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">*************</p>
@@ -339,13 +332,13 @@ export default function ProfilePage() {
             <Button
               type="button"
               onClick={() => setShowChangePasswordForm(true)}
-              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+              className="min-h-12 h-auto w-full md:w-[211px] py-2 rounded-[10px] border border-[var(--color-main)] bg-transparent px-3 text-center text-[16px] leading-[1.2] tracking-[0.32px] font-semibold whitespace-normal text-[var(--color-main)] hover:bg-transparent"
             >
               {t('changePassword')}
             </Button>
           </div>
 
-          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+          <div className="min-h-[138px] md:min-h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
             <div className="min-w-0 w-full">
               <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('firstName')}</p>
               <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{formData.firstName || '—'}</p>
@@ -354,13 +347,13 @@ export default function ProfilePage() {
               type="button"
               disabled={submitting}
               onClick={() => openNameEditor('firstName')}
-              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+              className="min-h-12 h-auto w-full md:w-[211px] py-2 rounded-[10px] border border-[var(--color-main)] bg-transparent px-3 text-center text-[16px] leading-[1.2] tracking-[0.32px] font-semibold whitespace-normal text-[var(--color-main)] hover:bg-transparent"
             >
               {t('updateFirstName')}
             </Button>
           </div>
 
-          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+          <div className="min-h-[138px] md:min-h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
             <div className="min-w-0 w-full">
               <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('lastName')}</p>
               <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{formData.lastName || '—'}</p>
@@ -369,13 +362,13 @@ export default function ProfilePage() {
               type="button"
               disabled={submitting}
               onClick={() => openNameEditor('lastName')}
-              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+              className="min-h-12 h-auto w-full md:w-[211px] py-2 rounded-[10px] border border-[var(--color-main)] bg-transparent px-3 text-center text-[16px] leading-[1.2] tracking-[0.32px] font-semibold whitespace-normal text-[var(--color-main)] hover:bg-transparent"
             >
               {t('updateLastName')}
             </Button>
           </div>
 
-          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+          <div className="min-h-[138px] md:min-h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
             <div className="min-w-0 w-full">
               <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('phoneNumber')}</p>
               <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{formData.phone || '—'}</p>
@@ -384,13 +377,13 @@ export default function ProfilePage() {
               type="button"
               disabled={submitting}
               onClick={() => openNameEditor('phone')}
-              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-transparent"
+              className="min-h-12 h-auto w-full md:w-[211px] py-2 rounded-[10px] border border-[var(--color-main)] bg-transparent px-3 text-center text-[16px] leading-[1.2] tracking-[0.32px] font-semibold whitespace-normal text-[var(--color-main)] hover:bg-transparent"
             >
               {t('updateNumber')}
             </Button>
           </div>
 
-          <div className="h-[138px] md:h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
+          <div className="min-h-[138px] md:min-h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 md:gap-0">
             <div className="min-w-0 w-full">
               <p className="text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-secondary-10)]">{t('dateOfBirthLabel')}</p>
               <p className="text-[14px] leading-[1.4] tracking-[0.28px] text-[var(--color-secondary-6)]">{formatDateOfBirthForRow(formData.dateOfBirth)}</p>
@@ -399,7 +392,7 @@ export default function ProfilePage() {
               type="button"
               disabled={submitting}
               onClick={() => openNameEditor('dateOfBirth')}
-              className="h-12 w-full md:w-[211px] rounded-[10px] border border-[var(--color-main)] bg-transparent text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] hover:bg-[var(--color-main)]/10"
+              className="min-h-12 h-auto w-full md:w-[211px] py-2 rounded-[10px] border border-[var(--color-main)] bg-transparent px-3 text-center text-[16px] leading-[1.2] tracking-[0.32px] font-semibold whitespace-normal text-[var(--color-main)] hover:bg-[var(--color-main)]/10"
             >
               {t('updateDate')}
             </Button>

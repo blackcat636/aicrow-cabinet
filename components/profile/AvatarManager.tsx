@@ -56,7 +56,7 @@ export function AvatarManager({ current, onSelect }: AvatarManagerProps) {
           <div className="flex items-center gap-4">
             <img
               src={getDicebearUrl(genStyle, genSeed || "user")}
-              alt="preview"
+              alt="Generated avatar preview"
               className="w-24 h-24 rounded-full object-cover bg-gray-800"
             />
             <div className="text-xs text-gray-400">{t('generatedByDiceBear') || 'Avatar is generated on-the-fly by DiceBear API.'}</div>

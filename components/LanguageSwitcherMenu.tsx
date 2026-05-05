@@ -78,7 +78,7 @@ export function LanguageSwitcherMenu({ onClose, variant = 'desktop' }: LanguageS
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: PointerEvent) => {
       const target = event.target as Node;
       
       if (
@@ -91,11 +91,22 @@ export function LanguageSwitcherMenu({ onClose, variant = 'desktop' }: LanguageS
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside, true);
+    document.addEventListener('pointerdown', handleClickOutside, true);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside, true);
+      document.removeEventListener('pointerdown', handleClickOutside, true);
     };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onEsc);
+    return () => window.removeEventListener('keydown', onEsc);
   }, [isOpen]);
 
   return (

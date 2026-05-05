@@ -92,7 +92,7 @@ export const subscriptionApi = {
    * API returns 404 + { status: 404, message: "No active subscription found" } when user has no active plan;
    * we treat that as success and return null (UI shows "Expired / Inactive" + select plan CTA). */
   getMyActivePlan: async (): Promise<ActivePlanResponse['data'] | null> => {
-    const url = `${API_BASE_URL}${ENDPOINTS.MY_ACTIVE}`;
+    const url = `/api${ENDPOINTS.MY_ACTIVE}`;
     const response = await fetchWithAuth(url, {
       method: 'GET',
       headers: { 'Content-Type': 'application/json' }

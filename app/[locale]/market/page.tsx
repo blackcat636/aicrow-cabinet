@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
 import { Link } from '@/i18n/routing';
 import { ChevronLeftIcon } from '@/components/icons';
+import { PageLoader } from '@/components/ui/PageLoader';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -21,6 +22,7 @@ export default function MarketPage() {
   const t = useTranslations('market');
   const tWorkflow = useTranslations('workflow');
   const tExecutions = useTranslations('executions');
+  const tCommon = useTranslations('common');
 
   const [availableWorkflows, setAvailableWorkflows] = useState<Workflow[]>([]);
   const [myWorkflowIds, setMyWorkflowIds] = useState<Set<number>>(new Set());
@@ -82,14 +84,13 @@ export default function MarketPage() {
     hasWorkflows && availableWorkflows.every((w) => myWorkflowIds.has(w.id));
 
   if (isLoading) {
+    return <PageLoader label={tCommon('loading')} />;
+  }
+
+  if (loading) {
     return (
       <AppLayout>
-        <div className="h-full bg-gray-900 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4" />
-            <p className="text-gray-300">{t('loading')}</p>
-          </div>
-        </div>
+        <PageLoader label={tCommon('loading')} />
       </AppLayout>
     );
   }
@@ -164,7 +165,7 @@ export default function MarketPage() {
               <div className="flex flex-col gap-8">
                 <section>
                   <h3 className="figma-body-2-semibold text-[var(--color-secondary-10)] mb-4">{t('sectionWorkflow')}</h3>
-                  <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                     {availableWorkflows.map((workflow) => (
                       <WorkflowCardAvailable
                         key={workflow.id}
@@ -293,17 +294,11 @@ function WorkflowCardAvailable({ workflow, isCreated, onAdd, t, tWorkflow }: Wor
   const shouldShowFullDescriptionOnHover = description.length > 130;
 
   return (
-    <div
-      role="button"
-      tabIndex={isCreated ? -1 : 0}
-      onClick={() => !isCreated && onAdd()}
-      onKeyDown={(e) => {
-        if (!isCreated && (e.key === 'Enter' || e.key === ' ')) {
-          e.preventDefault();
-          onAdd();
-        }
-      }}
-      className={`relative group bg-[var(--color-secondary-2)] border border-[var(--color-secondary-4)] rounded-[10px] h-[133px] px-[16px] py-[8px] flex items-center transition-all ${
+    <button
+      type="button"
+      disabled={isCreated}
+      onClick={onAdd}
+      className={`relative group w-full bg-[var(--color-secondary-2)] border border-[var(--color-secondary-4)] rounded-[10px] h-[133px] px-[16px] py-[8px] flex items-center transition-all text-left ${
         isCreated ? 'opacity-70 cursor-default' : 'cursor-pointer hover:border-[var(--color-main)]'
       }`}
     >
@@ -323,7 +318,7 @@ function WorkflowCardAvailable({ workflow, isCreated, onAdd, t, tWorkflow }: Wor
           )}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 

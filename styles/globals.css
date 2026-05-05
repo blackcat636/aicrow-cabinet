@@ -76,7 +76,7 @@
     --color-secondary-2: #1d1d1d;
     --color-secondary-3: #2f2f30;
     --color-secondary-4: #363639;
-    --color-secondary-5: #757575;
+    --color-secondary-5: #8f8f8f;
     --color-secondary-6: #9e9e9e;
     --color-secondary-7: #c2c2c2;
     --color-secondary-8: #e0e0e0;
@@ -274,6 +274,12 @@
 
 html {
   scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* Sparkle and Shimmer animations */

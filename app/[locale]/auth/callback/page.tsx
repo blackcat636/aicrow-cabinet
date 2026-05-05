@@ -4,7 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useRouter } from '@/i18n/routing';
 import { useTranslations } from 'next-intl';
-import { Spinner } from '@/components/ui/spinner';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
@@ -107,17 +107,7 @@ export default function AuthCallbackPage() {
 
   const renderContent = () => {
     if (status === 'loading') {
-      return (
-        <div className="flex flex-col items-center gap-4 text-center">
-          <Spinner size="xl" gradient aria-label="Processing OAuth" />
-          <div className="space-y-1">
-            <p className="text-white font-semibold">{t('signingIn')}</p>
-            <p className="text-sm text-gray-400">
-              {isLinkMode ? t('verifying') : t('signingIn')}
-            </p>
-          </div>
-        </div>
-      );
+      return <PageLoader label={isLinkMode ? t('verifying') : t('signingIn')} />;
     }
 
     if (status === 'error') {

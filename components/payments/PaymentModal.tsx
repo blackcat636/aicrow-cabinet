@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { X, Loader2 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
@@ -113,6 +113,8 @@ export const PaymentModal: React.FC<PaymentModalProps> = (props) => {
   const [walletMessage, setWalletMessage] = useState<string | null>(null);
   const [minUsd, setMinUsd] = useState<number | null>(null);
   const [cryptoAmount, setCryptoAmount] = useState<string | null>(null);
+  const titleId = useId();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   const stripePromise = useMemo(() => {
     const key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY?.trim();
@@ -150,6 +152,20 @@ export const PaymentModal: React.FC<PaymentModalProps> = (props) => {
       resetState();
     }
   }, [isOpen, resetState]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    closeButtonRef.current?.focus();
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
 
   const modalTitle =
     purpose === 'deposit' ? tDep('title') : tBill('paymentModalTitle');
@@ -433,7 +449,19 @@ export const PaymentModal: React.FC<PaymentModalProps> = (props) => {
   const copyAddress = async () => {
     if (!depositAddress) return;
     try {
-      await navigator.clipboard.writeText(depositAddress);
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(depositAddress);
+      } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = depositAddress;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+      }
       if (purpose === 'deposit') {
         toast.success(tDep('copied'));
       } else {
@@ -483,13 +511,17 @@ export const PaymentModal: React.FC<PaymentModalProps> = (props) => {
       }}
     >
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="p-[1px] rounded-2xl bg-[linear-gradient(90deg,#7C3AED_0%,#4C1D95_100%)] shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="bg-[#141519] w-full flex flex-col max-h-[90vh] overflow-hidden rounded-[calc(1rem-1px)]">
           <div className="flex items-center justify-between p-5 border-b border-gray-700/50 shrink-0">
-            <h2 className="text-xl font-bold text-white">{modalTitle}</h2>
+            <h2 id={titleId} className="text-xl font-bold text-white">{modalTitle}</h2>
             <button
+              ref={closeButtonRef}
               type="button"
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-white rounded-full hover:bg-white/10"

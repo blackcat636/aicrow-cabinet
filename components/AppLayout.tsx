@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useMemo, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -29,6 +30,7 @@ import { getImpersonationMeta } from '@/lib/auth';
 import { stripLocalePrefixFromPathname } from '@/lib/client-locale';
 import { LogoutConfirmDialog } from '@/components/ui/LogoutConfirmDialog';
 import { Badge } from '@/components/ui/badge';
+import { PageLoader } from '@/components/ui/PageLoader';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -150,6 +152,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const { user, logout, impersonationInfo, impersonateUser, stopImpersonation, isLoading: authLoading } = useAuth();
   const { planName, isLoading: planLoading } = useSubscription();
   const t = useTranslations('nav');
+  const tCommon = useTranslations('common');
   const tProfile = useTranslations('profile');
   const tImpersonation = useTranslations('impersonation');
   const tBilling = useTranslations('billing');
@@ -158,8 +161,12 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const [balance, setBalance] = useState(0);
   const [balanceLoading, setBalanceLoading] = useState(true);
 
-  // Clean plan name - remove 'plan' suffix if present
-  const cleanPlanName = planName ? planName.replace(/\s+plan$/i, '') : 'Free';
+  // Avoid "Free -> current plan" flicker while plan is still loading.
+  const cleanPlanName = planName
+    ? planName.replace(/\s+plan$/i, '')
+    : planLoading
+      ? null
+      : 'Free';
 
   // Fetch real balance from API
   useEffect(() => {
@@ -188,6 +195,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   }, [user?.balance]);
 
   const formattedBalance = balance.toLocaleString();
+  const showBalancePlanInfo = !balanceLoading && !planLoading;
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -196,12 +204,18 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   const [isStoppingImpersonation, setIsStoppingImpersonation] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
   
   // Ensure pathname is only used on client side
   // usePathname from next-intl may fail during static export, so we use window.location
-  const [pathname, setPathname] = useState<string>('/');
+  const [pathname, setPathname] = useState<string>('__pending__');
+  const showInitialPageLoader = pathname === '__pending__';
   
   // Get pathname from window.location (client-side only)
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   useEffect(() => {
     if (typeof window === 'undefined') return;
     
@@ -327,19 +341,19 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
   useEffect(() => {
     if (!isUserMenuOpen) return;
 
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: PointerEvent) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside, true);
-    return () => document.removeEventListener('mousedown', handleClickOutside, true);
+    document.addEventListener('pointerdown', handleClickOutside, true);
+    return () => document.removeEventListener('pointerdown', handleClickOutside, true);
   }, [isUserMenuOpen]);
 
   return (
     <>
-    <div className='h-screen bg-black overflow-hidden flex flex-col'>
+    <div className='min-h-screen min-h-[100dvh] bg-black overflow-hidden flex flex-col'>
       <div className='hidden md:flex h-[78px] w-full bg-[var(--color-secondary-1)] border-b border-[var(--color-secondary-4)]'>
         <div className='h-full w-[240px] bg-[var(--color-secondary-2)] border-r border-[var(--color-secondary-4)] px-[40px] flex items-center'>
           <I18nLink href='/' className='hover:opacity-90 flex items-center gap-2'>
@@ -352,13 +366,19 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
         <div className='flex-1 h-full px-[40px] flex items-center justify-end'>
           <div className='flex items-center gap-[24px]'>
             {/* Balance and Plan Info */}
-            <div className="flex items-center">
-              <div className="font-normal text-[#9e9e9e] text-[16px] tracking-[0.32px]">
-                <span>{tBilling('tokensInPlanPrefix', { count: formattedBalance })}</span>
-                <Badge className="bg-[#757575] text-white text-[16px] font-semibold">{cleanPlanName}</Badge>
-                <span>{tBilling('tokensInPlanSuffix')}</span>
+            {showBalancePlanInfo ? (
+              <div className="flex items-center">
+                <div className="font-normal text-[#9e9e9e] text-[16px] tracking-[0.32px]">
+                  <span>{tBilling('tokensInPlanPrefix', { count: formattedBalance })}</span>
+                  {cleanPlanName ? (
+                    <Badge className="bg-[#757575] text-white text-[16px] font-semibold">{cleanPlanName}</Badge>
+                  ) : (
+                    <span className="inline-block w-[52px]" aria-hidden />
+                  )}
+                  <span>{tBilling('tokensInPlanSuffix')}</span>
+                </div>
               </div>
-            </div>
+            ) : null}
             
             <LanguageSwitcherMenu variant="desktop" />
             <button
@@ -443,7 +463,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
         {isUserMenuOpen && (
           <div
             ref={userMenuRef}
-            className='fixed right-4 md:right-10 top-[68px] md:top-[70image.pngpx] z-[120] min-w-[188px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-2 shadow-[0px_0px_14px_0px_rgba(0,0,0,0.35)]'
+            className='fixed right-4 md:right-10 top-[68px] md:top-[70px] z-[120] min-w-[188px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] p-2 shadow-[0px_0px_14px_0px_rgba(0,0,0,0.35)]'
           >
             <I18nLink
               href='/profile'
@@ -478,7 +498,7 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
 
         {/* Mobile Side Menu Overlay */}
         {isMobileMenuOpen && (
-          <div className='md:hidden fixed inset-x-0 top-[71px] bottom-0 z-[100]'>
+          <div className='md:hidden fixed inset-x-0 top-[71px] bottom-0 z-[100] pb-[env(safe-area-inset-bottom)]'>
             <div className='absolute inset-0 bg-black/55' onClick={() => setIsMobileMenuOpen(false)} />
             <aside className='absolute left-0 top-0 bottom-0 w-[240px] bg-[var(--color-secondary-2)] border-r border-[var(--color-secondary-4)] flex flex-col'>
               <nav className='flex-1 pt-4'>
@@ -706,6 +726,12 @@ export const AppLayout: React.FC<LayoutProps> = ({ children }) => {
     </div>
     </div>
     </div>
+    {isMounted && showInitialPageLoader
+      ? createPortal(
+          <PageLoader label={tCommon('loading')} className="z-[130]" />,
+          document.body
+        )
+      : null}
     <UserImpersonationModal
       isOpen={showImpersonationModal}
       onClose={() => setShowImpersonationModal(false)}

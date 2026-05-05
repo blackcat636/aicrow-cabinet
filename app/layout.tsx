@@ -39,7 +39,7 @@ export default async function RootLayout({
       <head />
       <body
         className={clsx(
-          'h-screen bg-black text-white font-sans antialiased',
+          'min-h-screen min-h-[100dvh] bg-black text-white font-sans antialiased',
           fontSans.variable,
           fontSans.className
         )}
@@ -48,7 +48,7 @@ export default async function RootLayout({
           themeProps={{ attribute: 'class', defaultTheme: 'dark' }}
           cspNonce={cspNonce}
         >
-          <main role="main" className="h-full bg-black">{children}</main>
+          <main role="main" className="min-h-screen min-h-[100dvh] bg-black">{children}</main>
           <Toaster />
         </Providers>
       </body>

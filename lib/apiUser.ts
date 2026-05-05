@@ -28,6 +28,94 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const isNullableString = (value: unknown): value is string | null =>
   value === null || typeof value === 'string';
 
+const unwrapProfilePayload = (payload: unknown): unknown => {
+  if (!isRecord(payload)) {
+    return payload;
+  }
+
+  if ('data' in payload && payload.data != null) {
+    const nested = payload.data;
+    if (isRecord(nested) && 'user' in nested && nested.user != null) {
+      return nested.user;
+    }
+    if (isRecord(nested) && 'profile' in nested && nested.profile != null) {
+      return nested.profile;
+    }
+    return nested;
+  }
+
+  if ('user' in payload && payload.user != null) {
+    return payload.user;
+  }
+
+  if ('profile' in payload && payload.profile != null) {
+    return payload.profile;
+  }
+
+  return payload;
+};
+
+const normalizeProfileShape = (value: unknown): unknown => {
+  if (!isRecord(value)) {
+    return value;
+  }
+
+  if (typeof value.id === 'string') {
+    const parsedId = Number(value.id);
+    if (Number.isFinite(parsedId)) {
+      return { ...value, id: parsedId };
+    }
+  }
+
+  return value;
+};
+
+const readString = (value: unknown, fallback = ''): string =>
+  typeof value === 'string' ? value : fallback;
+
+const readNullableString = (value: unknown): string | null =>
+  typeof value === 'string' ? value : null;
+
+const readBoolean = (value: unknown, fallback = false): boolean =>
+  typeof value === 'boolean' ? value : fallback;
+
+const toUserProfile = (value: unknown): UserProfile | null => {
+  if (!isRecord(value)) {
+    return null;
+  }
+
+  const rawId = value.id;
+  const id =
+    typeof rawId === 'number'
+      ? rawId
+      : typeof rawId === 'string' && Number.isFinite(Number(rawId))
+        ? Number(rawId)
+        : null;
+
+  if (id === null) {
+    return null;
+  }
+
+  return {
+    id,
+    uuid: readString(value.uuid),
+    email: readString(value.email),
+    username: readString(value.username),
+    firstName: readString(value.firstName),
+    lastName: readString(value.lastName),
+    phone: readNullableString(value.phone),
+    photo: readNullableString(value.photo),
+    dateOfBirth: readNullableString(value.dateOfBirth),
+    role: readString(value.role, 'USER'),
+    isEmailVerified: readBoolean(value.isEmailVerified),
+    referralCode: readNullableString(value.referralCode),
+    referredByCode: readNullableString(value.referredByCode),
+    timezone: readNullableString(value.timezone),
+    createdAt: readString(value.createdAt),
+    updatedAt: readString(value.updatedAt),
+  };
+};
+
 function isUserProfile(value: unknown): value is UserProfile {
   if (!isRecord(value)) {
     return false;
@@ -93,11 +181,13 @@ export const userApi = {
     }
 
     const data: unknown = await response.json();
-    if (!isUserProfile(data)) {
+    const profileCandidate = normalizeProfileShape(unwrapProfilePayload(data));
+    const profile = toUserProfile(profileCandidate);
+    if (!profile || !isUserProfile(profile)) {
       // No HTTP status: invalid body must not be treated like a non-401 API error in auth init.
       throw new Error('Invalid profile response');
     }
-    return data;
+    return profile;
   },
 
   // Update user profile
@@ -173,10 +263,12 @@ export const userApi = {
       }
 
       const data: unknown = await response.json();
-      if (!isUserProfile(data)) {
+      const profileCandidate = normalizeProfileShape(unwrapProfilePayload(data));
+      const profile = toUserProfile(profileCandidate);
+      if (!profile || !isUserProfile(profile)) {
         throw withStatus(new Error('Invalid profile response'), response.status);
       }
-      return data;
+      return profile;
     } catch (error) {
       throw error;
     }

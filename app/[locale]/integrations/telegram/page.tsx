@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getAccessToken } from '@/lib/auth';
 import { AppLayout } from '@/components/AppLayout';
 import { useTranslations } from 'next-intl';
+import { PageLoader } from '@/components/ui/PageLoader';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
@@ -16,6 +17,7 @@ export const runtime = 'edge';
 const TelegramIntegrationPage: React.FC = () => {
   const { user } = useAuth();
   const t = useTranslations('integrations.telegram');
+  const tCommon = useTranslations('common');
   const [status, setStatus] = useState<TelegramStatusResponse['data'] | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isGeneratingLink, setIsGeneratingLink] = useState(false);
@@ -134,6 +136,10 @@ const TelegramIntegrationPage: React.FC = () => {
     }
   };
 
+  if (isLoading && !status) {
+    return <PageLoader label={tCommon('loading')} />;
+  }
+
   return (
     <AppLayout>
       <div className="h-full">
@@ -154,13 +160,6 @@ const TelegramIntegrationPage: React.FC = () => {
               {error && (
                 <div className="mb-4 p-3 bg-red-900/20 border border-red-600 rounded-lg">
                   <p className="text-sm text-red-400">{error}</p>
-                </div>
-              )}
-
-              {/* Loading State */}
-              {isLoading && !status && (
-                <div className="flex items-center justify-center py-12">
-                  <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-500"></div>
                 </div>
               )}
 

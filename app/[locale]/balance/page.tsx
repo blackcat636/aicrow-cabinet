@@ -9,19 +9,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
 export default function BalancePage() {
-  const { user, isAuthenticated, isLoading } = useAuth();
-
-  // Show loading state
-  if (isLoading) {
-    return (
-      <div className="h-full bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading...</p>
-        </div>
-      </div>
-    );
-  }
+  useAuth();
 
   return (
     <AppLayout>

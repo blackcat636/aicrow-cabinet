@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { authApi } from '@/lib/apiAuth';
 import { toast } from 'sonner';
 import { useTranslations } from 'next-intl';
@@ -31,6 +31,9 @@ export const UserImpersonationModal: React.FC<Props> = ({
   const [users, setUsers] = useState<UserListItem[]>([]);
   const [search, setSearch] = useState('');
   const [submittingId, setSubmittingId] = useState<string | number | null>(null);
+  const titleId = useId();
+  const descriptionId = useId();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -49,6 +52,20 @@ export const UserImpersonationModal: React.FC<Props> = ({
     };
     loadUsers();
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    closeButtonRef.current?.focus();
+
+    const handleEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, [isOpen, onClose]);
 
   const filteredUsers = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -84,17 +101,25 @@ export const UserImpersonationModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <div className="w-full max-w-3xl bg-[#141519] border border-gray-700 rounded-2xl shadow-2xl p-6 relative">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        aria-describedby={descriptionId}
+        className="w-full max-w-3xl bg-[#141519] border border-gray-700 rounded-2xl shadow-2xl p-6 relative"
+      >
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h3 className="text-xl font-semibold text-white">{t('loginMenu')}</h3>
-            <p className="text-sm text-gray-400">
+            <h3 id={titleId} className="text-xl font-semibold text-white">{t('loginMenu')}</h3>
+            <p id={descriptionId} className="text-sm text-gray-400">
               {t('pickUser')}
             </p>
           </div>
           <button
+            ref={closeButtonRef}
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
+            aria-label="Close dialog"
           >
             ✕
           </button>

@@ -13,6 +13,7 @@ import { ChainHistory } from '@/components/workflow/ChainHistory';
 import { ResultDisplay } from '@/components/workflow/ResultDisplay';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Spinner } from '@/components/ui/spinner';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { XIcon, CheckIcon, ClockIcon } from '@/components/icons';
 import { toast } from 'sonner';
 
@@ -198,29 +199,11 @@ export default function ExecutionDetailsPage() {
   };
 
   if (isLoading || !isAuthenticated) {
-    return (
-      <AppLayout>
-        <div className="h-full bg-gray-900 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-300">{t('loading')}</p>
-          </div>
-        </div>
-      </AppLayout>
-    );
+    return <PageLoader label={tCommon('loading')} />;
   }
 
   if (loading) {
-    return (
-      <AppLayout>
-        <div className="h-full bg-gray-900 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-            <p className="text-gray-300">{t('loading')}</p>
-          </div>
-        </div>
-      </AppLayout>
-    );
+    return <PageLoader label={tCommon('loading')} />;
   }
 
   if (error || !execution) {

@@ -67,7 +67,7 @@ export function LanguageSwitcher() {
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: PointerEvent) => {
       const target = event.target as Node;
       
       // Check if click is outside both button and dropdown menu
@@ -82,11 +82,22 @@ export function LanguageSwitcher() {
     };
 
     // Use capture phase to catch clicks early
-    document.addEventListener('mousedown', handleClickOutside, true);
+    document.addEventListener('pointerdown', handleClickOutside, true);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside, true);
+      document.removeEventListener('pointerdown', handleClickOutside, true);
     };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onEsc);
+    return () => window.removeEventListener('keydown', onEsc);
   }, [isOpen]);
 
   return (
@@ -123,14 +134,13 @@ export function LanguageSwitcher() {
         {/* Dropdown menu - rendered via portal */}
         {isOpen && typeof document !== 'undefined' && (createPortal(
           <>
-            {/* Backdrop - invisible but captures clicks outside */}
-            <div
-              className="fixed inset-0 z-[99998]"
-              onClick={(e) => {
-                // Only close if clicking directly on backdrop, not on dropdown
-                if (e.target === e.currentTarget) {
-                  setIsOpen(false);
-                }
+            {/* Backdrop — native control for a11y + lint */}
+            <button
+              type="button"
+              aria-label="Close language menu"
+              className="fixed inset-0 z-[99998] cursor-default border-0 bg-transparent p-0"
+              onClick={() => {
+                setIsOpen(false);
               }}
             />
             {/* Dropdown */}
@@ -141,10 +151,6 @@ export function LanguageSwitcher() {
                 top: `${dropdownPosition.top}px`,
                 left: `${dropdownPosition.left}px`,
                 width: `${dropdownPosition.width}px`
-              }}
-              onClick={(e) => {
-                // Prevent backdrop from closing when clicking inside dropdown
-                e.stopPropagation();
               }}
             >
               {languages.map((lang) => {

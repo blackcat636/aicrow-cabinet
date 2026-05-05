@@ -26,6 +26,18 @@ const readMessage = (payload: unknown, fallback: string): string => {
   return fallback;
 };
 
+const unwrapProfilePayload = (payload: unknown): unknown => {
+  if (!isRecord(payload)) {
+    return payload;
+  }
+
+  if ('data' in payload && payload.data != null) {
+    return payload.data;
+  }
+
+  return payload;
+};
+
 export async function GET(request: NextRequest) {
   try {
     const { accessToken, deviceId } = getTokens(request);
@@ -56,13 +68,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Handle response format: { status: 200, data: {...}, message: "..." }
-    if (data.status === 200 && data.data) {
-      return NextResponse.json(data.data, { status: 200 });
-    }
-
-    // Fallback: if data is already the profile object
-    return NextResponse.json(rawData, { status: 200 });
+    // Support both envelope and direct profile shapes.
+    return NextResponse.json(unwrapProfilePayload(rawData), { status: 200 });
   } catch (error) {
     return NextResponse.json(
       { message: 'Internal server error' },

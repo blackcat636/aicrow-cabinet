@@ -123,7 +123,7 @@ export const CryptoPaymentPanel: React.FC<CryptoPaymentPanelProps> = ({
         <div className="space-y-3 rounded-[10px] border border-gray-700 bg-black/30 p-4">
           {qrUrl && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={qrUrl} alt="" className="mx-auto w-[160px] h-[160px] rounded-lg" />
+            <img src={qrUrl} alt="QR code for crypto payment address" className="mx-auto w-[160px] h-[160px] rounded-lg" />
           )}
           <div>
             <p className="text-xs text-gray-500 mb-1">{labels.address}</p>

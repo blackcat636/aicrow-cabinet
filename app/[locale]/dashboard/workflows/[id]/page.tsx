@@ -30,6 +30,7 @@ import { WorkflowForm } from '@/components/workflow/WorkflowForm';
 import { WorkflowExecuteModal } from '@/components/workflow/WorkflowExecuteModal';
 import { ResultDisplay } from '@/components/workflow/ResultDisplay';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { ChainToWorkflowModal } from '@/components/workflow/ChainToWorkflowModal';
 import { AvailableChainsResponse } from '@/types/workflow';
 import { Spinner } from '@/components/ui/spinner';
@@ -907,68 +908,9 @@ export default function WorkflowDetailPage() {
     }
   };
 
-  // Skeleton loader for workflow detail page
-  const DetailSkeleton = () => (
-    <div className="h-full">
-      <div className="max-w-6xl mx-auto p-6 min-h-[600px]">
-        <div className="rounded-lg border border-gray-700 bg-[#141519]">
-          {/* Header skeleton */}
-          <div className="p-6 min-h-[120px]">
-            <div className="flex items-center justify-between mb-4">
-              <div className="h-6 w-20 bg-gray-700 rounded animate-pulse"></div>
-              <div className="flex gap-2">
-                <div className="h-10 w-24 bg-gray-700 rounded animate-pulse"></div>
-                <div className="h-10 w-28 bg-gray-700 rounded animate-pulse"></div>
-                <div className="h-10 w-20 bg-gray-700 rounded animate-pulse"></div>
-                <div className="h-10 w-20 bg-gray-700 rounded animate-pulse"></div>
-              </div>
-            </div>
-            <div className="h-8 w-64 bg-gray-700 rounded mb-2 animate-pulse"></div>
-            <div className="h-5 w-96 bg-gray-700 rounded animate-pulse"></div>
-          </div>
-          {/* Content skeleton */}
-          <div className="p-6">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-              {[1, 2].map((i) => (
-                <div key={i} className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
-                  <div className="bg-black rounded-lg p-6 h-64 animate-pulse">
-                    <div className="h-6 w-48 bg-gray-700 rounded mb-4"></div>
-                    <div className="space-y-3">
-                      <div className="h-4 w-full bg-gray-700 rounded"></div>
-                      <div className="h-4 w-3/4 bg-gray-700 rounded"></div>
-                      <div className="h-4 w-5/6 bg-gray-700 rounded"></div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-            {/* Executions skeleton */}
-            <div className="mt-8">
-              <div className="h-6 w-48 bg-gray-700 rounded mb-4 animate-pulse"></div>
-              <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="p-[1px] rounded-lg bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] overflow-hidden">
-                    <div className="bg-black rounded-lg p-6 h-32 animate-pulse">
-                      <div className="h-4 w-32 bg-gray-700 rounded mb-2"></div>
-                      <div className="h-4 w-48 bg-gray-700 rounded"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
   // Show loading state for auth or initial workflow loading
   if (isLoading || loading) {
-    return (
-      <AppLayout>
-        <DetailSkeleton />
-      </AppLayout>
-    );
+    return <PageLoader label={tCommon('loading')} />;
   }
 
   // Show error state only if not loading and workflow is not found

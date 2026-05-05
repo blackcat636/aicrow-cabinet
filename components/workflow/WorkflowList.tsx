@@ -5,6 +5,7 @@ import { UserWorkflow } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
 import { automationApi, UserAutomation } from '@/lib/apiAutomation';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { PlusIcon } from '@/components/icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslations } from 'next-intl';
@@ -138,14 +139,14 @@ export const WorkflowList: React.FC<WorkflowListProps> = (props) => {
   useEffect(() => {
     if (!openMenuWorkflowId) return;
 
-    const handleOutsideClick = (event: MouseEvent) => {
+    const handleOutsideClick = (event: PointerEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setOpenMenuWorkflowId(null);
       }
     };
 
-    document.addEventListener('mousedown', handleOutsideClick);
-    return () => document.removeEventListener('mousedown', handleOutsideClick);
+    document.addEventListener('pointerdown', handleOutsideClick);
+    return () => document.removeEventListener('pointerdown', handleOutsideClick);
   }, [openMenuWorkflowId]);
 
   const handleDelete = useCallback((id: number, name: string) => {
@@ -314,21 +315,8 @@ export const WorkflowList: React.FC<WorkflowListProps> = (props) => {
     );
   };
 
-  // Skeleton loader component - reserves space to prevent layout shift
-  const SkeletonLoader = () => (
-    <div className="space-y-4 min-h-[300px]">
-      <div className="h-8 w-44 bg-[var(--color-secondary-4)] rounded animate-pulse" />
-      <div className="h-6 w-24 bg-[var(--color-secondary-4)] rounded animate-pulse" />
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="h-[132px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] animate-pulse" />
-        ))}
-      </div>
-    </div>
-  );
-
   if (loading) {
-    return <SkeletonLoader />;
+    return <PageLoader label={tCommon('loading')} />;
   }
 
   if (error) {

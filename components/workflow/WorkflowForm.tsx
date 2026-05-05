@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Workflow, AttachWorkflowRequest, CredentialType, CredentialData } from '@/types/workflow';
 import { workflowApi } from '@/lib/apiWorkflow';
@@ -46,6 +46,8 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSelectOpen, setIsSelectOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const titleId = useId();
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
   
   // Get selected workflow details - prioritize preselected workflow, then check editingWorkflow.workflow, then formData.workflowId
   const selectedWorkflow = preselectedWorkflow 
@@ -121,6 +123,11 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
     window.addEventListener('keydown', handleKeyDown as any);
     return () => window.removeEventListener('keydown', handleKeyDown as any);
   }, [isOpen, isQuickAddModal, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    closeButtonRef.current?.focus();
+  }, [isOpen]);
 
   const loadAvailableWorkflows = async () => {
     try {
@@ -249,6 +256,9 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
         onClick={onClose}
       >
         <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
           className="w-full rounded-[15px] bg-[var(--color-secondary-2)] pb-6 md:max-w-[595px]"
           onClick={(e) => e.stopPropagation()}
         >
@@ -262,7 +272,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
               >
                 <ChevronLeftIcon className="w-5 h-5" />
               </button>
-              <h2 className="figma-body-2-semibold uppercase text-[var(--color-secondary-10)] truncate">
+              <h2 id={titleId} className="figma-body-2-semibold uppercase text-[var(--color-secondary-10)] truncate">
                 {selectedWorkflow.name || t('attachNewWorkflow')}
               </h2>
             </div>
@@ -290,6 +300,7 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
                 {submitting ? t('attaching') : t('addWorkflow')}
               </button>
               <button
+                ref={closeButtonRef}
                 type="button"
                 onClick={onClose}
                 className="h-12 rounded-[10px] border border-[var(--color-main)] figma-body-1-semibold text-[var(--color-main)]"
@@ -370,6 +381,9 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
       }}
     >
       <div 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
         className="p-[1px] rounded-2xl bg-[linear-gradient(90deg,#A500E1_0%,#7B61FF_100%)] shadow-2xl shadow-purple-500/20 max-w-2xl w-full max-h-[90vh] overflow-hidden flex flex-col"
         onClick={(e) => {
           // Prevent closing when clicking inside modal
@@ -379,12 +393,14 @@ export const WorkflowForm: React.FC<WorkflowFormProps> = ({
         <div className="bg-[#141519] rounded-2xl w-full flex flex-col max-h-[90vh] overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-700/50 bg-gradient-to-r from-purple-900/10 to-transparent">
-            <h2 className="text-2xl font-bold text-white bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent">
+            <h2 id={titleId} className="text-2xl font-bold text-white bg-gradient-to-r from-purple-400 to-purple-300 bg-clip-text text-transparent">
               {editingWorkflow ? t('editWorkflow') : t('attachNewWorkflow')}
             </h2>
             <button
+              ref={closeButtonRef}
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-red-400 transition-all rounded-full hover:bg-red-900/20 hover:scale-110"
+              aria-label="Close dialog"
             >
               <XIcon className="w-5 h-5" />
             </button>

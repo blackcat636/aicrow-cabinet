@@ -1,10 +1,16 @@
 'use client';
 
-import React, { useState, useLayoutEffect } from 'react';
-import { ChevronLeftIcon, XIcon, EyeIcon, EyeOffIcon } from '@/components/icons';
+import React, { useState, useLayoutEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { FormActions } from '@/components/ui/FormActions';
+import { FormField } from '@/components/ui/FormField';
+import { Input } from '@/components/ui/Input';
+import { Modal } from '@/components/ui/Modal';
+import { PasswordInput } from '@/components/ui/PasswordInput';
+import { Spinner } from '@/components/ui/spinner';
+import { StatusBanner } from '@/components/ui/StatusBanner';
 import { useTranslations } from 'next-intl';
 
 interface ChangePasswordFormProps {
@@ -24,6 +30,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
 }) => {
   const t = useTranslations('profile.changePasswordForm');
   const tProfile = useTranslations('profile');
+  const tAuth = useTranslations('auth');
   const { user } = useAuth();
   const [step, setStep] = useState<Step>('password');
   const [email, setEmail] = useState('');
@@ -32,8 +39,6 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [sendingCode, setSendingCode] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -340,7 +345,7 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
 
   const handleClose = () => {
     onClose();
-    setTimeout(() => {
+    window.setTimeout(() => {
       resetForm();
     }, 300);
   };
@@ -361,57 +366,48 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
 
   return (
     <>
-    <div
-      className="fixed inset-x-0 top-[71px] bottom-0 md:inset-0 bg-[var(--color-secondary-1)] md:bg-black md:bg-opacity-80 md:flex md:items-center md:justify-center md:p-4 z-50 overflow-y-auto"
-      onClick={(e) => {
-        if (e.target === e.currentTarget && window.innerWidth >= 768) {
-          setConfirmOpen(true);
-        }
-      }}
-    >
-      <div className="bg-[var(--color-secondary-1)] md:bg-gray-900 md:rounded-xl md:max-w-md w-full md:border md:border-gray-700 md:shadow-2xl min-h-full md:min-h-0">
-        {/* Header */}
-        <div className="flex items-center gap-3 p-4 md:p-6 border-b border-[var(--color-secondary-4)] md:border-gray-700">
-          <button
-            onClick={handleClose}
-            className="md:hidden h-8 w-8 rounded-full border border-[var(--color-secondary-5)] flex items-center justify-center text-[var(--color-secondary-10)]"
-          >
-            <ChevronLeftIcon className="w-4 h-4" />
-          </button>
-          <h2 className="text-[14px] uppercase md:normal-case md:text-xl font-semibold text-white flex-1">
-            {t('enterNewPassword')}
-          </h2>
-          <button
-            onClick={handleClose}
-            className="hidden md:flex p-2 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-gray-800"
-          >
-            <XIcon className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 md:p-6">
+      <Modal
+        isOpen={isOpen}
+        onClose={handleClose}
+        title={t('enterNewPassword')}
+        titleClassName="text-[14px] uppercase md:normal-case md:text-xl md:font-semibold md:leading-tight"
+        size="sm"
+        mobileLayout="full"
+        mobileBelowHeader
+        showBackdrop
+        backdropDesktopOnly
+        onBackdropClick={() => setConfirmOpen(true)}
+        closeOnBackdrop={false}
+        closeOnEsc={false}
+        showCloseButton
+        mobileBackButton
+        panelClassName="flex min-h-full flex-1 flex-col border-[var(--color-secondary-4)] bg-[var(--color-secondary-1)] md:min-h-0 md:flex-none md:rounded-xl md:border-gray-700 md:bg-gray-900"
+      >
+        <div className="flex flex-1 flex-col p-4 md:p-6">
           {sendingCode ? (
             <div className="flex flex-col items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-500 mb-4"></div>
-              <p className="text-gray-300">{t('sendingCode')}</p>
+              <Spinner
+                size="xl"
+                className="mb-4 text-[var(--color-main)]"
+                label={t('sendingCode')}
+              />
+              <p className="text-[var(--color-secondary-7)]">{t('sendingCode')}</p>
             </div>
           ) : (
             <form onSubmit={handlePasswordSubmit} className="space-y-4">
-              {/* Success message about code being sent - only show if no error */}
-              {!error && email && (
-                <div className="mb-4 p-3 bg-green-900/20 border border-green-500/50 rounded-lg">
-                  <p className="text-sm text-green-400">
-                    {t('codeSentSuccessMessage', { email })}
-                  </p>
-                </div>
-              )}
+              {!error && email ? (
+                <StatusBanner variant="success" className="mb-4 text-sm">
+                  {t('codeSentSuccessMessage', { email })}
+                </StatusBanner>
+              ) : null}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t('verificationCodeRequired')}
-                </label>
-                <input
+              <FormField
+                label={t('verificationCodeRequired')}
+                htmlFor="change-password-code"
+                error={errors.code}
+              >
+                <Input
+                  id="change-password-code"
                   type="text"
                   value={code}
                   onChange={(e) => {
@@ -423,122 +419,84 @@ export const ChangePasswordForm: React.FC<ChangePasswordFormProps> = ({
                   placeholder={t('enterVerificationCodePlaceholder')}
                   maxLength={6}
                   autoComplete="off"
-                  autoFocus={false}
                   spellCheck={false}
                   data-lpignore="true"
                   data-form-type="other"
                   name="verification-code"
-                  className={`w-full p-3 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                    errors.code ? 'border-red-500' : 'border-gray-600'
-                  }`}
+                  aria-invalid={Boolean(errors.code)}
+                  invalid={Boolean(errors.code)}
                 />
-                {errors.code && (
-                  <p className="mt-1 text-sm text-red-400">{errors.code}</p>
-                )}
-              </div>
+              </FormField>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t('newPasswordRequired')}
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => {
-                      setNewPassword(e.target.value);
-                      if (errors.newPassword) {
-                        setErrors({ ...errors, newPassword: '' });
-                      }
-                    }}
-                    placeholder={t('enterNewPasswordPlaceholder')}
-                    className={`w-full p-3 pr-10 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                      errors.newPassword ? 'border-red-500' : 'border-gray-600'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                  >
-                    {showNewPassword ? (
-                      <EyeOffIcon className="w-5 h-5" />
-                    ) : (
-                      <EyeIcon className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-                {errors.newPassword && (
-                  <p className="mt-1 text-sm text-red-400">{errors.newPassword}</p>
-                )}
-                <p className="mt-1 text-xs text-gray-400">
-                  {t('passwordMinLength')}
-                </p>
-              </div>
+              <FormField
+                label={t('newPasswordRequired')}
+                htmlFor="change-password-new"
+                error={errors.newPassword}
+                hint={t('passwordMinLength')}
+              >
+                <PasswordInput
+                  id="change-password-new"
+                  value={newPassword}
+                  onChange={(e) => {
+                    setNewPassword(e.target.value);
+                    if (errors.newPassword) {
+                      setErrors({ ...errors, newPassword: '' });
+                    }
+                  }}
+                  placeholder={t('enterNewPasswordPlaceholder')}
+                  aria-invalid={Boolean(errors.newPassword)}
+                  invalid={Boolean(errors.newPassword)}
+                  getToggleAriaLabel={(visible) =>
+                    visible ? tAuth('hidePassword') : tAuth('showPassword')
+                  }
+                />
+              </FormField>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-2">
-                  {t('confirmNewPasswordRequired')}
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => {
-                      setConfirmPassword(e.target.value);
-                      if (errors.confirmPassword) {
-                        setErrors({ ...errors, confirmPassword: '' });
-                      }
-                    }}
-                    placeholder={t('confirmNewPasswordPlaceholder')}
-                    className={`w-full p-3 pr-10 bg-gray-800 text-white placeholder-gray-400 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 ${
-                      errors.confirmPassword ? 'border-red-500' : 'border-gray-600'
-                    }`}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOffIcon className="w-5 h-5" />
-                    ) : (
-                      <EyeIcon className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-400">{errors.confirmPassword}</p>
-                )}
-              </div>
+              <FormField
+                label={t('confirmNewPasswordRequired')}
+                htmlFor="change-password-confirm"
+                error={errors.confirmPassword}
+              >
+                <PasswordInput
+                  id="change-password-confirm"
+                  value={confirmPassword}
+                  onChange={(e) => {
+                    setConfirmPassword(e.target.value);
+                    if (errors.confirmPassword) {
+                      setErrors({ ...errors, confirmPassword: '' });
+                    }
+                  }}
+                  placeholder={t('confirmNewPasswordPlaceholder')}
+                  aria-invalid={Boolean(errors.confirmPassword)}
+                  invalid={Boolean(errors.confirmPassword)}
+                  getToggleAriaLabel={(visible) =>
+                    visible ? tAuth('hidePassword') : tAuth('showPassword')
+                  }
+                />
+              </FormField>
 
-              {error && (
-                <div className="p-3 bg-red-900/20 border border-red-500/50 rounded-lg">
-                  <p className="text-sm text-red-400">{error}</p>
-                </div>
-              )}
+              {error ? (
+                <StatusBanner variant="error" className="text-sm">
+                  {error}
+                </StatusBanner>
+              ) : null}
 
-              <div className="mt-4 flex flex-col md:flex-row gap-4 md:gap-3 md:pt-4">
-                <button
-                  type="button"
-                  onClick={handleClose}
-                  className="order-2 md:order-1 w-full md:flex-1 h-[48px] px-4 rounded-[10px] border border-[var(--color-main)] md:border-none bg-transparent md:bg-gray-700 text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-[var(--color-main)] md:text-gray-300 hover:bg-transparent md:hover:bg-gray-600 transition-colors"
-                >
-                  {tProfile('discard')}
-                </button>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="order-1 md:order-2 w-full md:flex-1 h-[48px] px-4 rounded-[10px] bg-[var(--color-main)] md:bg-purple-600 hover:bg-[var(--color-main)] md:hover:bg-purple-700 text-[16px] leading-[1.4] tracking-[0.32px] font-semibold text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isLoading ? t('changing') : t('changePassword')}
-                </button>
-              </div>
+              <FormActions
+                primary={{
+                  label: isLoading ? t('changing') : t('changePassword'),
+                  type: 'submit',
+                  loading: isLoading,
+                  disabled: isLoading,
+                }}
+                secondary={{
+                  label: tProfile('discard'),
+                  onClick: handleClose,
+                }}
+              />
             </form>
           )}
         </div>
-      </div>
-    </div>
+      </Modal>
     <ConfirmDialog
       isOpen={confirmOpen}
       onClose={() => setConfirmOpen(false)}

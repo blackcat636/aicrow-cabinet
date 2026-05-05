@@ -67,7 +67,7 @@ export function LanguageSwitcherCompact() {
   useEffect(() => {
     if (!isOpen) return;
 
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: PointerEvent) => {
       const target = event.target as Node;
       
       // Check if click is outside both button and dropdown menu
@@ -82,11 +82,22 @@ export function LanguageSwitcherCompact() {
     };
 
     // Use capture phase to catch clicks early
-    document.addEventListener('mousedown', handleClickOutside, true);
+    document.addEventListener('pointerdown', handleClickOutside, true);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside, true);
+      document.removeEventListener('pointerdown', handleClickOutside, true);
     };
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onEsc = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', onEsc);
+    return () => window.removeEventListener('keydown', onEsc);
   }, [isOpen]);
 
   return (

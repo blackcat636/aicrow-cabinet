@@ -2,12 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from '@/i18n/routing';
-import { useLocale } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/contexts/AuthContext';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { RegisterForm } from '@/components/auth/RegisterForm';
 import { VerifyEmailForm } from '@/components/auth/VerifyEmailForm';
 import { AppLayout } from '@/components/AppLayout';
+import { PageLoader } from '@/components/ui/PageLoader';
 import { FileTextIcon, DashBoardIcon, ClockIcon } from '@/components/icons';
 import { toast } from 'sonner';
 
@@ -17,6 +18,7 @@ export const runtime = 'edge';
 export default function Home() {
   const router = useRouter();
   const locale = useLocale();
+  const tCommon = useTranslations('common');
   const { user, isAuthenticated, isLoading } = useAuth();
   const [showLoginForm, setShowLoginForm] = useState(false);
   const [showRegisterForm, setShowRegisterForm] = useState(false);
@@ -33,14 +35,7 @@ export default function Home() {
 
   // Show loading state
   if (isLoading) {
-    return (
-      <div className="h-full bg-black flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
-          <p className="text-gray-300">Loading...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader label={tCommon('loading')} />;
   }
 
   // Show login/register if not authenticated

@@ -43,24 +43,8 @@ export const BalanceList: React.FC = () => {
     }
   }, [fetchBalances]);
 
-  const SkeletonLoader = () => (
-    <div className="space-y-4 min-h-[400px]">
-      <div className="h-10 w-72 rounded bg-[var(--color-secondary-3)] animate-pulse" />
-      <div className="h-5 w-80 rounded bg-[var(--color-secondary-3)] animate-pulse" />
-      <div className="flex gap-3 pt-2">
-        <div className="h-12 w-[446px] rounded-[10px] bg-[var(--color-secondary-3)] animate-pulse" />
-        <div className="h-12 w-[147px] rounded-[10px] bg-[var(--color-secondary-3)] animate-pulse" />
-      </div>
-      <div className="space-y-3 pt-2">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="h-[74px] rounded-[10px] border border-[var(--color-secondary-4)] bg-[var(--color-secondary-2)] animate-pulse" />
-        ))}
-      </div>
-    </div>
-  );
-
   if (isLoading) {
-    return <SkeletonLoader />;
+    return null;
   }
 
   if (error) {
