@@ -1,0 +1,22 @@
+---
+description: UI component conventions for shared and feature components.
+globs: components/**/*.tsx
+alwaysApply: false
+---
+
+# Component Standards
+
+- Reuse existing primitives from `components/ui/` before introducing new base components.
+- Keep components small and focused; extract reusable logic to hooks when needed.
+- Match naming, prop structure, and styling patterns already used in neighboring files.
+
+# Accessibility and UX
+
+- Preserve keyboard accessibility and semantic HTML.
+- Keep visual and interaction behavior consistent with current UI patterns.
+- Avoid introducing custom behavior that duplicates existing shared components.
+
+# Type Safety
+
+- Use explicit TypeScript props and domain types from `types/`.
+- Avoid `any`; prefer narrow unions and existing interfaces.

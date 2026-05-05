@@ -1,0 +1,25 @@
+---
+description: Core repository coding standards and guardrails.
+alwaysApply: true
+---
+
+# AIcrow Core Stack
+
+- Use Node.js `20.18.x` and Yarn `1.22.x`.
+- Keep changes minimal and scoped to the task.
+- Reuse existing utilities and components before creating new abstractions.
+- Do not introduce new dependencies unless there is no practical alternative.
+- Keep TypeScript strict; avoid `any` and unsafe casts.
+- User-facing assistant responses should be in Ukrainian.
+
+# Quality Gates
+
+- Validate with `yarn lint:check` for static checks.
+- Validate with `yarn test` for unit behavior.
+- Prefer `yarn verify:ci` for pre-merge confidence.
+
+# Architecture Baseline
+
+- Next.js App Router structure is source of truth.
+- i18n is based on `i18n/routing.ts` and `app/[locale]/...`.
+- Auth/session flows must align with `lib/auth.ts`, `lib/auth-cookies.ts`, and `middleware.ts`.

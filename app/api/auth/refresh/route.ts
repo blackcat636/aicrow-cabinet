@@ -3,6 +3,8 @@ import { getTokens } from '@/lib/auth';
 
 import { API_CONFIG } from '@/config/api';
 import { decodeToken } from '@/lib/auth-utils';
+import { readApiJsonMessage } from '@/lib/api-json-error';
+import { attachRequestId, getOrCreateRequestId } from '@/lib/request-id';
 import {
   getAuthTokenCookieOptions,
   getClearAuthTokenCookieOptions,
@@ -29,26 +31,18 @@ interface BackendRefreshResponse {
 const isRecord = (value: unknown): value is JsonObject =>
   typeof value === 'object' && value !== null;
 
-const readMessage = (payload: unknown, fallback: string): string => {
-  if (!isRecord(payload)) {
-    return fallback;
-  }
-  const message = payload.message;
-  if (typeof message === 'string' && message.length > 0) {
-    return message;
-  }
-  return fallback;
-};
-
 export async function POST(request: NextRequest) {
+  const requestId = getOrCreateRequestId(request);
   try {
     const { refreshToken, deviceId } = getTokens(request);
 
     if (!refreshToken || !deviceId) {
-      return NextResponse.json(
+      const response = NextResponse.json(
         { error: 'No refresh token found' },
         { status: 401 }
       );
+      attachRequestId(response, requestId);
+      return response;
     }
 
     const response = await fetch(`${API_URL}/auth/refresh`, {
@@ -73,6 +67,7 @@ export async function POST(request: NextRequest) {
         { message: 'Token refreshed successfully' },
         { status: 200 }
       );
+      attachRequestId(nextResponse, requestId);
 
       const nowSec = Math.floor(Date.now() / 1000);
       const accessExp = decodeToken(data.data.accessToken)?.exp;
@@ -101,6 +96,7 @@ export async function POST(request: NextRequest) {
           { error: 'Invalid refresh token' },
           { status: 401 }
         );
+        attachRequestId(nextResponse, requestId);
         // Clear cookies
         nextResponse.cookies.set('access_token', '', {
           ...getClearAuthTokenCookieOptions()
@@ -114,15 +110,19 @@ export async function POST(request: NextRequest) {
         return nextResponse;
       }
 
-      return NextResponse.json(
-        { error: readMessage(rawData, 'Token refresh failed') },
+      const nextResponse = NextResponse.json(
+        { error: readApiJsonMessage(rawData, 'Token refresh failed') },
         { status: response.status }
       );
+      attachRequestId(nextResponse, requestId);
+      return nextResponse;
     }
-  } catch (error) {
-    return NextResponse.json(
+  } catch {
+    const response = NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
+    attachRequestId(response, requestId);
+    return response;
   }
 }

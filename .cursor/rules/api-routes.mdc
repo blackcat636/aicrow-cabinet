@@ -1,0 +1,23 @@
+---
+description: Standards for Next.js route handlers in app/api.
+globs: app/api/**/*.ts
+alwaysApply: false
+---
+
+# API Route Handlers
+
+- Follow existing route handler patterns with `NextRequest` and `NextResponse`.
+- Keep auth-sensitive behavior aligned with `lib/auth.ts` and `lib/auth-cookies.ts`.
+- Reuse established API helpers and endpoint constants from `config/api.ts` and `lib/api*.ts` where applicable.
+- Preserve existing cookie and header behavior used by auth and proxy flows.
+
+# Error and Response Shape
+
+- Return explicit HTTP status codes for client and server errors.
+- Keep JSON response format consistent with nearby endpoints.
+- Avoid leaking sensitive internal details in response bodies.
+
+# Change Scope
+
+- Do not introduce broad API contract changes unless explicitly requested.
+- Add tests in `test/unit/` when route behavior changes.

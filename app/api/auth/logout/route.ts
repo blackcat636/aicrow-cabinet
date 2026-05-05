@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getTokens } from '@/lib/auth';
 import { API_CONFIG } from '@/config/api';
+import { attachRequestId, getOrCreateRequestId } from '@/lib/request-id';
 import {
   getClearAuthTokenCookieOptions,
   getClearDeviceCookieOptions
@@ -11,6 +12,7 @@ export const runtime = 'edge';
 const API_URL = API_CONFIG.BASE_URL;
 
 export async function POST(request: NextRequest) {
+  const requestId = getOrCreateRequestId(request);
   try {
     const { accessToken, deviceId } = getTokens(request);
 
@@ -28,8 +30,7 @@ export async function POST(request: NextRequest) {
         if (!response.ok) {
           throw new Error('Logout failed');
         }
-      } catch (error) {
-        console.warn('Logout upstream call failed');
+      } catch {
       }
     }
 
@@ -38,6 +39,7 @@ export async function POST(request: NextRequest) {
       { message: 'Logout successful' },
       { status: 200 }
     );
+    attachRequestId(nextResponse, requestId);
 
     // Clear cookies
     nextResponse.cookies.set('access_token', '', {
@@ -51,10 +53,12 @@ export async function POST(request: NextRequest) {
     });
 
     return nextResponse;
-  } catch (error) {
-    return NextResponse.json(
+  } catch {
+    const response = NextResponse.json(
       { message: 'Internal server error' },
       { status: 500 }
     );
+    attachRequestId(response, requestId);
+    return response;
   }
 }

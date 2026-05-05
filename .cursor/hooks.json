@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeSubmitPrompt": [
+      {
+        "command": "node .cursor/hooks/check-prompt-secrets.mjs",
+        "timeout": 10
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": ".cursor/hooks/shell-guard.sh",
+        "matcher": "wrangler\\s+pages\\s+deploy|git\\s+push\\s+--force|rm\\s+-rf",
+        "timeout": 10
+      }
+    ]
+  }
+}

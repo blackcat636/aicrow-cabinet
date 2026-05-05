@@ -1,0 +1,21 @@
+---
+description: Translation and locale routing consistency rules.
+globs: "{i18n/**/*.ts,messages/**/*.json}"
+alwaysApply: false
+---
+
+# i18n Consistency
+
+- Keep locale routing changes aligned with `i18n/routing.ts` and `i18n/locale-config.ts`.
+- When adding translation keys, update all locale files in `messages/` unless intentionally deferred.
+- Preserve existing message key namespaces and nesting patterns.
+
+# Localization Quality
+
+- Prefer semantic keys over inline literal strings for reusable UI text.
+- Avoid deleting keys that are still referenced by pages or components.
+- Keep wording consistent across locales for auth, billing, and workflow domains.
+
+# Routing Safety
+
+- Do not change default locale behavior without updating middleware and routing together.

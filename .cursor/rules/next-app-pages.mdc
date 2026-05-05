@@ -1,0 +1,23 @@
+---
+description: Conventions for Next.js localized app pages and layouts.
+globs: app/**/*.tsx
+alwaysApply: false
+---
+
+# Localized App Pages
+
+- Preserve locale-aware routing under `app/[locale]/...`.
+- Prefer server components by default; use client components only when required.
+- For navigation, use project i18n wrappers from `i18n/routing.ts` when locale-aware links are needed.
+- Keep page-level data and side effects close to the route boundary.
+
+# UI Composition
+
+- Build feature UI from existing primitives in `components/ui/`.
+- Keep page components focused; move reusable logic to `components/` or `hooks/`.
+- Avoid adding route-specific styling systems when shared styles already exist.
+
+# Safety
+
+- Do not break existing locale paths or implicit redirects managed by middleware.
+- Maintain compatibility with existing app-level providers.
